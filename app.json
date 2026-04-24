@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "automate-v2-scaffold",
-    "slug": "automate-v2-scaffold",
+    "name": "AutoMate",
+    "slug": "automate-v2",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "automatev2scaffold",
+    "scheme": "automate-v2",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
@@ -30,7 +30,8 @@
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
-      "expo-router"
+      "expo-router",
+      "expo-sqlite"
     ],
     "experiments": {
       "typedRoutes": true
