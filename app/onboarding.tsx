@@ -1,4 +1,5 @@
 import { View, Text, Pressable } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useSettingsStore } from '@/src/stores/settingsStore';
 
@@ -7,24 +8,40 @@ export default function OnboardingScreen() {
   const updateSetting = useSettingsStore((s) => s.updateSetting);
 
   const handleGetStarted = async () => {
+    // Mark onboarding complete and go to tabs
+    // Vehicle modal (Phase 5 stub) is accessible from tabs via the no-vehicle guard
     await updateSetting('hasCompletedOnboarding', true);
     router.replace('/(tabs)/dashboard');
   };
 
   return (
-    <View className="flex-1 items-center justify-center p-8">
-      <Text className="text-4xl font-bold">AutoMate</Text>
-      <Text className="text-base text-gray-500 mt-3 text-center">
-        Track every mile, own every dollar.
-      </Text>
-      <Pressable
-        onPress={handleGetStarted}
-        className="mt-12 bg-blue-600 px-8 py-4 rounded-xl"
-        accessibilityLabel="Get Started"
-        accessibilityRole="button"
-      >
-        <Text className="text-white text-lg font-semibold">Get Started</Text>
-      </Pressable>
-    </View>
+    <SafeAreaView className="flex-1 bg-white dark:bg-gray-900">
+      <View className="flex-1 items-center justify-center px-8">
+        {/* App icon placeholder */}
+        <View className="w-20 h-20 rounded-2xl bg-primary items-center justify-center mb-6">
+          <Text className="text-4xl">🚗</Text>
+        </View>
+
+        <Text className="text-4xl font-bold text-gray-900 dark:text-gray-100 text-center">
+          AutoMate
+        </Text>
+        <Text className="text-lg text-gray-500 dark:text-gray-400 mt-3 text-center leading-7">
+          Track every mile,{'\n'}own every dollar.
+        </Text>
+
+        <Pressable
+          onPress={handleGetStarted}
+          className="mt-12 bg-primary px-10 py-4 rounded-xl w-full items-center"
+          accessibilityLabel="Get Started"
+          accessibilityRole="button"
+        >
+          <Text className="text-white text-lg font-semibold">Get Started</Text>
+        </Pressable>
+
+        <Text className="text-xs text-gray-400 dark:text-gray-600 mt-4 text-center">
+          No account required. Your data stays on your device.
+        </Text>
+      </View>
+    </SafeAreaView>
   );
 }

@@ -3,8 +3,9 @@ import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native
 import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useState } from 'react';
-import { useColorScheme, ActivityIndicator, View } from 'react-native';
+import { useColorScheme, ActivityIndicator, View, ColorSchemeName } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { initializeDatabase } from '@/src/db/client';
 import { useSettingsStore } from '@/src/stores/settingsStore';
 import { useVehicleStore } from '@/src/stores/vehicleStore';
@@ -25,7 +26,7 @@ export default function RootLayout() {
   const systemColorScheme = useColorScheme();
   const themeSetting = useSettingsStore((s) => s.settings.theme);
 
-  const resolvedColorScheme =
+  const resolvedColorScheme: ColorSchemeName =
     themeSetting === 'system' ? systemColorScheme : themeSetting;
 
   useEffect(() => {
@@ -64,7 +65,12 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <ThemeProvider value={resolvedColorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-        <RootNavigator />
+        <BottomSheetModalProvider>
+          {/* colorScheme prop tells NativeWind dark: classes which scheme to use */}
+          <View style={{ flex: 1, colorScheme: resolvedColorScheme ?? 'light' } as never}>
+            <RootNavigator />
+          </View>
+        </BottomSheetModalProvider>
       </ThemeProvider>
     </GestureHandlerRootView>
   );
