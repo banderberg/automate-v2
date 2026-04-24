@@ -1,0 +1,56 @@
+import { useEffect, useState } from 'react';
+import { View, Text, Pressable, Animated } from 'react-native';
+import { useEventStore } from '../stores/eventStore';
+
+export function UndoSnackbar() {
+  const pendingDelete = useEventStore((s) => s.pendingDelete);
+  const undoDelete = useEventStore((s) => s.undoDelete);
+  const [visible, setVisible] = useState(false);
+  const [opacity] = useState(new Animated.Value(0));
+
+  useEffect(() => {
+    if (pendingDelete) {
+      setVisible(true);
+      Animated.timing(opacity, {
+        toValue: 1,
+        duration: 200,
+        useNativeDriver: true,
+      }).start();
+    } else {
+      Animated.timing(opacity, {
+        toValue: 0,
+        duration: 150,
+        useNativeDriver: true,
+      }).start(() => setVisible(false));
+    }
+  }, [pendingDelete]);
+
+  if (!visible) return null;
+
+  return (
+    <Animated.View
+      style={{ opacity, position: 'absolute', bottom: 96, left: 16, right: 16 }}
+    >
+      <View
+        className="flex-row items-center justify-between bg-gray-900 dark:bg-gray-100 rounded-xl px-4 py-3"
+        style={{
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.15,
+          shadowRadius: 12,
+          elevation: 8,
+        }}
+      >
+        <Text className="text-sm text-white dark:text-gray-900">Event deleted</Text>
+        <Pressable
+          onPress={undoDelete}
+          hitSlop={8}
+          accessibilityLabel="Undo delete"
+          accessibilityRole="button"
+        >
+          <Text className="text-sm font-semibold text-primary">Undo</Text>
+        </Pressable>
+      </View>
+    </Animated.View>
+  );
+}

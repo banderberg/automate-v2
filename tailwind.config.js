@@ -8,14 +8,25 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        // Semantic tokens
-        primary: '#2563eb',       // blue-600
-        'primary-dark': '#60a5fa', // blue-400
-        destructive: '#dc2626',   // red-600
-        // Event type colors
-        fuel: '#14b8a6',          // teal-500
-        service: '#f97316',       // orange-500
-        expense: '#10b981',       // emerald-500
+        primary: '#3B82F6',
+        'primary-light': '#DBEAFE',
+        'primary-dark': '#1E3A5F',
+        fuel: '#0D9488',
+        'fuel-light': '#CCFBF1',
+        service: '#F97316',
+        'service-light': '#FFF7ED',
+        expense: '#10B981',
+        'expense-light': '#D1FAE5',
+        destructive: '#EF4444',
+        'destructive-light': '#FEE2E2',
+        warning: '#F59E0B',
+        'warning-light': '#FEF3C7',
+        success: '#10B981',
+        'success-light': '#D1FAE5',
+        surface: '#F5F5F7',
+        'surface-dark': '#1C1C1E',
+        'surface-elevated': '#FFFFFF',
+        'surface-elevated-dark': '#2C2C2E',
       },
     },
   },
