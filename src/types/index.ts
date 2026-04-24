@@ -99,3 +99,12 @@ export interface AppSettings {
   defaultOdometerUnit: 'miles' | 'kilometers';
   hasCompletedOnboarding: boolean;
 }
+
+export interface ReminderWithStatus extends Reminder {
+  nextDate: string | null;
+  nextOdometer: number | null;
+  distanceRemaining: number | null;
+  daysRemaining: number | null;
+  status: 'upcoming' | 'soon' | 'overdue';
+  linkedName: string;
+}
