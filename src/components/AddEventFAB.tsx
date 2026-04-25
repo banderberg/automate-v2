@@ -2,6 +2,7 @@ import { useRef, useCallback } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import {
   BottomSheetModal,
   BottomSheetView,
@@ -17,6 +18,7 @@ export function AddEventFAB() {
   const isElectric = activeVehicle?.fuelType === 'electric';
 
   const handleOpen = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     bottomSheetRef.current?.present();
   }, []);
 

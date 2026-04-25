@@ -127,7 +127,6 @@ export function PlaceAutocomplete({
               onChangeText={setSearch}
               placeholder="Search places..."
               placeholderTextColor="#9CA3AF"
-              autoFocus
             />
           </View>
 
@@ -197,7 +196,6 @@ export function PlaceAutocomplete({
               onChangeText={setNewName}
               placeholder="e.g., Shell on Main St"
               placeholderTextColor="#9CA3AF"
-              autoFocus
             />
 
             <Text className="text-xs text-gray-500 mb-1 font-semibold">Address</Text>

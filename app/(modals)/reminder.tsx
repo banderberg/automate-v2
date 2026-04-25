@@ -1,25 +1,397 @@
-import { ScrollView, Text } from 'react-native';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import {
+  View,
+  Text,
+  TextInput,
+  Switch,
+  ScrollView,
+  Pressable,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import * as Haptics from 'expo-haptics';
 import { ModalHeader } from '@/src/components/ModalHeader';
+import { SegmentedControl } from '@/src/components/SegmentedControl';
+import { ChipPicker } from '@/src/components/ChipPicker';
+import { DateField } from '@/src/components/DateField';
+import { useVehicleStore } from '@/src/stores/vehicleStore';
+import { useEventStore } from '@/src/stores/eventStore';
+import { useReminderStore } from '@/src/stores/reminderStore';
+import { useReferenceDataStore } from '@/src/stores/referenceDataStore';
+import { getOdometerLabel } from '@/src/constants/units';
+import type { Reminder } from '@/src/types';
+
+type ReminderKind = 'maintenance' | 'expense';
+type TimeUnitOption = 'days' | 'weeks' | 'months' | 'years';
+
+const TIME_UNITS: { value: TimeUnitOption; label: string }[] = [
+  { value: 'days', label: 'Days' },
+  { value: 'weeks', label: 'Weeks' },
+  { value: 'months', label: 'Months' },
+  { value: 'years', label: 'Years' },
+];
 
 export default function ReminderModal() {
   const router = useRouter();
   const { reminderId } = useLocalSearchParams<{ reminderId?: string }>();
   const isEditing = !!reminderId;
+  const activeVehicle = useVehicleStore((s) => s.activeVehicle);
+  const events = useEventStore((s) => s.events);
+  const reminders = useReminderStore((s) => s.reminders);
+  const addReminder = useReminderStore((s) => s.addReminder);
+  const updateReminder = useReminderStore((s) => s.updateReminder);
+  const deleteReminder = useReminderStore((s) => s.deleteReminder);
+  const serviceTypes = useReferenceDataStore((s) => s.serviceTypes);
+  const categories = useReferenceDataStore((s) => s.categories);
+
+  const [kind, setKind] = useState<ReminderKind>('maintenance');
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [distanceEnabled, setDistanceEnabled] = useState(false);
+  const [distanceInterval, setDistanceInterval] = useState('');
+  const [timeEnabled, setTimeEnabled] = useState(true);
+  const [timeInterval, setTimeInterval] = useState('');
+  const [timeUnit, setTimeUnit] = useState<TimeUnitOption>('months');
+  const [baselineDate, setBaselineDate] = useState(new Date().toISOString().split('T')[0]);
+  const [baselineOdometer, setBaselineOdometer] = useState('');
+  const [intervalError, setIntervalError] = useState('');
+  const [selectionError, setSelectionError] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  const odometerUnit = activeVehicle?.odometerUnit ?? 'miles';
+  const odoLabel = getOdometerLabel(odometerUnit);
+
+  useEffect(() => {
+    if (!isEditing || !reminderId) return;
+    const existing = reminders.find((r) => r.id === reminderId);
+    if (!existing) return;
+
+    if (existing.serviceTypeId) {
+      setKind('maintenance');
+      setSelectedIds([existing.serviceTypeId]);
+    } else if (existing.categoryId) {
+      setKind('expense');
+      setSelectedIds([existing.categoryId]);
+    }
+
+    if (existing.distanceInterval != null) {
+      setDistanceEnabled(true);
+      setDistanceInterval(String(existing.distanceInterval));
+    }
+    if (existing.timeInterval != null && existing.timeUnit) {
+      setTimeEnabled(true);
+      setTimeInterval(String(existing.timeInterval));
+      setTimeUnit(existing.timeUnit as TimeUnitOption);
+    }
+    if (existing.baselineDate) setBaselineDate(existing.baselineDate);
+    if (existing.baselineOdometer != null) setBaselineOdometer(String(existing.baselineOdometer));
+  }, []);
+
+  const matchingEvent = useMemo(() => {
+    if (selectedIds.length === 0 || !activeVehicle) return null;
+    const selectedId = selectedIds[0];
+    if (kind === 'maintenance') {
+      return events.find(
+        (e) => e.type === 'service'
+      ) ?? null;
+    }
+    return events.find(
+      (e) => e.type === 'expense' && e.categoryId === selectedId
+    ) ?? null;
+  }, [events, selectedIds, kind, activeVehicle]);
+
+  const hasBaseline = useMemo(() => {
+    if (matchingEvent) return true;
+    return false;
+  }, [matchingEvent]);
+
+  const canSave = useMemo(() => {
+    if (saving) return false;
+    if (selectedIds.length === 0) return false;
+    if (!distanceEnabled && !timeEnabled) return false;
+    if (distanceEnabled) {
+      const d = parseInt(distanceInterval, 10);
+      if (isNaN(d) || d <= 0) return false;
+    }
+    if (timeEnabled) {
+      const t = parseInt(timeInterval, 10);
+      if (isNaN(t) || t <= 0) return false;
+    }
+    if (!hasBaseline) {
+      if (timeEnabled && !baselineDate) return false;
+      if (distanceEnabled && !baselineOdometer) return false;
+    }
+    return true;
+  }, [saving, selectedIds, distanceEnabled, timeEnabled, distanceInterval, timeInterval, hasBaseline, baselineDate, baselineOdometer]);
+
+  const handleSave = useCallback(async () => {
+    if (selectedIds.length === 0) {
+      setSelectionError(kind === 'maintenance' ? 'Select a service type' : 'Select a category');
+      return;
+    }
+    if (!distanceEnabled && !timeEnabled) {
+      setIntervalError('Choose at least one repeat interval');
+      return;
+    }
+    if (!canSave || !activeVehicle) return;
+    setSaving(true);
+    try {
+      const blDate = hasBaseline && matchingEvent ? matchingEvent.date : baselineDate;
+      const blOdo = hasBaseline && matchingEvent?.odometer != null
+        ? matchingEvent.odometer
+        : (baselineOdometer ? parseInt(baselineOdometer, 10) : undefined);
+
+      const data: Omit<Reminder, 'id' | 'createdAt' | 'updatedAt' | 'notificationId'> = {
+        vehicleId: activeVehicle.id,
+        serviceTypeId: kind === 'maintenance' ? selectedIds[0] : undefined,
+        categoryId: kind === 'expense' ? selectedIds[0] : undefined,
+        distanceInterval: distanceEnabled ? parseInt(distanceInterval, 10) : undefined,
+        timeInterval: timeEnabled ? parseInt(timeInterval, 10) : undefined,
+        timeUnit: timeEnabled ? timeUnit : undefined,
+        baselineDate: blDate,
+        baselineOdometer: blOdo,
+      };
+
+      if (isEditing && reminderId) {
+        await updateReminder(reminderId, data);
+      } else {
+        await addReminder(data);
+      }
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      router.back();
+    } catch {
+      Alert.alert('Error', 'Failed to save reminder. Please try again.');
+    } finally {
+      setSaving(false);
+    }
+  }, [canSave, activeVehicle, kind, selectedIds, distanceEnabled, distanceInterval, timeEnabled, timeInterval, timeUnit, baselineDate, baselineOdometer, hasBaseline, matchingEvent, isEditing, reminderId]);
+
+  const handleDelete = useCallback(() => {
+    if (!reminderId) return;
+    Alert.alert('Delete Reminder', 'Are you sure you want to delete this reminder?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: async () => {
+          await deleteReminder(reminderId);
+          router.back();
+        },
+      },
+    ]);
+  }, [reminderId, deleteReminder, router]);
+
+  const handleSelectionChange = useCallback((ids: string[]) => {
+    setSelectedIds(ids);
+    if (ids.length > 0) setSelectionError('');
+  }, []);
+
+  const chipItems = kind === 'maintenance' ? serviceTypes : categories;
 
   return (
     <SafeAreaView className="flex-1 bg-white dark:bg-gray-900" edges={['top']}>
       <ModalHeader
         title={isEditing ? 'Edit Reminder' : 'Add Reminder'}
         onCancel={() => router.back()}
-        saveDisabled
+        onSave={handleSave}
+        saveDisabled={!canSave}
       />
-      <ScrollView className="flex-1 p-4">
-        <Text className="text-sm text-gray-500 dark:text-gray-400 text-center mt-8">
-          Reminder form coming in Phase 5.
-        </Text>
-      </ScrollView>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        className="flex-1"
+      >
+        <ScrollView className="flex-1 px-4 pt-4" keyboardShouldPersistTaps="handled">
+          {/* Pick what */}
+          <Text className="text-xs text-gray-500 dark:text-gray-400 mb-2 font-semibold">
+            Reminder Type
+          </Text>
+          <View className="mb-4">
+            <SegmentedControl
+              options={[
+                { value: 'maintenance' as ReminderKind, label: 'Maintenance' },
+                { value: 'expense' as ReminderKind, label: 'Expense' },
+              ]}
+              selectedValue={kind}
+              onValueChange={(v) => {
+                setKind(v);
+                setSelectedIds([]);
+              }}
+              disabled={isEditing}
+              accessibilityLabel="Reminder type"
+            />
+          </View>
+
+          <ChipPicker
+            items={chipItems}
+            selectedIds={selectedIds}
+            onSelectionChange={handleSelectionChange}
+            multiSelect={false}
+            label={kind === 'maintenance' ? 'Service Type *' : 'Category *'}
+            error={selectionError}
+            accentColor={kind === 'maintenance' ? '#F97316' : '#10B981'}
+          />
+
+          {/* Repeat every */}
+          <Text className="text-xs text-gray-500 dark:text-gray-400 mb-2 mt-2 font-semibold">
+            Repeat Every
+          </Text>
+
+          {/* Distance toggle */}
+          <View className="flex-row items-center bg-surface dark:bg-surface-dark rounded-xl border border-gray-200 dark:border-gray-700 px-3.5 py-3 mb-3">
+            <View className="flex-1 mr-3">
+              <Text className="text-base text-gray-900 dark:text-gray-100">By Distance</Text>
+            </View>
+            <Switch
+              value={distanceEnabled}
+              onValueChange={(v) => {
+                setDistanceEnabled(v);
+                setIntervalError('');
+              }}
+              trackColor={{ false: '#d1d5db', true: '#93C5FD' }}
+              thumbColor={distanceEnabled ? '#3B82F6' : '#f4f3f4'}
+              accessibilityLabel="Enable distance-based repeat"
+            />
+          </View>
+          {distanceEnabled && (
+            <View className="flex-row items-center mb-4 ml-4 gap-2">
+              <Text className="text-sm text-gray-600 dark:text-gray-300">Every</Text>
+              <View className="flex-row items-center bg-surface dark:bg-surface-dark rounded-xl border border-gray-200 dark:border-gray-700 px-3 py-2">
+                <TextInput
+                  className="text-base text-gray-900 dark:text-gray-100 min-w-[60px] text-center"
+                  value={distanceInterval}
+                  onChangeText={setDistanceInterval}
+                  keyboardType="number-pad"
+                  placeholder="5000"
+                  placeholderTextColor="#9CA3AF"
+                  accessibilityLabel={`Distance interval in ${odoLabel}`}
+                />
+              </View>
+              <Text className="text-sm text-gray-600 dark:text-gray-300">{odoLabel}</Text>
+            </View>
+          )}
+
+          {/* Time toggle */}
+          <View className="flex-row items-center bg-surface dark:bg-surface-dark rounded-xl border border-gray-200 dark:border-gray-700 px-3.5 py-3 mb-3">
+            <View className="flex-1 mr-3">
+              <Text className="text-base text-gray-900 dark:text-gray-100">By Time</Text>
+            </View>
+            <Switch
+              value={timeEnabled}
+              onValueChange={(v) => {
+                setTimeEnabled(v);
+                setIntervalError('');
+              }}
+              trackColor={{ false: '#d1d5db', true: '#93C5FD' }}
+              thumbColor={timeEnabled ? '#3B82F6' : '#f4f3f4'}
+              accessibilityLabel="Enable time-based repeat"
+            />
+          </View>
+          {timeEnabled && (
+            <View className="flex-row items-center mb-4 ml-4 gap-2 flex-wrap">
+              <Text className="text-sm text-gray-600 dark:text-gray-300">Every</Text>
+              <View className="flex-row items-center bg-surface dark:bg-surface-dark rounded-xl border border-gray-200 dark:border-gray-700 px-3 py-2">
+                <TextInput
+                  className="text-base text-gray-900 dark:text-gray-100 min-w-[40px] text-center"
+                  value={timeInterval}
+                  onChangeText={setTimeInterval}
+                  keyboardType="number-pad"
+                  placeholder="6"
+                  placeholderTextColor="#9CA3AF"
+                  accessibilityLabel="Time interval"
+                />
+              </View>
+              <View className="flex-row gap-1">
+                {TIME_UNITS.map((u) => (
+                  <Pressable
+                    key={u.value}
+                    onPress={() => setTimeUnit(u.value)}
+                    className={`px-3 py-1.5 rounded-full ${
+                      timeUnit === u.value
+                        ? 'bg-primary'
+                        : 'bg-surface dark:bg-surface-dark border border-gray-200 dark:border-gray-700'
+                    }`}
+                    accessibilityLabel={`${u.label}${timeUnit === u.value ? ', selected' : ''}`}
+                    accessibilityRole="button"
+                  >
+                    <Text
+                      className={`text-xs font-semibold ${
+                        timeUnit === u.value ? 'text-white' : 'text-gray-600 dark:text-gray-300'
+                      }`}
+                    >
+                      {u.label}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+            </View>
+          )}
+
+          {intervalError ? (
+            <Text className="text-xs text-destructive mb-3">{intervalError}</Text>
+          ) : null}
+
+          {/* Starting from */}
+          {selectedIds.length > 0 && (
+            <>
+              <Text className="text-xs text-gray-500 dark:text-gray-400 mb-2 mt-2 font-semibold">
+                Starting From
+              </Text>
+              {hasBaseline && matchingEvent ? (
+                <View className="bg-surface dark:bg-surface-dark rounded-xl border border-gray-200 dark:border-gray-700 px-3.5 py-3 mb-4">
+                  <Text className="text-sm text-gray-900 dark:text-gray-100">
+                    Last event on {matchingEvent.date}
+                    {matchingEvent.odometer != null && ` at ${matchingEvent.odometer.toLocaleString('en-US')} ${odoLabel}`}
+                  </Text>
+                </View>
+              ) : (
+                <>
+                  {timeEnabled && (
+                    <DateField
+                      value={baselineDate}
+                      onChange={setBaselineDate}
+                      label="Start tracking from"
+                    />
+                  )}
+                  {distanceEnabled && (
+                    <View className="mb-4">
+                      <Text className="text-xs text-gray-500 dark:text-gray-400 mb-1.5 font-semibold">
+                        Starting Odometer
+                      </Text>
+                      <View className="flex-row items-center bg-surface dark:bg-surface-dark rounded-xl border border-gray-200 dark:border-gray-700 px-3.5 py-3">
+                        <TextInput
+                          className="flex-1 text-base text-gray-900 dark:text-gray-100"
+                          value={baselineOdometer}
+                          onChangeText={setBaselineOdometer}
+                          keyboardType="number-pad"
+                          placeholder="Current odometer"
+                          placeholderTextColor="#9CA3AF"
+                          accessibilityLabel={`Starting odometer in ${odoLabel}`}
+                        />
+                        <Text className="text-sm text-gray-400 ml-2">{odoLabel}</Text>
+                      </View>
+                    </View>
+                  )}
+                </>
+              )}
+            </>
+          )}
+
+          {isEditing && (
+            <Pressable
+              onPress={handleDelete}
+              className="mt-4 mb-8 py-3 rounded-xl border border-destructive items-center"
+              accessibilityLabel="Delete reminder"
+              accessibilityRole="button"
+            >
+              <Text className="text-destructive font-semibold text-base">Delete Reminder</Text>
+            </Pressable>
+          )}
+
+          <View className="h-8" />
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

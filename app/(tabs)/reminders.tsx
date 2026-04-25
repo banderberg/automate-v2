@@ -1,50 +1,36 @@
+import { useState, useEffect, useCallback } from 'react';
 import { View, Text, Pressable, FlatList } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { VehicleSwitcher } from '@/src/components/VehicleSwitcher';
 import { EmptyState } from '@/src/components/EmptyState';
+import { ReminderCard } from '@/src/components/ReminderCard';
 import { useVehicleStore } from '@/src/stores/vehicleStore';
 import { useActiveVehicle } from '@/src/hooks/useActiveVehicle';
-import type { ReminderWithStatus } from '@/src/types';
-
-function statusColors(status: ReminderWithStatus['status']): {
-  badge: string;
-  text: string;
-  bar: string;
-} {
-  switch (status) {
-    case 'overdue':
-      return { badge: '#fee2e2', text: '#b91c1c', bar: '#ef4444' };
-    case 'soon':
-      return { badge: '#fef9c3', text: '#92400e', bar: '#f59e0b' };
-    case 'upcoming':
-      return { badge: '#dcfce7', text: '#166534', bar: '#22c55e' };
-  }
-}
-
-function progressRatio(reminder: ReminderWithStatus): number {
-  if (reminder.distanceRemaining != null && reminder.distanceInterval != null) {
-    const ratio = 1 - reminder.distanceRemaining / reminder.distanceInterval;
-    return Math.max(0, Math.min(1, ratio));
-  }
-  if (reminder.daysRemaining != null && reminder.timeInterval != null) {
-    const totalDays = reminder.timeInterval * (
-      reminder.timeUnit === 'years' ? 365
-        : reminder.timeUnit === 'months' ? 30
-          : reminder.timeUnit === 'weeks' ? 7
-            : 1
-    );
-    const ratio = 1 - reminder.daysRemaining / totalDays;
-    return Math.max(0, Math.min(1, ratio));
-  }
-  return 0;
-}
+import * as notificationService from '@/src/services/notifications';
 
 export default function RemindersScreen() {
   const router = useRouter();
   const vehicleCount = useVehicleStore((s) => s.vehicles.length);
+  const activeVehicle = useVehicleStore((s) => s.activeVehicle);
   const { reminders } = useActiveVehicle();
+  const [notifDenied, setNotifDenied] = useState(false);
+
+  useEffect(() => {
+    notificationService.getPermissionStatus().then((status) => {
+      setNotifDenied(status === 'denied');
+    });
+  }, []);
+
+  const odometerUnit = activeVehicle?.odometerUnit ?? 'miles';
+
+  const handleReminderPress = useCallback(
+    (id: string) => {
+      router.push(`/(modals)/reminder?reminderId=${id}`);
+    },
+    [router]
+  );
 
   if (vehicleCount === 0) {
     return (
@@ -77,6 +63,22 @@ export default function RemindersScreen() {
         </Pressable>
       </View>
 
+      {/* Notification denied banner */}
+      {notifDenied && (
+        <Pressable
+          onPress={notificationService.openNotificationSettings}
+          className="flex-row items-center bg-warning-light px-4 py-3 gap-2"
+          accessibilityLabel="Notifications are off. Tap to enable in Settings."
+          accessibilityRole="button"
+        >
+          <Ionicons name="notifications-off-outline" size={18} color="#92400E" />
+          <Text className="flex-1 text-sm text-yellow-800">
+            Notifications are off. You'll only see reminders in the app.
+          </Text>
+          <Text className="text-sm text-primary font-semibold">Enable</Text>
+        </Pressable>
+      )}
+
       {reminders.length === 0 ? (
         <View className="flex-1">
           <EmptyState
@@ -92,62 +94,13 @@ export default function RemindersScreen() {
           data={reminders}
           keyExtractor={(item) => item.id}
           contentContainerStyle={{ padding: 16, gap: 12 }}
-          renderItem={({ item }) => {
-            const colors = statusColors(item.status);
-            const ratio = progressRatio(item);
-            const statusLabel =
-              item.status.charAt(0).toUpperCase() + item.status.slice(1);
-
-            return (
-              <Pressable
-                onPress={() => router.push(`/(modals)/reminder?reminderId=${item.id}`)}
-                className="bg-gray-50 dark:bg-gray-900 rounded-xl p-4 active:bg-gray-100"
-                accessibilityLabel={`${item.linkedName} reminder, status: ${statusLabel}`}
-                accessibilityRole="button"
-              >
-                {/* Name + badge */}
-                <View className="flex-row items-center justify-between mb-2">
-                  <Text className="text-base font-semibold text-gray-900 dark:text-gray-100 flex-1 mr-2">
-                    {item.linkedName}
-                  </Text>
-                  <View
-                    className="px-2 py-0.5 rounded-full"
-                    style={{ backgroundColor: colors.badge }}
-                    accessibilityLabel={`${statusLabel} reminder`}
-                  >
-                    <Text className="text-xs font-bold" style={{ color: colors.text }}>
-                      {statusLabel}
-                    </Text>
-                  </View>
-                </View>
-
-                {/* Progress bar */}
-                <View className="h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full mb-2 overflow-hidden">
-                  <View
-                    className="h-full rounded-full"
-                    style={{
-                      width: `${ratio * 100}%`,
-                      backgroundColor: colors.bar,
-                    }}
-                  />
-                </View>
-
-                {/* Due info */}
-                <View className="gap-0.5">
-                  {item.nextOdometer != null && (
-                    <Text className="text-xs text-gray-500 dark:text-gray-400">
-                      Next: {item.nextOdometer.toLocaleString()} mi
-                    </Text>
-                  )}
-                  {item.nextDate != null && (
-                    <Text className="text-xs text-gray-500 dark:text-gray-400">
-                      Next: {item.nextDate}
-                    </Text>
-                  )}
-                </View>
-              </Pressable>
-            );
-          }}
+          renderItem={({ item }) => (
+            <ReminderCard
+              reminder={item}
+              odometerUnit={odometerUnit}
+              onPress={() => handleReminderPress(item.id)}
+            />
+          )}
         />
       )}
     </SafeAreaView>

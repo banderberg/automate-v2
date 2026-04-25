@@ -1,17 +1,12 @@
 import { View, Text, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { useSettingsStore } from '@/src/stores/settingsStore';
 
 export default function OnboardingScreen() {
   const router = useRouter();
-  const updateSetting = useSettingsStore((s) => s.updateSetting);
 
-  const handleGetStarted = async () => {
-    // Mark onboarding complete and go to tabs
-    // Vehicle modal (Phase 5 stub) is accessible from tabs via the no-vehicle guard
-    await updateSetting('hasCompletedOnboarding', true);
-    router.replace('/(tabs)/dashboard');
+  const handleGetStarted = () => {
+    router.push('/(modals)/vehicle');
   };
 
   return (

@@ -3,6 +3,7 @@ import { View, Text, Pressable, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import { FlashList } from '@shopify/flash-list';
 import { Swipeable } from 'react-native-gesture-handler';
 import { VehicleSwitcher } from '@/src/components/VehicleSwitcher';
@@ -107,7 +108,7 @@ function SwipeableEventRow({
 
   return (
     <Swipeable ref={swipeableRef} renderRightActions={renderRightActions} overshootRight={false}>
-      <Pressable onLongPress={onLongPress} delayLongPress={500}>
+      <Pressable onLongPress={onLongPress} delayLongPress={500} accessibilityLabel={`${event.type} event on ${event.date}, $${event.cost.toFixed(2)}. Long press for options.`}>
         <View className="bg-white dark:bg-gray-950">
           <EventRow
             event={event}
@@ -151,13 +152,19 @@ export default function HistoryScreen() {
 
   const handleEventPress = useCallback(
     (event: VehicleEvent) => {
-      router.push(`/(modals)/${event.type}-event?eventId=${event.id}`);
+      const routes = {
+        fuel: `/(modals)/fuel-event?eventId=${event.id}`,
+        service: `/(modals)/service-event?eventId=${event.id}`,
+        expense: `/(modals)/expense-event?eventId=${event.id}`,
+      } as const;
+      router.push(routes[event.type]);
     },
     [router]
   );
 
   const handleDelete = useCallback(
     (event: VehicleEvent) => {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       deleteEvent(event.id);
     },
     [deleteEvent]

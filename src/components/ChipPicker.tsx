@@ -1,5 +1,5 @@
 import { useRef, useState, useCallback } from 'react';
-import { View, Text, Pressable, ScrollView, TextInput, Alert } from 'react-native';
+import { View, Text, Pressable, TextInput, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import {
   BottomSheetModal,
@@ -111,14 +111,14 @@ export function ChipPicker({
         </View>
       )}
 
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row">
+      <View className="flex-row flex-wrap">
         {items.map((item) => {
           const selected = selectedIds.includes(item.id);
           return (
             <Pressable
               key={item.id}
               onPress={() => handleToggle(item.id)}
-              className={`mr-2 px-4 py-2 rounded-full border ${
+              className={`mr-2 mb-2 px-4 py-2 rounded-full border ${
                 selected
                   ? 'border-transparent'
                   : 'border-gray-200 dark:border-gray-700 bg-surface dark:bg-surface-dark'
@@ -138,7 +138,7 @@ export function ChipPicker({
             </Pressable>
           );
         })}
-      </ScrollView>
+      </View>
 
       {error && (
         <Text className="text-xs text-destructive mt-1.5 ml-1">{error}</Text>

@@ -12,6 +12,7 @@ import { useVehicleStore } from '@/src/stores/vehicleStore';
 import { useReferenceDataStore } from '@/src/stores/referenceDataStore';
 import { useEventStore } from '@/src/stores/eventStore';
 import { useReminderStore } from '@/src/stores/reminderStore';
+import { ErrorToast } from '@/src/components/ErrorToast';
 
 export { ErrorBoundary } from 'expo-router';
 
@@ -69,6 +70,7 @@ export default function RootLayout() {
           {/* colorScheme prop tells NativeWind dark: classes which scheme to use */}
           <View style={{ flex: 1, colorScheme: resolvedColorScheme ?? 'light' } as never}>
             <RootNavigator />
+            <ErrorToast />
           </View>
         </BottomSheetModalProvider>
       </ThemeProvider>
@@ -85,9 +87,12 @@ function RootNavigator() {
   useEffect(() => {
     if (!hasCompletedOnboarding && vehicleCount === 0) {
       const inOnboarding = segments[0] === 'onboarding';
-      if (!inOnboarding) {
+      const inModals = segments[0] === '(modals)';
+      if (!inOnboarding && !inModals) {
         router.replace('/onboarding');
       }
+    } else if (hasCompletedOnboarding && segments[0] === 'onboarding') {
+      router.replace('/(tabs)/dashboard');
     }
   }, [hasCompletedOnboarding, vehicleCount, segments]);
 

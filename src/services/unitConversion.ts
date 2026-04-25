@@ -19,26 +19,30 @@ export async function convertVehicleOdometers(
 ): Promise<number> {
   const db = getDatabase();
   const factor = to === 'kilometers' ? MILES_TO_KM : KM_TO_MILES;
+  const now = new Date().toISOString();
+  let totalChanges = 0;
 
-  // Convert all event odometers for this vehicle
-  const eventResult = await db.runAsync(
-    `UPDATE event SET odometer = ROUND(odometer * ?, 0), updatedAt = ?
-     WHERE vehicleId = ? AND odometer IS NOT NULL`,
-    [factor, new Date().toISOString(), vehicleId]
-  );
+  await db.withTransactionAsync(async () => {
+    const eventResult = await db.runAsync(
+      `UPDATE event SET odometer = ROUND(odometer * ?, 0), updatedAt = ?
+       WHERE vehicleId = ? AND odometer IS NOT NULL`,
+      [factor, now, vehicleId]
+    );
 
-  // Convert reminder distance intervals and baseline odometers for this vehicle
-  const reminderDistResult = await db.runAsync(
-    `UPDATE reminder SET distanceInterval = ROUND(distanceInterval * ?, 0), updatedAt = ?
-     WHERE vehicleId = ? AND distanceInterval IS NOT NULL`,
-    [factor, new Date().toISOString(), vehicleId]
-  );
+    const reminderDistResult = await db.runAsync(
+      `UPDATE reminder SET distanceInterval = ROUND(distanceInterval * ?, 0), updatedAt = ?
+       WHERE vehicleId = ? AND distanceInterval IS NOT NULL`,
+      [factor, now, vehicleId]
+    );
 
-  const reminderBaseResult = await db.runAsync(
-    `UPDATE reminder SET baselineOdometer = ROUND(baselineOdometer * ?, 0), updatedAt = ?
-     WHERE vehicleId = ? AND baselineOdometer IS NOT NULL`,
-    [factor, new Date().toISOString(), vehicleId]
-  );
+    const reminderBaseResult = await db.runAsync(
+      `UPDATE reminder SET baselineOdometer = ROUND(baselineOdometer * ?, 0), updatedAt = ?
+       WHERE vehicleId = ? AND baselineOdometer IS NOT NULL`,
+      [factor, now, vehicleId]
+    );
 
-  return eventResult.changes + reminderDistResult.changes + reminderBaseResult.changes;
+    totalChanges = eventResult.changes + reminderDistResult.changes + reminderBaseResult.changes;
+  });
+
+  return totalChanges;
 }
