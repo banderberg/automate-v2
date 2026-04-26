@@ -1,11 +1,11 @@
 {
   "expo": {
     "name": "AutoMate",
-    "slug": "automate-v2",
+    "slug": "automate",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
-    "scheme": "automate-v2",
+    "icon": "./assets/icon.png",
+    "scheme": "automate",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
@@ -14,20 +14,54 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "bundleIdentifier": "com.automate.carexpenses",
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSCameraUsageDescription": "AutoMate uses your camera to take photos of receipts and your vehicle.",
+        "NSPhotoLibraryUsageDescription": "AutoMate accesses your photo library to attach receipt images to events.",
+        "NSLocationWhenInUseUsageDescription": "AutoMate uses your location to identify nearby gas stations and service shops."
+      }
     },
     "android": {
+      "package": "com.automate.carexpenses",
+      "versionCode": 1,
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#F5F4F1"
       },
+      "permissions": [
+        "CAMERA",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "POST_NOTIFICATIONS"
+      ],
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false
     },
     "plugins": [
       "expo-router",
       "expo-sqlite",
-      "@react-native-community/datetimepicker"
+      "@react-native-community/datetimepicker",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#3B82F6"
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "AutoMate uses your camera to take photos of receipts and your vehicle.",
+          "photosPermission": "AutoMate accesses your photo library to attach receipt images."
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "AutoMate uses your location to identify nearby gas stations and service shops."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

@@ -17,13 +17,15 @@ import { DateField } from '@/src/components/DateField';
 import { OdometerField } from '@/src/components/OdometerField';
 import { ChipPicker } from '@/src/components/ChipPicker';
 import { PlaceAutocomplete } from '@/src/components/PlaceAutocomplete';
+import { EventPhotos } from '@/src/components/EventPhotos';
 import { useVehicleStore } from '@/src/stores/vehicleStore';
 import { useEventStore } from '@/src/stores/eventStore';
 import { useReferenceDataStore } from '@/src/stores/referenceDataStore';
 import { validateOdometer } from '@/src/services/odometerValidator';
 import * as eventQueries from '@/src/db/queries/events';
 import * as eventServiceTypeQueries from '@/src/db/queries/eventServiceTypes';
-import type { VehicleEvent } from '@/src/types';
+import * as eventPhotoQueries from '@/src/db/queries/eventPhotos';
+import type { VehicleEvent, LocalPhoto } from '@/src/types';
 
 export default function ServiceEventModal() {
   const router = useRouter();
@@ -46,6 +48,8 @@ export default function ServiceEventModal() {
   const [cost, setCost] = useState('');
   const [placeId, setPlaceId] = useState<string | undefined>();
   const [notes, setNotes] = useState('');
+
+  const [photos, setPhotos] = useState<LocalPhoto[]>([]);
 
   const [odometerError, setOdometerError] = useState('');
   const [serviceTypeError, setServiceTypeError] = useState('');
@@ -71,6 +75,14 @@ export default function ServiceEventModal() {
       (async () => {
         const types = await eventServiceTypeQueries.getByEvent(eventId);
         setSelectedServiceTypeIds(types.map((t) => t.id));
+        const existingPhotos = await eventPhotoQueries.getByEvent(eventId);
+        setPhotos(
+          existingPhotos.map((p) => ({
+            id: p.id,
+            uri: p.filePath,
+            isNew: false,
+          }))
+        );
       })();
     } else {
       (async () => {
@@ -134,10 +146,11 @@ export default function ServiceEventModal() {
         notes: notes.trim() || undefined,
       };
 
+      const photoUris = photos.map((p) => p.uri);
       if (isEditing && eventId) {
-        await updateEvent(eventId, eventData, selectedServiceTypeIds);
+        await updateEvent(eventId, eventData, selectedServiceTypeIds, photoUris);
       } else {
-        await addEvent(eventData, selectedServiceTypeIds);
+        await addEvent(eventData, selectedServiceTypeIds, photoUris);
       }
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       router.back();
@@ -234,6 +247,12 @@ export default function ServiceEventModal() {
               accessibilityLabel="Notes"
             />
           </View>
+
+          <EventPhotos
+            eventId={isEditing && eventId ? eventId : null}
+            photos={photos}
+            onPhotosChange={setPhotos}
+          />
 
           {isEditing && (
             <Pressable

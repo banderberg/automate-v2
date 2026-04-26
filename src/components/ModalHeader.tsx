@@ -20,7 +20,7 @@ export function ModalHeader({
   hideSave = false,
 }: ModalHeaderProps) {
   return (
-    <View className="flex-row items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
+    <View className="flex-row items-center justify-between px-4 py-3 border-b border-divider dark:border-divider-dark bg-card dark:bg-card-dark">
       <Pressable
         onPress={onCancel}
         className="min-w-[60px] py-1"
@@ -32,7 +32,7 @@ export function ModalHeader({
       </Pressable>
 
       <Text
-        className="flex-1 text-base font-semibold text-gray-900 dark:text-gray-100 text-center"
+        className="flex-1 text-base font-semibold text-ink dark:text-ink-on-dark text-center"
         numberOfLines={1}
       >
         {title}
@@ -50,7 +50,7 @@ export function ModalHeader({
         >
           <Text
             className={`text-base font-semibold ${
-              saveDisabled ? 'text-gray-400 dark:text-gray-600' : 'text-primary'
+              saveDisabled ? 'text-ink-muted dark:text-ink-faint-on-dark' : 'text-primary'
             }`}
           >
             {saveLabel}

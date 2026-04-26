@@ -335,7 +335,7 @@ export default function VehicleModal() {
   }, [vehicleId, vehicles, events, reminders]);
 
   return (
-    <SafeAreaView className="flex-1 bg-white dark:bg-gray-900" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-surface dark:bg-surface-dark" edges={['top']}>
       <ModalHeader
         title={isEditing ? 'Edit Vehicle' : 'Add Vehicle'}
         onCancel={() => router.back()}
@@ -351,7 +351,7 @@ export default function VehicleModal() {
           <View className="items-center mb-6">
             <Pressable
               onPress={handlePhotoPress}
-              className="w-[120px] h-[120px] rounded-full bg-gray-100 dark:bg-gray-800 items-center justify-center overflow-hidden border-2 border-gray-200 dark:border-gray-700"
+              className="w-[120px] h-[120px] rounded-full bg-surface dark:bg-surface-dark items-center justify-center overflow-hidden border-2 border-divider dark:border-divider-dark"
               accessibilityLabel={imagePath ? 'Change vehicle photo' : 'Add vehicle photo'}
               accessibilityRole="button"
             >
@@ -363,8 +363,8 @@ export default function VehicleModal() {
                 />
               ) : (
                 <View className="items-center">
-                  <Ionicons name="camera-outline" size={32} color="#9CA3AF" />
-                  <Text className="text-xs text-gray-400 mt-1">Add Photo</Text>
+                  <Ionicons name="camera-outline" size={32} color="#A8A49D" />
+                  <Text className="text-xs text-ink-muted mt-1">Add Photo</Text>
                 </View>
               )}
             </Pressable>
@@ -372,12 +372,12 @@ export default function VehicleModal() {
 
           {/* VIN */}
           <View className="mb-4">
-            <Text className="text-xs text-gray-500 dark:text-gray-400 mb-1.5 font-semibold">
+            <Text className="text-xs text-ink-muted dark:text-ink-muted-on-dark mb-1.5 font-semibold">
               VIN
             </Text>
-            <View className="flex-row items-center bg-surface dark:bg-surface-dark rounded-xl border border-gray-200 dark:border-gray-700 px-3.5 py-3">
+            <View className="flex-row items-center bg-surface dark:bg-surface-dark rounded-xl border border-divider dark:border-divider-dark px-3.5 py-3">
               <TextInput
-                className="flex-1 text-base text-gray-900 dark:text-gray-100"
+                className="flex-1 text-base text-ink dark:text-ink-on-dark"
                 value={vin}
                 onChangeText={(t) => {
                   setVin(t.toUpperCase().slice(0, 17));
@@ -385,7 +385,7 @@ export default function VehicleModal() {
                 }}
                 onBlur={handleVinBlur}
                 placeholder="17-character VIN"
-                placeholderTextColor="#9CA3AF"
+                placeholderTextColor="#A8A49D"
                 autoCapitalize="characters"
                 maxLength={17}
                 accessibilityLabel="Vehicle Identification Number"
@@ -404,16 +404,16 @@ export default function VehicleModal() {
 
           {/* Nickname */}
           <View className="mb-4">
-            <Text className="text-xs text-gray-500 dark:text-gray-400 mb-1.5 font-semibold">
+            <Text className="text-xs text-ink-muted dark:text-ink-muted-on-dark mb-1.5 font-semibold">
               Nickname *
             </Text>
-            <View className="bg-surface dark:bg-surface-dark rounded-xl border border-gray-200 dark:border-gray-700 px-3.5 py-3">
+            <View className="bg-surface dark:bg-surface-dark rounded-xl border border-divider dark:border-divider-dark px-3.5 py-3">
               <TextInput
-                className="text-base text-gray-900 dark:text-gray-100"
+                className="text-base text-ink dark:text-ink-on-dark"
                 value={nickname}
                 onChangeText={(t) => setNickname(t.slice(0, 30))}
                 placeholder="e.g., The Corolla"
-                placeholderTextColor="#9CA3AF"
+                placeholderTextColor="#A8A49D"
                 maxLength={30}
                 accessibilityLabel="Vehicle nickname"
               />
@@ -422,16 +422,16 @@ export default function VehicleModal() {
 
           {/* Year */}
           <View className="mb-4">
-            <Text className="text-xs text-gray-500 dark:text-gray-400 mb-1.5 font-semibold">
+            <Text className="text-xs text-ink-muted dark:text-ink-muted-on-dark mb-1.5 font-semibold">
               Year *
             </Text>
-            <View className="bg-surface dark:bg-surface-dark rounded-xl border border-gray-200 dark:border-gray-700 px-3.5 py-3">
+            <View className="bg-surface dark:bg-surface-dark rounded-xl border border-divider dark:border-divider-dark px-3.5 py-3">
               <TextInput
-                className="text-base text-gray-900 dark:text-gray-100"
+                className="text-base text-ink dark:text-ink-on-dark"
                 value={year}
                 onChangeText={(t) => setYear(t.replace(/[^0-9]/g, '').slice(0, 4))}
                 placeholder="2024"
-                placeholderTextColor="#9CA3AF"
+                placeholderTextColor="#A8A49D"
                 keyboardType="number-pad"
                 maxLength={4}
                 accessibilityLabel="Vehicle year"
@@ -441,16 +441,16 @@ export default function VehicleModal() {
 
           {/* Make */}
           <View className="mb-4">
-            <Text className="text-xs text-gray-500 dark:text-gray-400 mb-1.5 font-semibold">
+            <Text className="text-xs text-ink-muted dark:text-ink-muted-on-dark mb-1.5 font-semibold">
               Make *
             </Text>
-            <View className="bg-surface dark:bg-surface-dark rounded-xl border border-gray-200 dark:border-gray-700 px-3.5 py-3">
+            <View className="bg-surface dark:bg-surface-dark rounded-xl border border-divider dark:border-divider-dark px-3.5 py-3">
               <TextInput
-                className="text-base text-gray-900 dark:text-gray-100"
+                className="text-base text-ink dark:text-ink-on-dark"
                 value={make}
                 onChangeText={setMake}
                 placeholder="Toyota"
-                placeholderTextColor="#9CA3AF"
+                placeholderTextColor="#A8A49D"
                 accessibilityLabel="Vehicle make"
               />
             </View>
@@ -458,16 +458,16 @@ export default function VehicleModal() {
 
           {/* Model */}
           <View className="mb-4">
-            <Text className="text-xs text-gray-500 dark:text-gray-400 mb-1.5 font-semibold">
+            <Text className="text-xs text-ink-muted dark:text-ink-muted-on-dark mb-1.5 font-semibold">
               Model *
             </Text>
-            <View className="bg-surface dark:bg-surface-dark rounded-xl border border-gray-200 dark:border-gray-700 px-3.5 py-3">
+            <View className="bg-surface dark:bg-surface-dark rounded-xl border border-divider dark:border-divider-dark px-3.5 py-3">
               <TextInput
-                className="text-base text-gray-900 dark:text-gray-100"
+                className="text-base text-ink dark:text-ink-on-dark"
                 value={model}
                 onChangeText={setModel}
                 placeholder="Corolla"
-                placeholderTextColor="#9CA3AF"
+                placeholderTextColor="#A8A49D"
                 accessibilityLabel="Vehicle model"
               />
             </View>
@@ -475,16 +475,16 @@ export default function VehicleModal() {
 
           {/* Trim */}
           <View className="mb-4">
-            <Text className="text-xs text-gray-500 dark:text-gray-400 mb-1.5 font-semibold">
+            <Text className="text-xs text-ink-muted dark:text-ink-muted-on-dark mb-1.5 font-semibold">
               Trim
             </Text>
-            <View className="bg-surface dark:bg-surface-dark rounded-xl border border-gray-200 dark:border-gray-700 px-3.5 py-3">
+            <View className="bg-surface dark:bg-surface-dark rounded-xl border border-divider dark:border-divider-dark px-3.5 py-3">
               <TextInput
-                className="text-base text-gray-900 dark:text-gray-100"
+                className="text-base text-ink dark:text-ink-on-dark"
                 value={trim}
                 onChangeText={setTrim}
                 placeholder="SE, XLE, etc."
-                placeholderTextColor="#9CA3AF"
+                placeholderTextColor="#A8A49D"
                 accessibilityLabel="Vehicle trim"
               />
             </View>
@@ -492,7 +492,7 @@ export default function VehicleModal() {
 
           {/* Fuel Type */}
           <View className="mb-4">
-            <Text className="text-xs text-gray-500 dark:text-gray-400 mb-2 font-semibold">
+            <Text className="text-xs text-ink-muted dark:text-ink-muted-on-dark mb-2 font-semibold">
               Fuel Type
             </Text>
             <SegmentedControl
@@ -509,7 +509,7 @@ export default function VehicleModal() {
 
           {/* Odometer Unit */}
           <View className="mb-4">
-            <Text className="text-xs text-gray-500 dark:text-gray-400 mb-2 font-semibold">
+            <Text className="text-xs text-ink-muted dark:text-ink-muted-on-dark mb-2 font-semibold">
               Odometer Unit
             </Text>
             <SegmentedControl
@@ -525,20 +525,20 @@ export default function VehicleModal() {
 
           {/* Fuel Capacity */}
           <View className="mb-4">
-            <Text className="text-xs text-gray-500 dark:text-gray-400 mb-1.5 font-semibold">
+            <Text className="text-xs text-ink-muted dark:text-ink-muted-on-dark mb-1.5 font-semibold">
               Fuel Capacity
             </Text>
-            <View className="flex-row items-center bg-surface dark:bg-surface-dark rounded-xl border border-gray-200 dark:border-gray-700 px-3.5 py-3">
+            <View className="flex-row items-center bg-surface dark:bg-surface-dark rounded-xl border border-divider dark:border-divider-dark px-3.5 py-3">
               <TextInput
-                className="flex-1 text-base text-gray-900 dark:text-gray-100"
+                className="flex-1 text-base text-ink dark:text-ink-on-dark"
                 value={fuelCapacity}
                 onChangeText={setFuelCapacity}
                 placeholder="Optional"
-                placeholderTextColor="#9CA3AF"
+                placeholderTextColor="#A8A49D"
                 keyboardType="decimal-pad"
                 accessibilityLabel={`Fuel capacity in ${capacityLabel}`}
               />
-              <Text className="text-sm text-gray-400 ml-2">{capacityLabel}</Text>
+              <Text className="text-sm text-ink-muted ml-2">{capacityLabel}</Text>
             </View>
           </View>
 

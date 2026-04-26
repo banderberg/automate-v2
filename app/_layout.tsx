@@ -3,7 +3,8 @@ import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native
 import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useState } from 'react';
-import { useColorScheme, ActivityIndicator, View, ColorSchemeName } from 'react-native';
+import { useColorScheme as useSystemColorScheme, ActivityIndicator, View } from 'react-native';
+import { useColorScheme } from 'nativewind';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { initializeDatabase } from '@/src/db/client';
@@ -24,11 +25,15 @@ SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const [appReady, setAppReady] = useState(false);
-  const systemColorScheme = useColorScheme();
+  const systemColorScheme = useSystemColorScheme();
+  const { colorScheme, setColorScheme } = useColorScheme();
   const themeSetting = useSettingsStore((s) => s.settings.theme);
 
-  const resolvedColorScheme: ColorSchemeName =
-    themeSetting === 'system' ? systemColorScheme : themeSetting;
+  useEffect(() => {
+    setColorScheme(themeSetting === 'system' ? 'system' : themeSetting);
+  }, [themeSetting, setColorScheme]);
+
+  const resolvedColorScheme = colorScheme ?? systemColorScheme ?? 'light';
 
   useEffect(() => {
     async function init() {
@@ -57,8 +62,8 @@ export default function RootLayout() {
 
   if (!appReady) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="large" />
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: systemColorScheme === 'dark' ? '#0E0E0C' : '#F5F4F1' }}>
+        <ActivityIndicator size="large" color={systemColorScheme === 'dark' ? '#F5F4F1' : '#1C1B18'} />
       </View>
     );
   }
@@ -67,8 +72,7 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <ThemeProvider value={resolvedColorScheme === 'dark' ? DarkTheme : DefaultTheme}>
         <BottomSheetModalProvider>
-          {/* colorScheme prop tells NativeWind dark: classes which scheme to use */}
-          <View style={{ flex: 1, colorScheme: resolvedColorScheme ?? 'light' } as never}>
+          <View style={{ flex: 1 }}>
             <RootNavigator />
             <ErrorToast />
           </View>

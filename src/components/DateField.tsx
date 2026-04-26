@@ -48,17 +48,17 @@ export function DateField({
 
   return (
     <View className="mb-4">
-      <Text className="text-xs text-gray-500 dark:text-gray-400 mb-1.5 font-semibold">
+      <Text className="text-xs text-ink-muted dark:text-ink-muted-on-dark mb-1.5 font-semibold">
         {label} *
       </Text>
       <Pressable
         onPress={() => setShowPicker(!showPicker)}
-        className="flex-row items-center bg-surface dark:bg-surface-dark rounded-xl border border-gray-200 dark:border-gray-700 px-3.5 py-3"
+        className="flex-row items-center bg-card dark:bg-card-dark rounded-xl border border-divider dark:border-divider-dark px-3.5 py-3"
         accessibilityLabel={`${label}: ${formatDisplayDate(value)}`}
         accessibilityRole="button"
       >
-        <Ionicons name="calendar-outline" size={18} color="#9CA3AF" />
-        <Text className="flex-1 ml-2 text-base text-gray-900 dark:text-gray-100">
+        <Ionicons name="calendar-outline" size={18} color="#A8A49D" />
+        <Text className="flex-1 ml-2 text-base text-ink dark:text-ink-on-dark">
           {formatDisplayDate(value)}
         </Text>
       </Pressable>

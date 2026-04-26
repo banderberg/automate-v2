@@ -34,9 +34,9 @@ export default function RemindersScreen() {
 
   if (vehicleCount === 0) {
     return (
-      <SafeAreaView className="flex-1 bg-white dark:bg-gray-950">
+      <SafeAreaView className="flex-1 bg-surface dark:bg-surface-dark" edges={['top']}>
         <EmptyState
-          icon={<Ionicons name="car-outline" size={64} color="#9ca3af" />}
+          icon={<Ionicons name="car-outline" size={64} color="#A8A49D" />}
           title="Add a Vehicle to Get Started"
           description="Track fuel, service, and expenses for your vehicle."
           actionLabel="Add Vehicle"
@@ -47,7 +47,7 @@ export default function RemindersScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-white dark:bg-gray-950">
+    <SafeAreaView className="flex-1 bg-surface dark:bg-surface-dark" edges={['top']}>
       {/* Header row with VehicleSwitcher and Add button */}
       <View className="flex-row items-stretch">
         <View className="flex-1">
@@ -55,7 +55,7 @@ export default function RemindersScreen() {
         </View>
         <Pressable
           onPress={() => router.push('/(modals)/reminder')}
-          className="px-4 items-center justify-center bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800"
+          className="px-4 items-center justify-center bg-surface dark:bg-surface-dark border-b border-divider dark:border-divider-dark"
           accessibilityLabel="Add Reminder"
           accessibilityRole="button"
         >
@@ -82,7 +82,7 @@ export default function RemindersScreen() {
       {reminders.length === 0 ? (
         <View className="flex-1">
           <EmptyState
-            icon={<Ionicons name="notifications-outline" size={64} color="#9ca3af" />}
+            icon={<Ionicons name="notifications-outline" size={64} color="#A8A49D" />}
             title="No Reminders Set"
             description="Never miss an oil change — tap + to create one."
             actionLabel="Add Reminder"

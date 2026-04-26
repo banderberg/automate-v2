@@ -23,6 +23,23 @@ const migrations: Migration[] = [
       await seedDatabase(db);
     },
   },
+  {
+    version: 2,
+    up: async (db: SQLiteDatabase) => {
+      await db.execAsync(`
+        CREATE TABLE IF NOT EXISTS event_photo (
+          id TEXT PRIMARY KEY,
+          eventId TEXT NOT NULL REFERENCES event(id) ON DELETE CASCADE,
+          filePath TEXT NOT NULL,
+          sortOrder INTEGER NOT NULL DEFAULT 0,
+          createdAt TEXT NOT NULL
+        );
+      `);
+      await db.execAsync(
+        'CREATE INDEX IF NOT EXISTS idx_event_photo_event ON event_photo(eventId);'
+      );
+    },
+  },
 ];
 
 export async function runMigrations(db: SQLiteDatabase): Promise<void> {

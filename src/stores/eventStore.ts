@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import type { VehicleEvent } from '../types';
 import * as eventQueries from '../db/queries/events';
 import * as eventServiceTypeQueries from '../db/queries/eventServiceTypes';
+import * as eventPhotoQueries from '../db/queries/eventPhotos';
 import { estimateOdometer } from '../services/odometerEstimator';
 import { useReminderStore } from './reminderStore';
 
@@ -20,12 +21,14 @@ interface EventStore {
   loadForVehicle(vehicleId: string): Promise<void>;
   addEvent(
     data: Omit<VehicleEvent, 'id' | 'createdAt' | 'updatedAt'>,
-    serviceTypeIds?: string[]
+    serviceTypeIds?: string[],
+    photoUris?: string[]
   ): Promise<VehicleEvent>;
   updateEvent(
     id: string,
     fields: Partial<VehicleEvent>,
-    serviceTypeIds?: string[]
+    serviceTypeIds?: string[],
+    photoUris?: string[]
   ): Promise<void>;
   deleteEvent(id: string): Promise<void>;
   undoDelete(): Promise<void>;
@@ -78,13 +81,19 @@ export const useEventStore = create<EventStore>((set, get) => ({
     }
   },
 
-  async addEvent(data, serviceTypeIds) {
+  async addEvent(data, serviceTypeIds, photoUris) {
     set({ error: null });
     try {
       const event = await eventQueries.insert(data);
 
       if (data.type === 'service' && serviceTypeIds && serviceTypeIds.length > 0) {
         await eventServiceTypeQueries.setForEvent(event.id, serviceTypeIds);
+      }
+
+      if (photoUris && photoUris.length > 0) {
+        for (let i = 0; i < photoUris.length; i++) {
+          await eventPhotoQueries.insert(event.id, photoUris[i], i);
+        }
       }
 
       set((state) => ({ events: insertSorted(state.events, event) }));
@@ -99,13 +108,36 @@ export const useEventStore = create<EventStore>((set, get) => ({
     }
   },
 
-  async updateEvent(id, fields, serviceTypeIds) {
+  async updateEvent(id, fields, serviceTypeIds, photoUris) {
     set({ error: null });
     try {
       await eventQueries.update(id, fields);
 
       if (serviceTypeIds) {
         await eventServiceTypeQueries.setForEvent(id, serviceTypeIds);
+      }
+
+      if (photoUris !== undefined) {
+        // Get existing photos to diff
+        const existingPhotos = await eventPhotoQueries.getByEvent(id);
+        const existingUris = new Set(existingPhotos.map((p) => p.filePath));
+        const newUris = new Set(photoUris);
+
+        // Remove photos that are no longer in the list
+        for (const photo of existingPhotos) {
+          if (!newUris.has(photo.filePath)) {
+            await eventPhotoQueries.remove(photo.id);
+          }
+        }
+
+        // Add new photos (those not already in the DB)
+        let sortOrder = 0;
+        for (const uri of photoUris) {
+          if (!existingUris.has(uri)) {
+            await eventPhotoQueries.insert(id, uri, sortOrder);
+          }
+          sortOrder++;
+        }
       }
 
       const updatedEvent = await eventQueries.getById(id);
@@ -136,6 +168,7 @@ export const useEventStore = create<EventStore>((set, get) => ({
     if (pendingDelete) {
       clearTimeout(pendingDelete.timer);
       try {
+        await eventPhotoQueries.removeAllForEvent(pendingDelete.event.id);
         await eventQueries.remove(pendingDelete.event.id);
       } catch {
         // Best-effort finalization
@@ -164,6 +197,8 @@ export const useEventStore = create<EventStore>((set, get) => ({
     // Set up deferred DB delete
     const timer = setTimeout(async () => {
       try {
+        // Clean up photo files before DB delete (CASCADE handles DB rows)
+        await eventPhotoQueries.removeAllForEvent(id);
         await eventQueries.remove(id);
       } catch {
         // Event already removed from UI

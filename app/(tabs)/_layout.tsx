@@ -1,12 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
-import { useColorScheme } from 'react-native';
+import { useColorScheme } from 'nativewind';
 
 export default function TabLayout() {
-  const colorScheme = useColorScheme();
-  const activeTint = colorScheme === 'dark' ? '#60a5fa' : '#2563eb';
-  const inactiveTint = colorScheme === 'dark' ? '#6b7280' : '#9ca3af';
-  const tabBarBg = colorScheme === 'dark' ? '#111827' : '#ffffff';
+  const { colorScheme } = useColorScheme();
+  const activeTint = colorScheme === 'dark' ? '#60a5fa' : '#3B82F6';
+  const inactiveTint = colorScheme === 'dark' ? '#78756F' : '#A8A49D';
+  const tabBarBg = colorScheme === 'dark' ? '#0E0E0C' : '#F5F4F1';
 
   return (
     <Tabs
@@ -15,7 +15,7 @@ export default function TabLayout() {
         tabBarInactiveTintColor: inactiveTint,
         tabBarStyle: {
           backgroundColor: tabBarBg,
-          borderTopColor: colorScheme === 'dark' ? '#1f2937' : '#e5e7eb',
+          borderTopColor: colorScheme === 'dark' ? '#2A2926' : '#E2E0DB',
         },
         headerShown: false,
       }}

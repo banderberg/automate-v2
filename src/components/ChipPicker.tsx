@@ -97,7 +97,7 @@ export function ChipPicker({
     <View className="mb-4">
       {label && (
         <View className="flex-row items-center justify-between mb-1.5">
-          <Text className="text-xs text-gray-500 dark:text-gray-400 font-semibold">{label}</Text>
+          <Text className="text-xs text-ink-muted dark:text-ink-muted-on-dark font-semibold">{label}</Text>
           {canManage && (
             <Pressable
               onPress={() => manageSheetRef.current?.present()}
@@ -121,7 +121,7 @@ export function ChipPicker({
               className={`mr-2 mb-2 px-4 py-2 rounded-full border ${
                 selected
                   ? 'border-transparent'
-                  : 'border-gray-200 dark:border-gray-700 bg-surface dark:bg-surface-dark'
+                  : 'border-divider dark:border-divider-dark bg-surface dark:bg-surface-dark'
               }`}
               style={selected ? { backgroundColor: accentColor || '#3B82F6' } : undefined}
               accessibilityLabel={`${item.name}${selected ? ', selected' : ''}`}
@@ -130,7 +130,7 @@ export function ChipPicker({
             >
               <Text
                 className={`text-sm font-semibold ${
-                  selected ? 'text-white' : 'text-gray-600 dark:text-gray-300'
+                  selected ? 'text-white' : 'text-ink-secondary dark:text-ink-secondary-on-dark'
                 }`}
               >
                 {item.name}
@@ -150,13 +150,13 @@ export function ChipPicker({
           enableDynamicSizing
           backdropComponent={renderBackdrop}
           enablePanDownToClose
-          handleIndicatorStyle={{ backgroundColor: '#d1d5db' }}
-          backgroundStyle={{ backgroundColor: 'white' }}
+          handleIndicatorStyle={{ backgroundColor: '#E2E0DB' }}
+          backgroundStyle={{ backgroundColor: '#FEFDFB' }}
           keyboardBehavior="interactive"
           keyboardBlurBehavior="restore"
         >
           <BottomSheetView style={{ paddingBottom: 40 }}>
-            <Text className="px-4 pt-2 pb-3 text-base font-semibold text-gray-900">
+            <Text className="px-4 pt-2 pb-3 text-base font-semibold text-ink">
               Manage {label}
             </Text>
 
@@ -165,7 +165,7 @@ export function ChipPicker({
                 {editingId === item.id ? (
                   <View className="flex-1 flex-row items-center">
                     <BottomSheetTextInput
-                      className="flex-1 text-sm text-gray-900 bg-gray-100 rounded-lg px-3 py-2"
+                      className="flex-1 text-sm text-ink bg-surface rounded-lg px-3 py-2"
                       value={editingName}
                       onChangeText={setEditingName}
                       autoFocus
@@ -181,12 +181,12 @@ export function ChipPicker({
                       accessibilityLabel="Cancel edit"
                       accessibilityRole="button"
                     >
-                      <Ionicons name="close" size={20} color="#9CA3AF" />
+                      <Ionicons name="close" size={20} color="#A8A49D" />
                     </Pressable>
                   </View>
                 ) : (
                   <>
-                    <Text className="flex-1 text-sm text-gray-900">{item.name}</Text>
+                    <Text className="flex-1 text-sm text-ink">{item.name}</Text>
                     {onUpdate && (
                       <Pressable
                         onPress={() => { setEditingId(item.id); setEditingName(item.name); }}
@@ -194,7 +194,7 @@ export function ChipPicker({
                         accessibilityLabel={`Edit ${item.name}`}
                         accessibilityRole="button"
                       >
-                        <Ionicons name="pencil" size={16} color="#6B7280" />
+                        <Ionicons name="pencil" size={16} color="#5C5A55" />
                       </Pressable>
                     )}
                     {onDelete && (
@@ -213,13 +213,13 @@ export function ChipPicker({
             ))}
 
             {onAdd && (
-              <View className="flex-row items-center px-4 pt-3 mt-2 border-t border-gray-200">
+              <View className="flex-row items-center px-4 pt-3 mt-2 border-t border-divider">
                 <BottomSheetTextInput
-                  className="flex-1 text-sm text-gray-900 bg-gray-100 rounded-lg px-3 py-2"
+                  className="flex-1 text-sm text-ink bg-surface rounded-lg px-3 py-2"
                   value={newItemName}
                   onChangeText={setNewItemName}
                   placeholder="Add new..."
-                  placeholderTextColor="#9CA3AF"
+                  placeholderTextColor="#A8A49D"
                   onSubmitEditing={handleAdd}
                   returnKeyType="done"
                 />

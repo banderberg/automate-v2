@@ -26,3 +26,12 @@ export function getDatabase(): SQLite.SQLiteDatabase {
   }
   return db;
 }
+
+export async function closeDatabase(): Promise<void> {
+  if (db) {
+    await db.closeAsync();
+    db = null;
+  }
+}
+
+export const DATABASE_NAME = 'automate.db';

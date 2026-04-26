@@ -191,7 +191,7 @@ export default function ReminderModal() {
   const chipItems = kind === 'maintenance' ? serviceTypes : categories;
 
   return (
-    <SafeAreaView className="flex-1 bg-white dark:bg-gray-900" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-surface dark:bg-surface-dark" edges={['top']}>
       <ModalHeader
         title={isEditing ? 'Edit Reminder' : 'Add Reminder'}
         onCancel={() => router.back()}
@@ -204,7 +204,7 @@ export default function ReminderModal() {
       >
         <ScrollView className="flex-1 px-4 pt-4" keyboardShouldPersistTaps="handled">
           {/* Pick what */}
-          <Text className="text-xs text-gray-500 dark:text-gray-400 mb-2 font-semibold">
+          <Text className="text-xs text-ink-muted dark:text-ink-muted-on-dark mb-2 font-semibold">
             Reminder Type
           </Text>
           <View className="mb-4">
@@ -234,14 +234,14 @@ export default function ReminderModal() {
           />
 
           {/* Repeat every */}
-          <Text className="text-xs text-gray-500 dark:text-gray-400 mb-2 mt-2 font-semibold">
+          <Text className="text-xs text-ink-muted dark:text-ink-muted-on-dark mb-2 mt-2 font-semibold">
             Repeat Every
           </Text>
 
           {/* Distance toggle */}
-          <View className="flex-row items-center bg-surface dark:bg-surface-dark rounded-xl border border-gray-200 dark:border-gray-700 px-3.5 py-3 mb-3">
+          <View className="flex-row items-center bg-surface dark:bg-surface-dark rounded-xl border border-divider dark:border-divider-dark px-3.5 py-3 mb-3">
             <View className="flex-1 mr-3">
-              <Text className="text-base text-gray-900 dark:text-gray-100">By Distance</Text>
+              <Text className="text-base text-ink dark:text-ink-on-dark">By Distance</Text>
             </View>
             <Switch
               value={distanceEnabled}
@@ -249,33 +249,33 @@ export default function ReminderModal() {
                 setDistanceEnabled(v);
                 setIntervalError('');
               }}
-              trackColor={{ false: '#d1d5db', true: '#93C5FD' }}
+              trackColor={{ false: '#E2E0DB', true: '#93C5FD' }}
               thumbColor={distanceEnabled ? '#3B82F6' : '#f4f3f4'}
               accessibilityLabel="Enable distance-based repeat"
             />
           </View>
           {distanceEnabled && (
             <View className="flex-row items-center mb-4 ml-4 gap-2">
-              <Text className="text-sm text-gray-600 dark:text-gray-300">Every</Text>
-              <View className="flex-row items-center bg-surface dark:bg-surface-dark rounded-xl border border-gray-200 dark:border-gray-700 px-3 py-2">
+              <Text className="text-sm text-ink-secondary dark:text-ink-secondary-on-dark">Every</Text>
+              <View className="flex-row items-center bg-surface dark:bg-surface-dark rounded-xl border border-divider dark:border-divider-dark px-3 py-2">
                 <TextInput
-                  className="text-base text-gray-900 dark:text-gray-100 min-w-[60px] text-center"
+                  className="text-base text-ink dark:text-ink-on-dark min-w-[60px] text-center"
                   value={distanceInterval}
                   onChangeText={setDistanceInterval}
                   keyboardType="number-pad"
                   placeholder="5000"
-                  placeholderTextColor="#9CA3AF"
+                  placeholderTextColor="#A8A49D"
                   accessibilityLabel={`Distance interval in ${odoLabel}`}
                 />
               </View>
-              <Text className="text-sm text-gray-600 dark:text-gray-300">{odoLabel}</Text>
+              <Text className="text-sm text-ink-secondary dark:text-ink-secondary-on-dark">{odoLabel}</Text>
             </View>
           )}
 
           {/* Time toggle */}
-          <View className="flex-row items-center bg-surface dark:bg-surface-dark rounded-xl border border-gray-200 dark:border-gray-700 px-3.5 py-3 mb-3">
+          <View className="flex-row items-center bg-surface dark:bg-surface-dark rounded-xl border border-divider dark:border-divider-dark px-3.5 py-3 mb-3">
             <View className="flex-1 mr-3">
-              <Text className="text-base text-gray-900 dark:text-gray-100">By Time</Text>
+              <Text className="text-base text-ink dark:text-ink-on-dark">By Time</Text>
             </View>
             <Switch
               value={timeEnabled}
@@ -283,22 +283,22 @@ export default function ReminderModal() {
                 setTimeEnabled(v);
                 setIntervalError('');
               }}
-              trackColor={{ false: '#d1d5db', true: '#93C5FD' }}
+              trackColor={{ false: '#E2E0DB', true: '#93C5FD' }}
               thumbColor={timeEnabled ? '#3B82F6' : '#f4f3f4'}
               accessibilityLabel="Enable time-based repeat"
             />
           </View>
           {timeEnabled && (
             <View className="flex-row items-center mb-4 ml-4 gap-2 flex-wrap">
-              <Text className="text-sm text-gray-600 dark:text-gray-300">Every</Text>
-              <View className="flex-row items-center bg-surface dark:bg-surface-dark rounded-xl border border-gray-200 dark:border-gray-700 px-3 py-2">
+              <Text className="text-sm text-ink-secondary dark:text-ink-secondary-on-dark">Every</Text>
+              <View className="flex-row items-center bg-surface dark:bg-surface-dark rounded-xl border border-divider dark:border-divider-dark px-3 py-2">
                 <TextInput
-                  className="text-base text-gray-900 dark:text-gray-100 min-w-[40px] text-center"
+                  className="text-base text-ink dark:text-ink-on-dark min-w-[40px] text-center"
                   value={timeInterval}
                   onChangeText={setTimeInterval}
                   keyboardType="number-pad"
                   placeholder="6"
-                  placeholderTextColor="#9CA3AF"
+                  placeholderTextColor="#A8A49D"
                   accessibilityLabel="Time interval"
                 />
               </View>
@@ -310,14 +310,14 @@ export default function ReminderModal() {
                     className={`px-3 py-1.5 rounded-full ${
                       timeUnit === u.value
                         ? 'bg-primary'
-                        : 'bg-surface dark:bg-surface-dark border border-gray-200 dark:border-gray-700'
+                        : 'bg-surface dark:bg-surface-dark border border-divider dark:border-divider-dark'
                     }`}
                     accessibilityLabel={`${u.label}${timeUnit === u.value ? ', selected' : ''}`}
                     accessibilityRole="button"
                   >
                     <Text
                       className={`text-xs font-semibold ${
-                        timeUnit === u.value ? 'text-white' : 'text-gray-600 dark:text-gray-300'
+                        timeUnit === u.value ? 'text-white' : 'text-ink-secondary dark:text-ink-secondary-on-dark'
                       }`}
                     >
                       {u.label}
@@ -335,12 +335,12 @@ export default function ReminderModal() {
           {/* Starting from */}
           {selectedIds.length > 0 && (
             <>
-              <Text className="text-xs text-gray-500 dark:text-gray-400 mb-2 mt-2 font-semibold">
+              <Text className="text-xs text-ink-muted dark:text-ink-muted-on-dark mb-2 mt-2 font-semibold">
                 Starting From
               </Text>
               {hasBaseline && matchingEvent ? (
-                <View className="bg-surface dark:bg-surface-dark rounded-xl border border-gray-200 dark:border-gray-700 px-3.5 py-3 mb-4">
-                  <Text className="text-sm text-gray-900 dark:text-gray-100">
+                <View className="bg-surface dark:bg-surface-dark rounded-xl border border-divider dark:border-divider-dark px-3.5 py-3 mb-4">
+                  <Text className="text-sm text-ink dark:text-ink-on-dark">
                     Last event on {matchingEvent.date}
                     {matchingEvent.odometer != null && ` at ${matchingEvent.odometer.toLocaleString('en-US')} ${odoLabel}`}
                   </Text>
@@ -356,20 +356,20 @@ export default function ReminderModal() {
                   )}
                   {distanceEnabled && (
                     <View className="mb-4">
-                      <Text className="text-xs text-gray-500 dark:text-gray-400 mb-1.5 font-semibold">
+                      <Text className="text-xs text-ink-muted dark:text-ink-muted-on-dark mb-1.5 font-semibold">
                         Starting Odometer
                       </Text>
-                      <View className="flex-row items-center bg-surface dark:bg-surface-dark rounded-xl border border-gray-200 dark:border-gray-700 px-3.5 py-3">
+                      <View className="flex-row items-center bg-surface dark:bg-surface-dark rounded-xl border border-divider dark:border-divider-dark px-3.5 py-3">
                         <TextInput
-                          className="flex-1 text-base text-gray-900 dark:text-gray-100"
+                          className="flex-1 text-base text-ink dark:text-ink-on-dark"
                           value={baselineOdometer}
                           onChangeText={setBaselineOdometer}
                           keyboardType="number-pad"
                           placeholder="Current odometer"
-                          placeholderTextColor="#9CA3AF"
+                          placeholderTextColor="#A8A49D"
                           accessibilityLabel={`Starting odometer in ${odoLabel}`}
                         />
-                        <Text className="text-sm text-gray-400 ml-2">{odoLabel}</Text>
+                        <Text className="text-sm text-ink-muted ml-2">{odoLabel}</Text>
                       </View>
                     </View>
                   )}

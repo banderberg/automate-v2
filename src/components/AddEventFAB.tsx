@@ -71,54 +71,54 @@ export function AddEventFAB() {
         enableDynamicSizing
         backdropComponent={renderBackdrop}
         enablePanDownToClose
-        handleIndicatorStyle={{ backgroundColor: '#d1d5db' }}
-        backgroundStyle={{ backgroundColor: 'white' }}
+        handleIndicatorStyle={{ backgroundColor: '#E2E0DB' }}
+        backgroundStyle={{ backgroundColor: '#FEFDFB' }}
       >
         <BottomSheetView>
-          <Text className="px-4 pt-4 pb-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+          <Text className="px-4 pt-4 pb-3 text-xs font-semibold text-ink-muted uppercase tracking-wider">
             Add Event
           </Text>
 
           <Pressable
             onPress={() => handleNavigate('/(modals)/fuel-event')}
-            className="flex-row items-center px-4 py-4 active:bg-gray-50"
+            className="flex-row items-center px-4 py-4 active:bg-surface"
             accessibilityLabel={isElectric ? 'Add Charge event' : 'Add Fill-Up event'}
             accessibilityRole="button"
           >
-            <View className="w-10 h-10 rounded-full bg-teal-100 items-center justify-center mr-4">
+            <View className="w-10 h-10 rounded-full items-center justify-center mr-4" style={{ backgroundColor: '#CCFBF1' }}>
               <Ionicons
                 name={isElectric ? 'flash' : 'water'}
                 size={20}
                 color="#14b8a6"
               />
             </View>
-            <Text className="text-base font-medium text-gray-900">
+            <Text className="text-base font-medium text-ink">
               {isElectric ? 'Charge' : 'Fill-Up'}
             </Text>
           </Pressable>
 
           <Pressable
             onPress={() => handleNavigate('/(modals)/service-event')}
-            className="flex-row items-center px-4 py-4 active:bg-gray-50"
+            className="flex-row items-center px-4 py-4 active:bg-surface"
             accessibilityLabel="Add Service event"
             accessibilityRole="button"
           >
-            <View className="w-10 h-10 rounded-full bg-orange-100 items-center justify-center mr-4">
+            <View className="w-10 h-10 rounded-full items-center justify-center mr-4" style={{ backgroundColor: '#FFF7ED' }}>
               <Ionicons name="construct" size={20} color="#f97316" />
             </View>
-            <Text className="text-base font-medium text-gray-900">Service</Text>
+            <Text className="text-base font-medium text-ink">Service</Text>
           </Pressable>
 
           <Pressable
             onPress={() => handleNavigate('/(modals)/expense-event')}
-            className="flex-row items-center px-4 py-4 active:bg-gray-50"
+            className="flex-row items-center px-4 py-4 active:bg-surface"
             accessibilityLabel="Add Expense event"
             accessibilityRole="button"
           >
-            <View className="w-10 h-10 rounded-full bg-emerald-100 items-center justify-center mr-4">
+            <View className="w-10 h-10 rounded-full items-center justify-center mr-4" style={{ backgroundColor: '#D1FAE5' }}>
               <Ionicons name="cash" size={20} color="#10b981" />
             </View>
-            <Text className="text-base font-medium text-gray-900">Expense</Text>
+            <Text className="text-base font-medium text-ink">Expense</Text>
           </Pressable>
 
           <View className="h-8" />

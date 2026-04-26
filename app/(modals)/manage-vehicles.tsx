@@ -29,12 +29,12 @@ export default function ManageVehiclesModal() {
         onPress={() =>
           router.push(`/(modals)/vehicle?vehicleId=${item.id}`)
         }
-        className="flex-row items-center px-4 py-3 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 active:bg-gray-50 dark:active:bg-gray-800"
+        className="flex-row items-center px-4 py-3 bg-card dark:bg-card-dark border-b border-divider-subtle dark:border-divider-dark active:bg-surface dark:active:bg-surface-dark"
         accessibilityLabel={`${item.nickname}, ${item.year} ${item.make} ${item.model}${item.isActive ? ', active' : ''}`}
         accessibilityRole="button"
       >
         {/* Photo */}
-        <View className="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-800 items-center justify-center overflow-hidden mr-3">
+        <View className="w-10 h-10 rounded-full bg-surface dark:bg-surface-dark items-center justify-center overflow-hidden mr-3">
           {item.imagePath ? (
             <Image
               source={{ uri: item.imagePath }}
@@ -42,7 +42,7 @@ export default function ManageVehiclesModal() {
               resizeMode="cover"
             />
           ) : (
-            <Ionicons name="car" size={20} color="#9CA3AF" />
+            <Ionicons name="car" size={20} color="#A8A49D" />
           )}
         </View>
 
@@ -50,7 +50,7 @@ export default function ManageVehiclesModal() {
         <View className="flex-1 mr-3">
           <View className="flex-row items-center gap-2">
             <Text
-              className="text-base font-semibold text-gray-900 dark:text-gray-100"
+              className="text-base font-semibold text-ink dark:text-ink-on-dark"
               numberOfLines={1}
             >
               {item.nickname}
@@ -59,7 +59,7 @@ export default function ManageVehiclesModal() {
               <View className="w-2 h-2 rounded-full bg-green-500" />
             )}
           </View>
-          <Text className="text-sm text-gray-500 dark:text-gray-400">
+          <Text className="text-sm text-ink-muted dark:text-ink-muted-on-dark">
             {item.year} {item.make} {item.model}
           </Text>
         </View>
@@ -77,7 +77,7 @@ export default function ManageVehiclesModal() {
             <Ionicons
               name="chevron-up"
               size={20}
-              color={index === 0 ? '#D1D5DB' : '#6B7280'}
+              color={index === 0 ? '#E2E0DB' : '#5C5A55'}
             />
           </Pressable>
           <Pressable
@@ -91,7 +91,7 @@ export default function ManageVehiclesModal() {
             <Ionicons
               name="chevron-down"
               size={20}
-              color={index === vehicles.length - 1 ? '#D1D5DB' : '#6B7280'}
+              color={index === vehicles.length - 1 ? '#E2E0DB' : '#5C5A55'}
             />
           </Pressable>
         </View>
@@ -101,7 +101,7 @@ export default function ManageVehiclesModal() {
   );
 
   return (
-    <SafeAreaView className="flex-1 bg-white dark:bg-gray-900" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-surface dark:bg-surface-dark" edges={['top']}>
       <ModalHeader
         title="Manage Vehicles"
         onCancel={() => router.back()}

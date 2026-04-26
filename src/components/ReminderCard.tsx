@@ -57,13 +57,13 @@ export function ReminderCard({ reminder, odometerUnit, onPress }: ReminderCardPr
   return (
     <Pressable
       onPress={onPress}
-      className="bg-surface dark:bg-surface-dark rounded-2xl p-4 border border-gray-100 dark:border-gray-800 active:opacity-80"
+      className="bg-card dark:bg-card-dark rounded-2xl p-4 border border-divider-subtle dark:border-divider-dark active:opacity-80"
       accessibilityLabel={`${reminder.linkedName} reminder, status: ${statusLabel}, ${pctLabel} progress`}
       accessibilityRole="button"
     >
       {/* Name + status badge */}
       <View className="flex-row items-center justify-between mb-2.5">
-        <Text className="text-base font-semibold text-gray-900 dark:text-gray-100 flex-1 mr-3" numberOfLines={1}>
+        <Text className="text-base font-semibold text-ink dark:text-ink-on-dark flex-1 mr-3" numberOfLines={1}>
           {reminder.linkedName}
         </Text>
         <View
@@ -79,19 +79,19 @@ export function ReminderCard({ reminder, odometerUnit, onPress }: ReminderCardPr
 
       {/* Progress bar */}
       <View className="flex-row items-center mb-2.5 gap-2">
-        <View className="flex-1 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+        <View className="flex-1 h-1.5 bg-divider dark:bg-divider-dark rounded-full overflow-hidden">
           <View
             className="h-full rounded-full"
             style={{ width: `${ratio * 100}%`, backgroundColor: styles.bar }}
           />
         </View>
-        <Text className="text-xs text-gray-500 dark:text-gray-400 w-8 text-right">{pctLabel}</Text>
+        <Text className="text-xs text-ink-muted dark:text-ink-muted-on-dark w-8 text-right">{pctLabel}</Text>
       </View>
 
       {/* Next due info */}
       <View className="gap-1">
         {reminder.nextOdometer != null && (
-          <Text className="text-xs text-gray-500 dark:text-gray-400">
+          <Text className="text-xs text-ink-muted dark:text-ink-muted-on-dark">
             Next: {reminder.nextOdometer.toLocaleString('en-US')} {odoLabel}
             {reminder.distanceRemaining != null && (
               <Text>
@@ -101,7 +101,7 @@ export function ReminderCard({ reminder, odometerUnit, onPress }: ReminderCardPr
           </Text>
         )}
         {reminder.nextDate != null && (
-          <Text className="text-xs text-gray-500 dark:text-gray-400">
+          <Text className="text-xs text-ink-muted dark:text-ink-muted-on-dark">
             Next: {formatDate(reminder.nextDate)}
             {reminder.daysRemaining != null && (
               <Text>

@@ -31,7 +31,7 @@ export function EventRow({ event, odometerUnit, place, onPress, currency = '$' }
   return (
     <Pressable
       onPress={onPress}
-      className="flex-row items-center px-4 py-3 active:bg-gray-50 dark:active:bg-gray-900"
+      className="flex-row items-center px-4 py-3 active:bg-surface dark:active:bg-surface-dark"
       accessibilityLabel={`${config.label} on ${event.date}, ${currency}${event.cost.toFixed(2)}`}
       accessibilityRole="button"
     >
@@ -43,17 +43,17 @@ export function EventRow({ event, odometerUnit, place, onPress, currency = '$' }
       </View>
 
       <View className="flex-1 mr-2">
-        <Text className="text-sm text-gray-900 dark:text-gray-100" numberOfLines={1}>
+        <Text className="text-sm text-ink dark:text-ink-on-dark" numberOfLines={1}>
           {topLine}
         </Text>
-        <Text className="text-xs text-gray-500 dark:text-gray-400">
+        <Text className="text-xs text-ink-muted dark:text-ink-muted-on-dark">
           {event.odometer != null
             ? `${event.odometer.toLocaleString('en-US')} ${unitLabel}`
             : '—'}
         </Text>
       </View>
 
-      <Text className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+      <Text className="text-sm font-semibold text-ink dark:text-ink-on-dark">
         {currency}{event.cost.toFixed(2)}
       </Text>
     </Pressable>

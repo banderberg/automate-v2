@@ -109,7 +109,7 @@ function SwipeableEventRow({
   return (
     <Swipeable ref={swipeableRef} renderRightActions={renderRightActions} overshootRight={false}>
       <Pressable onLongPress={onLongPress} delayLongPress={500} accessibilityLabel={`${event.type} event on ${event.date}, $${event.cost.toFixed(2)}. Long press for options.`}>
-        <View className="bg-white dark:bg-gray-950">
+        <View className="bg-surface dark:bg-surface-dark">
           <EventRow
             event={event}
             odometerUnit={odometerUnit}
@@ -190,9 +190,9 @@ export default function HistoryScreen() {
 
   if (vehicleCount === 0) {
     return (
-      <SafeAreaView className="flex-1 bg-white dark:bg-gray-950">
+      <SafeAreaView className="flex-1 bg-surface dark:bg-surface-dark" edges={['top']}>
         <EmptyState
-          icon={<Ionicons name="car-outline" size={64} color="#9ca3af" />}
+          icon={<Ionicons name="car-outline" size={64} color="#A8A49D" />}
           title="Add a Vehicle to Get Started"
           description="Track fuel, service, and expenses for your vehicle."
           actionLabel="Add Vehicle"
@@ -203,7 +203,7 @@ export default function HistoryScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-white dark:bg-gray-950">
+    <SafeAreaView className="flex-1 bg-surface dark:bg-surface-dark" edges={['top']}>
       <VehicleSwitcher />
 
       {/* Filter bar */}
@@ -215,7 +215,7 @@ export default function HistoryScreen() {
               key={chip.id}
               onPress={() => handleFilterToggle(chip.id)}
               className={`px-4 py-1.5 rounded-full border ${
-                isActive ? 'border-transparent' : 'border-gray-200 dark:border-gray-700'
+                isActive ? 'border-transparent' : 'border-divider dark:border-divider-dark'
               }`}
               style={
                 isActive
@@ -228,7 +228,7 @@ export default function HistoryScreen() {
             >
               <Text
                 className={`text-sm font-semibold ${
-                  isActive ? 'text-white' : 'text-gray-600 dark:text-gray-300'
+                  isActive ? 'text-white' : 'text-ink-secondary dark:text-ink-secondary-on-dark'
                 }`}
               >
                 {chip.label}
@@ -241,7 +241,7 @@ export default function HistoryScreen() {
       {filteredEvents.length === 0 ? (
         <View className="flex-1">
           <EmptyState
-            icon={<Ionicons name="time-outline" size={64} color="#9ca3af" />}
+            icon={<Ionicons name="time-outline" size={64} color="#A8A49D" />}
             title="No Events Yet"
             description="No events yet. Tap + to log your first fill-up, service, or expense."
           />
@@ -259,11 +259,11 @@ export default function HistoryScreen() {
           renderItem={({ item }) => {
             if (item.kind === 'header') {
               return (
-                <View className="flex-row items-center justify-between px-4 py-2.5 bg-white dark:bg-gray-950 border-b border-gray-100 dark:border-gray-800">
-                  <Text className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                <View className="flex-row items-center justify-between px-4 py-2.5 bg-surface dark:bg-surface-dark border-b border-divider-subtle dark:border-divider-dark">
+                  <Text className="text-sm font-semibold text-ink dark:text-ink-on-dark">
                     {item.month}
                   </Text>
-                  <Text className="text-sm font-semibold text-gray-500 dark:text-gray-400">
+                  <Text className="text-sm font-semibold text-ink-muted dark:text-ink-muted-on-dark">
                     ${item.total.toFixed(2)}
                   </Text>
                 </View>

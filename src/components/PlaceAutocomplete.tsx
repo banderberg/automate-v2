@@ -86,17 +86,17 @@ export function PlaceAutocomplete({
 
   return (
     <View className="mb-4">
-      <Text className="text-xs text-gray-500 dark:text-gray-400 mb-1.5 font-semibold">{label}</Text>
+      <Text className="text-xs text-ink-muted dark:text-ink-muted-on-dark mb-1.5 font-semibold">{label}</Text>
       <Pressable
         onPress={() => selectSheetRef.current?.present()}
-        className="flex-row items-center bg-surface dark:bg-surface-dark rounded-xl border border-gray-200 dark:border-gray-700 px-3.5 py-3"
+        className="flex-row items-center bg-card dark:bg-card-dark rounded-xl border border-divider dark:border-divider-dark px-3.5 py-3"
         accessibilityLabel={`Select ${label.toLowerCase()}`}
         accessibilityRole="button"
       >
-        <Ionicons name="location-outline" size={18} color="#9CA3AF" />
+        <Ionicons name="location-outline" size={18} color="#A8A49D" />
         <Text
           className={`flex-1 ml-2 text-base ${
-            selectedPlace ? 'text-gray-900 dark:text-gray-100' : 'text-gray-400'
+            selectedPlace ? 'text-ink dark:text-ink-on-dark' : 'text-ink-muted'
           }`}
           numberOfLines={1}
         >
@@ -104,7 +104,7 @@ export function PlaceAutocomplete({
         </Text>
         {selectedPlace && (
           <Pressable onPress={handleClear} hitSlop={8} accessibilityLabel="Clear place" accessibilityRole="button">
-            <Ionicons name="close-circle" size={18} color="#9CA3AF" />
+            <Ionicons name="close-circle" size={18} color="#A8A49D" />
           </Pressable>
         )}
       </Pressable>
@@ -114,19 +114,19 @@ export function PlaceAutocomplete({
         snapPoints={['60%']}
         backdropComponent={renderBackdrop}
         enablePanDownToClose
-        handleIndicatorStyle={{ backgroundColor: '#d1d5db' }}
-        backgroundStyle={{ backgroundColor: 'white' }}
+        handleIndicatorStyle={{ backgroundColor: '#E2E0DB' }}
+        backgroundStyle={{ backgroundColor: '#FEFDFB' }}
         keyboardBehavior="interactive"
         keyboardBlurBehavior="restore"
       >
         <BottomSheetView style={{ flex: 1, paddingBottom: 20 }}>
           <View className="px-4 pb-3">
             <BottomSheetTextInput
-              className="text-sm text-gray-900 bg-gray-100 rounded-xl px-3.5 py-2.5"
+              className="text-sm text-ink bg-surface rounded-xl px-3.5 py-2.5"
               value={search}
               onChangeText={setSearch}
               placeholder="Search places..."
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor="#A8A49D"
             />
           </View>
 
@@ -137,15 +137,15 @@ export function PlaceAutocomplete({
             renderItem={({ item }) => (
               <Pressable
                 onPress={() => handleSelect(item.id)}
-                className="flex-row items-center px-4 py-3 active:bg-gray-50"
+                className="flex-row items-center px-4 py-3 active:bg-surface"
                 accessibilityLabel={`Select ${item.name}`}
                 accessibilityRole="button"
               >
-                <Ionicons name="location" size={16} color="#6B7280" />
+                <Ionicons name="location" size={16} color="#5C5A55" />
                 <View className="flex-1 ml-3">
-                  <Text className="text-sm text-gray-900">{item.name}</Text>
+                  <Text className="text-sm text-ink">{item.name}</Text>
                   {item.address && (
-                    <Text className="text-xs text-gray-500" numberOfLines={1}>
+                    <Text className="text-xs text-ink-muted" numberOfLines={1}>
                       {item.address}
                     </Text>
                   )}
@@ -158,7 +158,7 @@ export function PlaceAutocomplete({
             ListFooterComponent={
               <Pressable
                 onPress={() => addSheetRef.current?.present()}
-                className="flex-row items-center px-4 py-3 border-t border-gray-100"
+                className="flex-row items-center px-4 py-3 border-t border-divider-subtle"
                 accessibilityLabel="Add new place"
                 accessibilityRole="button"
               >
@@ -177,40 +177,40 @@ export function PlaceAutocomplete({
         enableDynamicSizing
         backdropComponent={renderBackdrop}
         enablePanDownToClose
-        handleIndicatorStyle={{ backgroundColor: '#d1d5db' }}
-        backgroundStyle={{ backgroundColor: 'white' }}
+        handleIndicatorStyle={{ backgroundColor: '#E2E0DB' }}
+        backgroundStyle={{ backgroundColor: '#FEFDFB' }}
         keyboardBehavior="interactive"
         keyboardBlurBehavior="restore"
         stackBehavior="push"
       >
         <BottomSheetView style={{ paddingBottom: 40 }}>
-          <Text className="px-4 pt-2 pb-3 text-base font-semibold text-gray-900">
+          <Text className="px-4 pt-2 pb-3 text-base font-semibold text-ink">
             Add New Place
           </Text>
 
           <View className="px-4">
-            <Text className="text-xs text-gray-500 mb-1 font-semibold">Name *</Text>
+            <Text className="text-xs text-ink-muted mb-1 font-semibold">Name *</Text>
             <BottomSheetTextInput
-              className="text-sm text-gray-900 bg-gray-100 rounded-xl px-3.5 py-2.5 mb-3"
+              className="text-sm text-ink bg-surface rounded-xl px-3.5 py-2.5 mb-3"
               value={newName}
               onChangeText={setNewName}
               placeholder="e.g., Shell on Main St"
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor="#A8A49D"
             />
 
-            <Text className="text-xs text-gray-500 mb-1 font-semibold">Address</Text>
+            <Text className="text-xs text-ink-muted mb-1 font-semibold">Address</Text>
             <BottomSheetTextInput
-              className="text-sm text-gray-900 bg-gray-100 rounded-xl px-3.5 py-2.5 mb-4"
+              className="text-sm text-ink bg-surface rounded-xl px-3.5 py-2.5 mb-4"
               value={newAddress}
               onChangeText={setNewAddress}
               placeholder="Optional"
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor="#A8A49D"
             />
 
             <Pressable
               onPress={handleAddPlace}
               className={`rounded-xl py-3 items-center ${
-                newName.trim() ? 'bg-primary' : 'bg-gray-300'
+                newName.trim() ? 'bg-primary' : 'bg-divider'
               }`}
               disabled={!newName.trim()}
               accessibilityLabel="Save place"

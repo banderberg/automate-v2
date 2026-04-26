@@ -8,11 +8,15 @@ import { ModalHeader } from '@/src/components/ModalHeader';
 import { DateField } from '@/src/components/DateField';
 import { useVehicleStore } from '@/src/stores/vehicleStore';
 import { exportVehicleData } from '@/src/services/csvExport';
+import { generateServiceHistoryPDF } from '@/src/services/pdfExport';
+
+type ExportFormat = 'csv' | 'pdf';
 
 export default function ExportModal() {
   const router = useRouter();
   const vehicles = useVehicleStore((s) => s.vehicles);
 
+  const [format, setFormat] = useState<ExportFormat>('csv');
   const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>(null);
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
@@ -21,34 +25,64 @@ export default function ExportModal() {
 
   const selectedLabel = useMemo(() => {
     if (!selectedVehicleId) return 'All Vehicles';
-    const v = vehicles.find((v) => v.id === selectedVehicleId);
+    const v = vehicles.find((veh) => veh.id === selectedVehicleId);
     return v?.nickname ?? 'Unknown';
   }, [selectedVehicleId, vehicles]);
+
+  const handleFormatChange = useCallback(
+    (newFormat: ExportFormat) => {
+      setFormat(newFormat);
+      if (newFormat === 'pdf' && !selectedVehicleId && vehicles.length > 0) {
+        setSelectedVehicleId(vehicles[0].id);
+      }
+    },
+    [selectedVehicleId, vehicles],
+  );
 
   const handleExport = useCallback(async () => {
     setExporting(true);
     try {
-      const fileUri = await exportVehicleData(
-        selectedVehicleId,
-        fromDate || undefined,
-        toDate || undefined
-      );
-
-      const canShare = await Sharing.isAvailableAsync();
-      if (canShare) {
-        await Sharing.shareAsync(fileUri, {
-          mimeType: 'text/csv',
-          dialogTitle: 'Export AutoMate Data',
-        });
+      if (format === 'pdf') {
+        if (!selectedVehicleId) {
+          Alert.alert('Vehicle Required', 'Please select a vehicle for PDF export.');
+          return;
+        }
+        const fileUri = await generateServiceHistoryPDF(
+          selectedVehicleId,
+          fromDate || undefined,
+          toDate || undefined,
+        );
+        const canShare = await Sharing.isAvailableAsync();
+        if (canShare) {
+          await Sharing.shareAsync(fileUri, {
+            mimeType: 'application/pdf',
+            dialogTitle: 'Export AutoMate Service History',
+          });
+        } else {
+          Alert.alert('Exported', `File saved to: ${fileUri}`);
+        }
       } else {
-        Alert.alert('Exported', `File saved to: ${fileUri}`);
+        const fileUri = await exportVehicleData(
+          selectedVehicleId,
+          fromDate || undefined,
+          toDate || undefined,
+        );
+        const canShare = await Sharing.isAvailableAsync();
+        if (canShare) {
+          await Sharing.shareAsync(fileUri, {
+            mimeType: 'text/csv',
+            dialogTitle: 'Export AutoMate Data',
+          });
+        } else {
+          Alert.alert('Exported', `File saved to: ${fileUri}`);
+        }
       }
     } catch {
       Alert.alert('Export Failed', 'Could not export data. Please try again.');
     } finally {
       setExporting(false);
     }
-  }, [selectedVehicleId, fromDate, toDate]);
+  }, [format, selectedVehicleId, fromDate, toDate]);
 
   return (
     <SafeAreaView className="flex-1 bg-white dark:bg-gray-900" edges={['top']}>
@@ -58,6 +92,53 @@ export default function ExportModal() {
         hideSave
       />
       <ScrollView className="flex-1 px-4 pt-4" keyboardShouldPersistTaps="handled">
+        {/* Format toggle */}
+        <Text className="text-xs text-gray-500 dark:text-gray-400 mb-2 font-semibold">
+          Format
+        </Text>
+        <View className="flex-row bg-surface dark:bg-surface-dark rounded-xl border border-gray-200 dark:border-gray-700 p-1 mb-4">
+          <Pressable
+            onPress={() => handleFormatChange('csv')}
+            className={`flex-1 py-2.5 rounded-lg items-center ${
+              format === 'csv' ? 'bg-primary' : ''
+            }`}
+            accessibilityLabel={`CSV format${format === 'csv' ? ', selected' : ''}`}
+            accessibilityRole="tab"
+            accessibilityState={{ selected: format === 'csv' }}
+          >
+            <Text
+              className={`text-sm font-semibold ${
+                format === 'csv' ? 'text-white' : 'text-gray-600 dark:text-gray-300'
+              }`}
+            >
+              CSV
+            </Text>
+          </Pressable>
+          <Pressable
+            onPress={() => handleFormatChange('pdf')}
+            className={`flex-1 py-2.5 rounded-lg items-center ${
+              format === 'pdf' ? 'bg-primary' : ''
+            }`}
+            accessibilityLabel={`PDF format${format === 'pdf' ? ', selected' : ''}`}
+            accessibilityRole="tab"
+            accessibilityState={{ selected: format === 'pdf' }}
+          >
+            <Text
+              className={`text-sm font-semibold ${
+                format === 'pdf' ? 'text-white' : 'text-gray-600 dark:text-gray-300'
+              }`}
+            >
+              PDF
+            </Text>
+          </Pressable>
+        </View>
+
+        {format === 'pdf' && (
+          <Text className="text-xs text-gray-400 dark:text-gray-500 mb-4 -mt-2">
+            PDF export is per-vehicle only
+          </Text>
+        )}
+
         {/* Vehicle picker */}
         <Text className="text-xs text-gray-500 dark:text-gray-400 mb-2 font-semibold">
           Vehicle
@@ -80,27 +161,29 @@ export default function ExportModal() {
 
         {showVehiclePicker && (
           <View className="mb-4 bg-surface dark:bg-surface-dark rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-            <Pressable
-              onPress={() => {
-                setSelectedVehicleId(null);
-                setShowVehiclePicker(false);
-              }}
-              className={`px-3.5 py-3 border-b border-gray-100 dark:border-gray-800 ${
-                !selectedVehicleId ? 'bg-primary-light dark:bg-primary-dark' : ''
-              }`}
-              accessibilityLabel="All Vehicles"
-              accessibilityRole="button"
-            >
-              <Text
-                className={`text-base ${
-                  !selectedVehicleId
-                    ? 'text-primary font-semibold'
-                    : 'text-gray-900 dark:text-gray-100'
+            {format !== 'pdf' && (
+              <Pressable
+                onPress={() => {
+                  setSelectedVehicleId(null);
+                  setShowVehiclePicker(false);
+                }}
+                className={`px-3.5 py-3 border-b border-gray-100 dark:border-gray-800 ${
+                  !selectedVehicleId ? 'bg-primary-light dark:bg-primary-dark' : ''
                 }`}
+                accessibilityLabel="All Vehicles"
+                accessibilityRole="button"
               >
-                All Vehicles
-              </Text>
-            </Pressable>
+                <Text
+                  className={`text-base ${
+                    !selectedVehicleId
+                      ? 'text-primary font-semibold'
+                      : 'text-gray-900 dark:text-gray-100'
+                  }`}
+                >
+                  All Vehicles
+                </Text>
+              </Pressable>
+            )}
             {vehicles.map((v) => (
               <Pressable
                 key={v.id}
@@ -196,15 +279,21 @@ export default function ExportModal() {
           className={`mt-6 py-4 rounded-xl items-center ${
             exporting ? 'bg-gray-300 dark:bg-gray-700' : 'bg-primary'
           }`}
-          accessibilityLabel="Export CSV"
+          accessibilityLabel={`Export ${format.toUpperCase()}`}
           accessibilityRole="button"
         >
           {exporting ? (
             <ActivityIndicator color="white" />
           ) : (
             <View className="flex-row items-center gap-2">
-              <Ionicons name="download-outline" size={20} color="white" />
-              <Text className="text-white font-semibold text-base">Export CSV</Text>
+              <Ionicons
+                name={format === 'pdf' ? 'document-text-outline' : 'download-outline'}
+                size={20}
+                color="white"
+              />
+              <Text className="text-white font-semibold text-base">
+                Export {format.toUpperCase()}
+              </Text>
             </View>
           )}
         </Pressable>

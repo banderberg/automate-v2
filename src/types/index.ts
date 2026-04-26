@@ -108,3 +108,17 @@ export interface ReminderWithStatus extends Reminder {
   status: 'upcoming' | 'soon' | 'overdue';
   linkedName: string;
 }
+
+export interface EventPhoto {
+  id: string;
+  eventId: string;
+  filePath: string;
+  sortOrder: number;
+  createdAt: string;
+}
+
+export interface LocalPhoto {
+  id?: string;        // undefined for unsaved photos
+  uri: string;        // local file URI
+  isNew?: boolean;    // true for newly added, not yet persisted
+}

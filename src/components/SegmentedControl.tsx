@@ -17,7 +17,7 @@ export function SegmentedControl<T extends string>({
 }: SegmentedControlProps<T>) {
   return (
     <View
-      className="flex-row bg-surface dark:bg-surface-dark rounded-xl border border-gray-200 dark:border-gray-700 p-1"
+      className="flex-row bg-surface dark:bg-surface-dark rounded-xl border border-divider dark:border-divider-dark p-1"
       accessibilityLabel={accessibilityLabel}
       accessibilityRole="tablist"
     >
@@ -40,8 +40,8 @@ export function SegmentedControl<T extends string>({
                 selected
                   ? 'text-white'
                   : disabled
-                    ? 'text-gray-400 dark:text-gray-600'
-                    : 'text-gray-600 dark:text-gray-300'
+                    ? 'text-ink-muted dark:text-ink-faint-on-dark'
+                    : 'text-ink-secondary dark:text-ink-secondary-on-dark'
               }`}
             >
               {label}

@@ -32,8 +32,9 @@ export function UndoSnackbar() {
       style={{ opacity, position: 'absolute', bottom: 96, left: 16, right: 16 }}
     >
       <View
-        className="flex-row items-center justify-between bg-gray-900 dark:bg-gray-100 rounded-xl px-4 py-3"
+        className="flex-row items-center justify-between rounded-xl px-4 py-3"
         style={{
+          backgroundColor: '#1C1B18',
           shadowColor: '#000',
           shadowOffset: { width: 0, height: 4 },
           shadowOpacity: 0.15,
@@ -41,7 +42,7 @@ export function UndoSnackbar() {
           elevation: 8,
         }}
       >
-        <Text className="text-sm text-white dark:text-gray-900">Event deleted</Text>
+        <Text className="text-sm" style={{ color: '#F5F4F1' }}>Event deleted</Text>
         <Pressable
           onPress={undoDelete}
           hitSlop={8}

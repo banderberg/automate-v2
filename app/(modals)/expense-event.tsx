@@ -16,12 +16,14 @@ import { ModalHeader } from '@/src/components/ModalHeader';
 import { DateField } from '@/src/components/DateField';
 import { OdometerField } from '@/src/components/OdometerField';
 import { ChipPicker } from '@/src/components/ChipPicker';
+import { EventPhotos } from '@/src/components/EventPhotos';
 import { useVehicleStore } from '@/src/stores/vehicleStore';
 import { useEventStore } from '@/src/stores/eventStore';
 import { useReferenceDataStore } from '@/src/stores/referenceDataStore';
 import { validateOdometer } from '@/src/services/odometerValidator';
 import * as eventQueries from '@/src/db/queries/events';
-import type { VehicleEvent } from '@/src/types';
+import * as eventPhotoQueries from '@/src/db/queries/eventPhotos';
+import type { VehicleEvent, LocalPhoto } from '@/src/types';
 
 export default function ExpenseEventModal() {
   const router = useRouter();
@@ -43,6 +45,8 @@ export default function ExpenseEventModal() {
   const [cost, setCost] = useState('');
   const [notes, setNotes] = useState('');
 
+  const [photos, setPhotos] = useState<LocalPhoto[]>([]);
+
   const [odometerError, setOdometerError] = useState('');
   const [categoryError, setCategoryError] = useState('');
   const [bounds, setBounds] = useState<{ floor: number | null; ceiling: number | null }>({ floor: null, ceiling: null });
@@ -63,6 +67,16 @@ export default function ExpenseEventModal() {
         setCost(String(existing.cost));
         setNotes(existing.notes ?? '');
       }
+      (async () => {
+        const existingPhotos = await eventPhotoQueries.getByEvent(eventId);
+        setPhotos(
+          existingPhotos.map((p) => ({
+            id: p.id,
+            uri: p.filePath,
+            isNew: false,
+          }))
+        );
+      })();
     } else {
       setDate(new Date().toISOString().split('T')[0]);
     }
@@ -120,10 +134,11 @@ export default function ExpenseEventModal() {
         notes: notes.trim() || undefined,
       };
 
+      const photoUris = photos.map((p) => p.uri);
       if (isEditing && eventId) {
-        await updateEvent(eventId, eventData);
+        await updateEvent(eventId, eventData, undefined, photoUris);
       } else {
-        await addEvent(eventData);
+        await addEvent(eventData, undefined, photoUris);
       }
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       router.back();
@@ -213,6 +228,12 @@ export default function ExpenseEventModal() {
               accessibilityLabel="Notes"
             />
           </View>
+
+          <EventPhotos
+            eventId={isEditing && eventId ? eventId : null}
+            photos={photos}
+            onPhotosChange={setPhotos}
+          />
 
           {isEditing && (
             <Pressable
