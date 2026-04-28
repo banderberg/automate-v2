@@ -23,7 +23,7 @@ import { useEventStore } from '@/src/stores/eventStore';
 import { validateOdometer } from '@/src/services/odometerValidator';
 import * as eventQueries from '@/src/db/queries/events';
 import * as eventPhotoQueries from '@/src/db/queries/eventPhotos';
-import { getVolumeLabel, getOdometerLabel } from '@/src/constants/units';
+import { getVolumeLabel } from '@/src/constants/units';
 import type { VehicleEvent, LocalPhoto } from '@/src/types';
 
 export default function FuelEventModal() {
@@ -184,7 +184,7 @@ export default function FuelEventModal() {
   }, [eventId, deleteEvent, router]);
 
   return (
-    <SafeAreaView className="flex-1 bg-white dark:bg-gray-900" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-surface dark:bg-surface-dark" edges={['top']}>
       <ModalHeader
         title={title}
         onCancel={() => router.back()}
@@ -195,7 +195,8 @@ export default function FuelEventModal() {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         className="flex-1"
       >
-        <ScrollView className="flex-1 px-4 pt-4" keyboardShouldPersistTaps="handled">
+        <ScrollView className="flex-1 px-4 pt-4" contentContainerStyle={{ paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
+          {/* Core: when & where on the odometer */}
           <DateField value={date} onChange={setDate} />
 
           <OdometerField
@@ -208,126 +209,138 @@ export default function FuelEventModal() {
             required
           />
 
-          <View className="mb-4">
-            <Text className="text-xs text-gray-500 dark:text-gray-400 mb-1.5 font-semibold">
-              {isElectric ? 'Energy Added' : 'Fuel Added'} *
+          {/* Fill details */}
+          <View className="mt-2 mb-2">
+            <Text className="text-xs text-ink-muted dark:text-ink-muted-on-dark font-semibold uppercase tracking-wider mb-3">
+              {isElectric ? 'Charge Details' : 'Fill Details'}
             </Text>
-            <View className="flex-row items-center bg-surface dark:bg-surface-dark rounded-xl border border-gray-200 dark:border-gray-700 px-3.5 py-3">
-              <TextInput
-                className="flex-1 text-base text-gray-900 dark:text-gray-100"
-                value={volume}
-                onChangeText={setVolume}
-                keyboardType="decimal-pad"
-                placeholder="0.0"
-                placeholderTextColor="#9CA3AF"
-                accessibilityLabel={`Volume in ${getVolumeLabel(volumeUnit)}`}
+
+            <View className="mb-4">
+              <Text className="text-xs text-ink-muted dark:text-ink-muted-on-dark mb-1.5 font-semibold">
+                {isElectric ? 'Energy Added' : 'Fuel Added'} *
+              </Text>
+              <View className="flex-row items-center bg-card dark:bg-card-dark rounded-xl border border-divider dark:border-divider-dark px-3.5 py-3">
+                <TextInput
+                  className="flex-1 text-base text-ink dark:text-ink-on-dark"
+                  value={volume}
+                  onChangeText={setVolume}
+                  keyboardType="decimal-pad"
+                  placeholder="0.0"
+                  placeholderTextColor="#A8A49D"
+                  accessibilityLabel={`Volume in ${getVolumeLabel(volumeUnit)}`}
+                />
+                <Text className="text-sm text-ink-muted dark:text-ink-muted-on-dark ml-2">
+                  {getVolumeLabel(volumeUnit)}
+                </Text>
+              </View>
+            </View>
+
+            <View className="flex-row gap-3 mb-4">
+              <View className="flex-1">
+                <Text className="text-xs text-ink-muted dark:text-ink-muted-on-dark mb-1.5 font-semibold">
+                  Price / {getVolumeLabel(volumeUnit)} *
+                </Text>
+                <View className="flex-row items-center bg-card dark:bg-card-dark rounded-xl border border-divider dark:border-divider-dark px-3.5 py-3">
+                  <Text className="text-sm text-ink-muted dark:text-ink-muted-on-dark mr-1">$</Text>
+                  <TextInput
+                    className="flex-1 text-base text-ink dark:text-ink-on-dark"
+                    value={pricePerUnit}
+                    onChangeText={setPricePerUnit}
+                    keyboardType="decimal-pad"
+                    placeholder="0.00"
+                    placeholderTextColor="#A8A49D"
+                    accessibilityLabel={`Price per ${getVolumeLabel(volumeUnit)}`}
+                  />
+                </View>
+              </View>
+
+              <View className="flex-1">
+                <Text className="text-xs text-ink-muted dark:text-ink-muted-on-dark mb-1.5 font-semibold">
+                  Discount / {getVolumeLabel(volumeUnit)}
+                </Text>
+                <View className="flex-row items-center bg-card dark:bg-card-dark rounded-xl border border-divider dark:border-divider-dark px-3.5 py-3">
+                  <Text className="text-sm text-ink-muted dark:text-ink-muted-on-dark mr-1">$</Text>
+                  <TextInput
+                    className="flex-1 text-base text-ink dark:text-ink-on-dark"
+                    value={discountPerUnit}
+                    onChangeText={setDiscountPerUnit}
+                    keyboardType="decimal-pad"
+                    placeholder="0.00"
+                    placeholderTextColor="#A8A49D"
+                    accessibilityLabel={`Discount per ${getVolumeLabel(volumeUnit)}`}
+                  />
+                </View>
+              </View>
+            </View>
+
+            <View className="mb-4 bg-card dark:bg-card-dark rounded-xl border border-divider dark:border-divider-dark px-4 py-3">
+              <Text className="text-xs text-ink-muted dark:text-ink-muted-on-dark mb-0.5 font-semibold">
+                Total Cost
+              </Text>
+              <Text className="text-xl font-bold text-ink dark:text-ink-on-dark" style={{ fontVariant: ['tabular-nums'] }}>
+                {computedCost != null ? `$${computedCost.toFixed(2)}` : '$0.00'}
+              </Text>
+            </View>
+
+            <View className="flex-row items-center justify-between mb-4 bg-card dark:bg-card-dark rounded-xl border border-divider dark:border-divider-dark px-3.5 py-3">
+              <View className="flex-1 mr-3">
+                <Text className="text-base text-ink dark:text-ink-on-dark">Partial fill</Text>
+                <Text className="text-xs text-ink-muted dark:text-ink-muted-on-dark mt-0.5">
+                  Excluded from efficiency calculations
+                </Text>
+              </View>
+              <Switch
+                value={isPartialFill}
+                onValueChange={setIsPartialFill}
+                trackColor={{ false: '#E2E0DB', true: '#93C5FD' }}
+                thumbColor={isPartialFill ? '#3B82F6' : '#FEFDFB'}
+                accessibilityLabel="This is a partial fill"
               />
-              <Text className="text-sm text-gray-400 dark:text-gray-500 ml-2">
-                {getVolumeLabel(volumeUnit)}
-              </Text>
             </View>
           </View>
 
-          <View className="flex-row gap-3 mb-4">
-            <View className="flex-1">
-              <Text className="text-xs text-gray-500 dark:text-gray-400 mb-1.5 font-semibold">
-                Price / {getVolumeLabel(volumeUnit)} *
-              </Text>
-              <View className="flex-row items-center bg-surface dark:bg-surface-dark rounded-xl border border-gray-200 dark:border-gray-700 px-3.5 py-3">
-                <Text className="text-sm text-gray-400 mr-1">$</Text>
-                <TextInput
-                  className="flex-1 text-base text-gray-900 dark:text-gray-100"
-                  value={pricePerUnit}
-                  onChangeText={setPricePerUnit}
-                  keyboardType="decimal-pad"
-                  placeholder="0.00"
-                  placeholderTextColor="#9CA3AF"
-                  accessibilityLabel={`Price per ${getVolumeLabel(volumeUnit)}`}
-                />
-              </View>
-            </View>
-
-            <View className="flex-1">
-              <Text className="text-xs text-gray-500 dark:text-gray-400 mb-1.5 font-semibold">
-                Discount / {getVolumeLabel(volumeUnit)}
-              </Text>
-              <View className="flex-row items-center bg-surface dark:bg-surface-dark rounded-xl border border-gray-200 dark:border-gray-700 px-3.5 py-3">
-                <Text className="text-sm text-gray-400 mr-1">$</Text>
-                <TextInput
-                  className="flex-1 text-base text-gray-900 dark:text-gray-100"
-                  value={discountPerUnit}
-                  onChangeText={setDiscountPerUnit}
-                  keyboardType="decimal-pad"
-                  placeholder="0.00"
-                  placeholderTextColor="#9CA3AF"
-                  accessibilityLabel={`Discount per ${getVolumeLabel(volumeUnit)}`}
-                />
-              </View>
-            </View>
-          </View>
-
-          {/* Computed total cost */}
-          <View className="mb-4 bg-primary-light dark:bg-primary-dark rounded-xl px-4 py-3">
-            <Text className="text-xs text-primary dark:text-blue-300 mb-0.5 font-semibold">
-              Total Cost
+          {/* Context: location, notes, photos */}
+          <View className="mt-2">
+            <Text className="text-xs text-ink-muted dark:text-ink-muted-on-dark font-semibold uppercase tracking-wider mb-3">
+              Details
             </Text>
-            <Text className="text-xl font-bold text-primary dark:text-blue-200">
-              {computedCost != null ? `$${computedCost.toFixed(2)}` : '$0.00'}
-            </Text>
-          </View>
 
-          {/* Partial fill toggle */}
-          <View className="flex-row items-center justify-between mb-4 bg-surface dark:bg-surface-dark rounded-xl px-3.5 py-3 border border-gray-200 dark:border-gray-700">
-            <View className="flex-1 mr-3">
-              <Text className="text-base text-gray-900 dark:text-gray-100">Partial fill</Text>
-              <Text className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                Excluded from efficiency calculations
-              </Text>
+            <PlaceAutocomplete
+              value={placeId}
+              onChange={setPlaceId}
+              placeType="gas_station"
+            />
+
+            <View className="mb-4">
+              <View className="flex-row justify-between mb-1.5">
+                <Text className="text-xs text-ink-muted dark:text-ink-muted-on-dark font-semibold">Notes</Text>
+                <Text className="text-xs text-ink-faint dark:text-ink-faint-on-dark">{notes.length}/500</Text>
+              </View>
+              <TextInput
+                className="bg-card dark:bg-card-dark rounded-xl border border-divider dark:border-divider-dark px-3.5 py-3 text-base text-ink dark:text-ink-on-dark"
+                value={notes}
+                onChangeText={(t) => setNotes(t.slice(0, 500))}
+                multiline
+                numberOfLines={3}
+                textAlignVertical="top"
+                placeholder="Optional notes..."
+                placeholderTextColor="#A8A49D"
+                style={{ minHeight: 80 }}
+                accessibilityLabel="Notes"
+              />
             </View>
-            <Switch
-              value={isPartialFill}
-              onValueChange={setIsPartialFill}
-              trackColor={{ false: '#d1d5db', true: '#93C5FD' }}
-              thumbColor={isPartialFill ? '#3B82F6' : '#f4f3f4'}
-              accessibilityLabel="This is a partial fill"
+
+            <EventPhotos
+              eventId={isEditing && eventId ? eventId : null}
+              photos={photos}
+              onPhotosChange={setPhotos}
             />
           </View>
-
-          <PlaceAutocomplete
-            value={placeId}
-            onChange={setPlaceId}
-            placeType="gas_station"
-          />
-
-          {/* Notes */}
-          <View className="mb-4">
-            <View className="flex-row justify-between mb-1.5">
-              <Text className="text-xs text-gray-500 dark:text-gray-400 font-semibold">Notes</Text>
-              <Text className="text-xs text-gray-400">{notes.length}/500</Text>
-            </View>
-            <TextInput
-              className="bg-surface dark:bg-surface-dark rounded-xl border border-gray-200 dark:border-gray-700 px-3.5 py-3 text-base text-gray-900 dark:text-gray-100"
-              value={notes}
-              onChangeText={(t) => setNotes(t.slice(0, 500))}
-              multiline
-              numberOfLines={3}
-              textAlignVertical="top"
-              placeholder="Optional notes..."
-              placeholderTextColor="#9CA3AF"
-              style={{ minHeight: 80 }}
-              accessibilityLabel="Notes"
-            />
-          </View>
-
-          <EventPhotos
-            eventId={isEditing && eventId ? eventId : null}
-            photos={photos}
-            onPhotosChange={setPhotos}
-          />
 
           {isEditing && (
             <Pressable
               onPress={handleDelete}
+              style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
               className="mb-8 py-3 rounded-xl border border-destructive items-center"
               accessibilityLabel="Delete event"
               accessibilityRole="button"
@@ -335,8 +348,6 @@ export default function FuelEventModal() {
               <Text className="text-destructive font-semibold text-base">Delete Event</Text>
             </Pressable>
           )}
-
-          <View className="h-8" />
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>

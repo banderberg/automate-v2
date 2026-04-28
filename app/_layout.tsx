@@ -91,8 +91,7 @@ function RootNavigator() {
   useEffect(() => {
     if (!hasCompletedOnboarding && vehicleCount === 0) {
       const inOnboarding = segments[0] === 'onboarding';
-      const inModals = segments[0] === '(modals)';
-      if (!inOnboarding && !inModals) {
+      if (!inOnboarding) {
         router.replace('/onboarding');
       }
     } else if (hasCompletedOnboarding && segments[0] === 'onboarding') {

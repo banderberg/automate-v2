@@ -156,7 +156,7 @@ export default function ExpenseEventModal() {
   }, [eventId, deleteEvent, router]);
 
   return (
-    <SafeAreaView className="flex-1 bg-white dark:bg-gray-900" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-surface dark:bg-surface-dark" edges={['top']}>
       <ModalHeader
         title={title}
         onCancel={() => router.back()}
@@ -167,7 +167,7 @@ export default function ExpenseEventModal() {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         className="flex-1"
       >
-        <ScrollView className="flex-1 px-4 pt-4" keyboardShouldPersistTaps="handled">
+        <ScrollView className="flex-1 px-4 pt-4" contentContainerStyle={{ paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
           <DateField value={date} onChange={setDate} />
 
           <OdometerField
@@ -193,18 +193,18 @@ export default function ExpenseEventModal() {
           />
 
           <View className="mb-4">
-            <Text className="text-xs text-gray-500 dark:text-gray-400 mb-1.5 font-semibold">
+            <Text className="text-xs text-ink-muted dark:text-ink-muted-on-dark mb-1.5 font-semibold">
               Total Cost *
             </Text>
-            <View className="flex-row items-center bg-surface dark:bg-surface-dark rounded-xl border border-gray-200 dark:border-gray-700 px-3.5 py-3">
-              <Text className="text-sm text-gray-400 mr-1">$</Text>
+            <View className="flex-row items-center bg-card dark:bg-card-dark rounded-xl border border-divider dark:border-divider-dark px-3.5 py-3">
+              <Text className="text-sm text-ink-muted dark:text-ink-muted-on-dark mr-1">$</Text>
               <TextInput
-                className="flex-1 text-base text-gray-900 dark:text-gray-100"
+                className="flex-1 text-base text-ink dark:text-ink-on-dark"
                 value={cost}
                 onChangeText={setCost}
                 keyboardType="decimal-pad"
                 placeholder="0.00"
-                placeholderTextColor="#9CA3AF"
+                placeholderTextColor="#A8A49D"
                 accessibilityLabel="Total cost"
               />
             </View>
@@ -212,18 +212,18 @@ export default function ExpenseEventModal() {
 
           <View className="mb-4">
             <View className="flex-row justify-between mb-1.5">
-              <Text className="text-xs text-gray-500 dark:text-gray-400 font-semibold">Notes</Text>
-              <Text className="text-xs text-gray-400">{notes.length}/500</Text>
+              <Text className="text-xs text-ink-muted dark:text-ink-muted-on-dark font-semibold">Notes</Text>
+              <Text className="text-xs text-ink-faint dark:text-ink-faint-on-dark">{notes.length}/500</Text>
             </View>
             <TextInput
-              className="bg-surface dark:bg-surface-dark rounded-xl border border-gray-200 dark:border-gray-700 px-3.5 py-3 text-base text-gray-900 dark:text-gray-100"
+              className="bg-card dark:bg-card-dark rounded-xl border border-divider dark:border-divider-dark px-3.5 py-3 text-base text-ink dark:text-ink-on-dark"
               value={notes}
               onChangeText={(t) => setNotes(t.slice(0, 500))}
               multiline
               numberOfLines={3}
               textAlignVertical="top"
               placeholder="Optional notes..."
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor="#A8A49D"
               style={{ minHeight: 80 }}
               accessibilityLabel="Notes"
             />
@@ -238,6 +238,7 @@ export default function ExpenseEventModal() {
           {isEditing && (
             <Pressable
               onPress={handleDelete}
+              style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
               className="mb-8 py-3 rounded-xl border border-destructive items-center"
               accessibilityLabel="Delete event"
               accessibilityRole="button"
@@ -245,8 +246,6 @@ export default function ExpenseEventModal() {
               <Text className="text-destructive font-semibold text-base">Delete Event</Text>
             </Pressable>
           )}
-
-          <View className="h-8" />
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>

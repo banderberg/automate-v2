@@ -7,7 +7,10 @@ import * as Sharing from 'expo-sharing';
 import * as DocumentPicker from 'expo-document-picker';
 import { useSettingsStore } from '@/src/stores/settingsStore';
 import { useVehicleStore } from '@/src/stores/vehicleStore';
+import { useEventStore } from '@/src/stores/eventStore';
+import { useReminderStore } from '@/src/stores/reminderStore';
 import { createBackup, getBackupInfo, restoreBackup } from '@/src/services/backup';
+import { loadTestData } from '@/src/db/testData';
 
 const CURRENCIES = [
   { value: 'USD', label: 'USD ($)' },
@@ -138,6 +141,7 @@ export default function SettingsScreen() {
 
   const [isBackingUp, setIsBackingUp] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
+  const [isLoadingTestData, setIsLoadingTestData] = useState(false);
 
   const handleBackup = useCallback(async () => {
     if (isBackingUp) return;
@@ -209,6 +213,45 @@ export default function SettingsScreen() {
       setIsRestoring(false);
     }
   }, [isRestoring]);
+
+  const handleLoadTestData = useCallback(() => {
+    Alert.alert(
+      'Load Test Data?',
+      'This will replace all current vehicles, events, and reminders with 2 years of sample data. This cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Load Test Data',
+          style: 'destructive',
+          onPress: async () => {
+            setIsLoadingTestData(true);
+            try {
+              const result = await loadTestData();
+              const vehicleStore = useVehicleStore.getState();
+              await vehicleStore.initialize();
+              const active = useVehicleStore.getState().activeVehicle;
+              if (active) {
+                await Promise.all([
+                  useEventStore.getState().loadForVehicle(active.id),
+                  useReminderStore.getState().loadForVehicle(active.id),
+                ]);
+              }
+              await useSettingsStore.getState().initialize();
+              Alert.alert(
+                'Test Data Loaded',
+                `Created ${result.vehicles} vehicles, ${result.events} events, and ${result.reminders} reminders spanning 2 years.`,
+              );
+            } catch (e) {
+              const message = e instanceof Error ? e.message : 'An unexpected error occurred.';
+              Alert.alert('Failed', message);
+            } finally {
+              setIsLoadingTestData(false);
+            }
+          },
+        },
+      ],
+    );
+  }, []);
 
   const [pickerConfig, setPickerConfig] = useState<{
     visible: boolean;
@@ -381,6 +424,26 @@ export default function SettingsScreen() {
         <View className="border-t border-divider-subtle dark:border-divider-dark">
           <RowItem label="AutoMate v2.0" />
         </View>
+
+        {__DEV__ && (
+          <>
+            <SectionHeader title="Developer" />
+            <View className="border-t border-divider-subtle dark:border-divider-dark">
+              <View>
+                <RowItem
+                  label="Load Test Data"
+                  onPress={handleLoadTestData}
+                  accessibilityLabel="Load test data with 2 years of sample events"
+                />
+                {isLoadingTestData && (
+                  <View className="absolute right-12 top-0 bottom-0 justify-center">
+                    <ActivityIndicator size="small" />
+                  </View>
+                )}
+              </View>
+            </View>
+          </>
+        )}
       </ScrollView>
 
       <PickerModal

@@ -19,7 +19,7 @@ If you ever lose the upload key, you can reset it through `eas credentials` + Go
 
 ---
 
-## Part 1: EAS Build Setup
+## Part 1: EAS Build Setup ✅
 
 ### 1.1 Install EAS CLI
 
@@ -57,7 +57,7 @@ eas build:list
 
 ---
 
-## Part 2: Google Play Console Registration
+## Part 2: Google Play Console Registration ✅
 
 ### 2.1 Create a developer account
 
@@ -351,13 +351,33 @@ To change the target track, update the `"track"` value in `eas.json`:
 | Item | Cost |
 |------|------|
 | Google Play Developer account | **$25 one-time** |
-| EAS Build (free tier) | **$0/month** — 15 Android builds/month, 45-min timeout |
-| EAS Build (starter tier) | **$19/month** — if you exceed 15 builds/month |
-| EAS Submit | **Free** |
+| EAS Build (free tier) | **$0/month** — 30 builds/month, low-priority queue |
+| EAS Submit | **Free** on all tiers |
+| EAS Update (OTA hotfixes) | **Free** up to 1,000 monthly active users — **optional, not required** |
 | Google Play hosting | **Free** |
 | Privacy policy hosting | **Free** (GitHub Pages, Netlify, etc.) |
 
-**Total cost for a solo developer: $25 one-time.** The EAS free tier is plenty unless you're doing CI/CD.
+**Total cost for a solo developer: $25 one-time.**
+
+### Keeping costs at $0/month
+
+- **Skip EAS Update entirely.** Push updates through the Play Store instead of OTA. This avoids the 1,000 MAU limit that would eventually force a $99/month upgrade.
+- **Build budget:** 1 build per release = ~4/month if releasing weekly. You won't hit the 30-build limit unless you're in a heavy dev sprint.
+- **If you hit the build limit**, either wait for the monthly reset or build locally for free:
+  ```bash
+  npx expo run:android --variant release
+  ```
+  This runs the build on your own machine — no EAS needed. You manage the Android SDK and signing yourself, but it works.
+
+### When you'd need to upgrade
+
+The Production tier ($99/month) gives 1,000 builds/month and 50,000 EAS Update MAU. You'd only need this if:
+- You're running CI/CD with builds on every commit
+- You adopt EAS Update and cross 1,000 active users receiving OTA updates
+
+Neither applies at launch. The free tier should carry you well past your first few thousand Play Store users.
+
+Check https://expo.dev/pricing for current numbers — Expo adjusts tiers periodically.
 
 ---
 
@@ -380,16 +400,16 @@ The 14-day closed testing requirement is the biggest time gate. Start recruiting
 ## Master Checklist
 
 ### Preparation
-- [ ] Host privacy policy at a public URL
+- [x] Host privacy policy at a public URL — https://banderberg.github.io/arctoslabs/privacy.html
 - [ ] Create app icon (512x512 PNG, no transparency)
 - [ ] Create feature graphic (1024x500)
 - [ ] Capture and frame 4–8 phone screenshots
-- [ ] Build production AAB: `eas build --platform android --profile production`
+- [x] Build production AAB: `eas build --platform android --profile production`
 - [ ] Test preview APK on a real device
 
 ### Google Play Setup
-- [ ] Register developer account ($25)
-- [ ] Complete identity verification (2–7 day wait)
+- [x] Register developer account ($25)
+- [x] Complete identity verification
 - [ ] Create the app in Play Console
 - [ ] Fill in store listing (name, descriptions, graphics)
 - [ ] Complete content rating questionnaire

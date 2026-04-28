@@ -1,31 +1,24 @@
 # AutoMate v2 — Post-MVP Implementation Plan
 
 **Date:** April 26, 2026
-**Context:** The MVP (Phases 1–5) is complete. This plan covers features needed for a competitive Google Play launch and the first post-launch updates. Each phase is designed to be executed by an AI coding agent in a single session.
+**Last updated:** April 28, 2026
+**Context:** The MVP (Phases 1–5) is complete. Phases 6–10 are also complete. This document preserves the specs for reference and lists the post-launch roadmap (Phases 11+).
 
 **Reference:** See `docs/COMPETITIVE-ANALYSIS.md` for the competitive research behind these priorities.
 
 ---
 
-## How to Use This Plan
+## Completed Phases
 
-Each phase below is a self-contained unit of work for one AI agent session. Phases are ordered by priority — complete them sequentially. Each phase includes:
-
-- **Goal** — what the user gets when this phase ships
-- **Context for the agent** — what already exists, what to read first
-- **Deliverables** — concrete, testable outputs
-- **Acceptance criteria** — how to verify the work is done
-- **Files to create/modify** — explicit list so the agent doesn't have to guess
-
-Before starting a phase, the agent should read: `CLAUDE.md`, `docs/PRD.md`, `DESIGN.md`, and the relevant existing code.
+All post-MVP phases (6–10) have been implemented. The specs below are retained for reference.
 
 ---
 
-## Phase 6: Local Backup & Restore
+## Phase 6: Local Backup & Restore ✓
 
+**Status: Complete**
 **Priority:** Critical — launch blocker
 **Estimated scope:** Small (single session)
-**Model recommendation:** Sonnet 4.6, effort high
 
 ### Goal
 Users can export the entire database to a backup file and restore from it. This is manual (not cloud sync) — the user taps "Backup" and gets a file they can save to Google Drive, Files, email, etc. via the system share sheet. They can later restore from that file.
@@ -63,11 +56,11 @@ Users can export the entire database to a backup file and restore from it. This 
 
 ---
 
-## Phase 7: Receipt Photo Attachment on Events
+## Phase 7: Receipt Photo Attachment on Events ✓
 
+**Status: Complete**
 **Priority:** High — first post-launch update
 **Estimated scope:** Medium (single session)
-**Model recommendation:** Opus 4.6, effort high
 
 ### Goal
 Users can attach one or more photos (receipts, invoices) to any event type (fuel, service, expense). Photos are viewable when editing an event and persist across app restarts.
@@ -133,11 +126,11 @@ Users can attach one or more photos (receipts, invoices) to any event type (fuel
 
 ---
 
-## Phase 8: Data Import from Competitors
+## Phase 8: Data Import from Competitors ✓
 
+**Status: Complete**
 **Priority:** High — enables user acquisition from competitor apps
 **Estimated scope:** Medium (single session)
-**Model recommendation:** Opus 4.6, effort high
 
 ### Goal
 Users can import their data from Fuelio and Fuelly CSV exports. This lowers the switching barrier from the two most popular competitors with exportable data.
@@ -188,11 +181,11 @@ Users can import their data from Fuelio and Fuelly CSV exports. This lowers the 
 
 ---
 
-## Phase 9: PDF Service History Export
+## Phase 9: PDF Service History Export ✓
 
+**Status: Complete**
 **Priority:** Medium — differentiator for vehicle resale
 **Estimated scope:** Small (single session)
-**Model recommendation:** Sonnet 4.6, effort high
 
 ### Goal
 Users can generate a formatted PDF document of a vehicle's complete service history. Useful when selling a vehicle or filing insurance claims.
@@ -237,11 +230,11 @@ Users can generate a formatted PDF document of a vehicle's complete service hist
 
 ---
 
-## Phase 10: Play Store Preparation
+## Phase 10: Play Store Preparation ✓
 
+**Status: Complete**
 **Priority:** Critical — required for launch
 **Estimated scope:** Small (single session)
-**Model recommendation:** Sonnet 4.6, effort high
 
 ### Goal
 Prepare all assets and configuration needed to submit to Google Play Store.
@@ -309,33 +302,28 @@ Prepare all assets and configuration needed to submit to Google Play Store.
 
 ---
 
-## Phase Summary & Ordering
+## Phase Summary
 
-| Phase | Name | Priority | Scope | Depends On |
-|-------|------|----------|-------|------------|
-| 6 | Local Backup & Restore | Critical | Small | — |
-| 7 | Receipt Photo Attachment | High | Medium | — |
-| 8 | Data Import from Competitors | High | Medium | Phase 6 (expo-document-picker) |
-| 9 | PDF Service History Export | Medium | Small | — |
-| 10 | Play Store Preparation | Critical | Small | — |
-
-**Recommended execution order:** 6 → 10 → 7 → 8 → 9
-
-Rationale: Phase 6 (backup) and Phase 10 (Play Store prep) are launch blockers — do them first. Phase 7 (photos) and 8 (import) are strong differentiators for the launch listing. Phase 9 (PDF) can ship as a v1.1 update.
-
-**Phases 6 and 10 are independent and can be run in parallel** if two agent sessions are available.
+| Phase | Name | Status |
+|-------|------|--------|
+| 6 | Local Backup & Restore | ✓ Complete |
+| 7 | Receipt Photo Attachment | ✓ Complete |
+| 8 | Data Import from Competitors | ✓ Complete |
+| 9 | PDF Service History Export | ✓ Complete |
+| 10 | Play Store Preparation | ✓ Complete |
 
 ---
 
 ## Future Phases (Post-Launch Roadmap)
 
-These are documented for planning but not detailed here. Each would be its own plan document when the time comes.
+These are not yet implemented. Each would get its own detailed plan document when the time comes.
 
 | Phase | Feature | Notes |
 |-------|---------|-------|
 | 11 | Cloud Sync (Google Drive) | Real-time or scheduled automatic backup. Much more complex than Phase 6. |
 | 12 | Home Screen Widgets | Quick-add fill-up from home screen. Expo has widget support via expo-widgets. |
 | 13 | Receipt OCR | Camera scan → auto-populate fuel event fields. Requires ML integration. |
-| 14 | Trip Logging | GPS-based trip recording for mileage reimbursement. |
-| 15 | Recurring Expenses | Auto-generate expense events on a schedule (insurance, loan payments). |
-| 16 | Maintenance Schedule Templates | Import manufacturer service intervals by make/model/year. |
+| 14 | VIN Scanning | Scan a VIN barcode with the camera to auto-populate vehicle details via NHTSA API. Eliminates manual entry of year/make/model during vehicle creation. Uses expo-camera or expo-barcode-scanner. |
+| 15 | Trip Logging | GPS-based trip recording for mileage reimbursement. |
+| 16 | Recurring Expenses | Auto-generate expense events on a schedule (insurance, loan payments). |
+| 17 | Maintenance Schedule Templates | Import manufacturer service intervals by make/model/year. |
