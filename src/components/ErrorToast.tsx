@@ -86,7 +86,7 @@ export function ErrorToast() {
   if (!visible) return null;
 
   const isSuccess = kind === 'success';
-  const bgClass = isSuccess ? 'bg-success' : 'bg-destructive';
+  const bgColor = isSuccess ? '#10B981' : '#EF4444';
   const icon = isSuccess ? 'checkmark-circle' : 'alert-circle';
 
   return (
@@ -104,8 +104,13 @@ export function ErrorToast() {
             if (isSuccess) clearToast();
           });
         }}
-        className={`flex-row items-start ${bgClass} rounded-xl px-4 py-3`}
         style={{
+          flexDirection: 'row',
+          alignItems: 'flex-start',
+          backgroundColor: bgColor,
+          borderRadius: 12,
+          paddingHorizontal: 16,
+          paddingVertical: 12,
           shadowColor: '#000',
           shadowOffset: { width: 0, height: 4 },
           shadowOpacity: isDark ? 0 : 0.15,
@@ -116,7 +121,7 @@ export function ErrorToast() {
         accessibilityRole="alert"
       >
         <Ionicons name={icon} size={18} color="white" style={{ marginTop: 1 }} />
-        <Text className="text-sm text-white ml-2 font-medium" numberOfLines={4} style={{ flexShrink: 1 }}>{message}</Text>
+        <Text style={{ fontSize: 14, color: 'white', marginLeft: 8, fontWeight: '500', flexShrink: 1 }} numberOfLines={4}>{message}</Text>
       </Pressable>
     </Animated.View>
   );

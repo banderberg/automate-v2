@@ -83,7 +83,7 @@ function DocumentRow({
         ) : (
           <Image
             source={{ uri: doc.filePath }}
-            className="w-12 h-12"
+            style={{ width: 48, height: 48 }}
             resizeMode="cover"
           />
         )}
