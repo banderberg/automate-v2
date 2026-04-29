@@ -13,9 +13,9 @@ interface EventRowProps {
 }
 
 const TYPE_CONFIG = {
-  fuel: { color: '#0D9488', bgColor: '#CCFBF1', icon: 'water' as const, label: 'Fuel event' },
-  service: { color: '#F97316', bgColor: '#FFF7ED', icon: 'construct' as const, label: 'Service event' },
-  expense: { color: '#10B981', bgColor: '#D1FAE5', icon: 'receipt-outline' as const, label: 'Expense event' },
+  fuel: { color: '#1A9A8F', bgColor: '#D0F5EE', icon: 'water' as const, label: 'Fuel event' },
+  service: { color: '#E8772B', bgColor: '#FFF3E6', icon: 'construct' as const, label: 'Service event' },
+  expense: { color: '#2EAD76', bgColor: '#D5F2E3', icon: 'receipt-outline' as const, label: 'Expense event' },
 };
 
 const tabularNums: TextStyle = { fontVariant: ['tabular-nums'] };

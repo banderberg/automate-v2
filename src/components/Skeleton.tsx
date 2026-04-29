@@ -89,12 +89,14 @@ export function DashboardSkeleton() {
 }
 
 export function RemindersSkeleton() {
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === 'dark';
   return (
     <View style={{ padding: 16, gap: 12 }}>
       {[1, 2, 3].map((i) => (
         <View
           key={i}
-          style={{ borderRadius: 20, padding: 16, borderWidth: 1, borderColor: '#E2E0DB' }}
+          style={{ borderRadius: 20, padding: 16, borderWidth: 1, borderColor: isDark ? '#2A2926' : '#E2E0DB' }}
         >
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 }}>
             <SkeletonBone width={140} height={16} borderRadius={4} />

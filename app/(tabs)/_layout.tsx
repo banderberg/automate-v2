@@ -5,7 +5,7 @@ import { useColorScheme } from 'nativewind';
 export default function TabLayout() {
   const { colorScheme } = useColorScheme();
   const activeTint = colorScheme === 'dark' ? '#6A9FD8' : '#4272C4'; // primary-tint / primary
-  const inactiveTint = colorScheme === 'dark' ? '#78756F' : '#A8A49D';
+  const inactiveTint = colorScheme === 'dark' ? '#8A8680' : '#706C67';
   const tabBarBg = colorScheme === 'dark' ? '#0E0E0C' : '#F5F4F1';
 
   return (

@@ -45,8 +45,8 @@ export function OdometerField({
           {label}{required ? ' *' : ''}
         </Text>
         {tag != null && (
-          <View className="ml-2 px-1.5 py-0.5 rounded" style={{ backgroundColor: '#CCFBF1' }}>
-            <Text style={{ fontSize: 10, fontWeight: '600', color: '#0D9488', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+          <View className="ml-2 px-1.5 py-0.5 rounded" style={{ backgroundColor: '#D0F5EE' }}>
+            <Text style={{ fontSize: 10, fontWeight: '600', color: '#1A9A8F', textTransform: 'uppercase', letterSpacing: 0.5 }}>
               {tag}
             </Text>
           </View>

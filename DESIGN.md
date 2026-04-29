@@ -22,7 +22,7 @@ No pure grays. No `#000`. No `#fff`. Every neutral is tinted warm.
 | `divider-subtle` | `#F0EFEC` | `#2A2926` | Internal row dividers, inset separators |
 | `ink` | `#1C1B18` | `#F5F4F1` | Primary text, headings |
 | `ink-secondary` | `#5C5A55` | `#C5C2BC` | Secondary text, descriptions |
-| `ink-muted` | `#A8A49D` | `#78756F` | Labels, captions, placeholders |
+| `ink-muted` | `#706C67` | `#8A8680` | Labels, captions, placeholders |
 | `ink-faint` | `#78756F` | `#54524D` | Disabled text, hints |
 
 ### Accent Colors
@@ -31,12 +31,12 @@ No pure grays. No `#000`. No `#fff`. Every neutral is tinted warm.
 |-------|-------|-------|
 | `primary` | `#4272C4` | Buttons, links, active tab, FAB, save actions |
 | `primary-light` | `#DBE6F5` | Primary tint backgrounds (add vehicle circle) |
-| `fuel` | `#0D9488` | Fuel events, efficiency chart line |
-| `fuel-light` | `#CCFBF1` | Fuel event icon background |
-| `service` | `#F97316` | Service events |
-| `service-light` | `#FFF7ED` | Service event icon background |
-| `expense` | `#10B981` | Expense events |
-| `expense-light` | `#D1FAE5` | Expense event icon background |
+| `fuel` | `#1A9A8F` | Fuel events, efficiency chart line |
+| `fuel-light` | `#D0F5EE` | Fuel event icon background |
+| `service` | `#E8772B` | Service events |
+| `service-light` | `#FFF3E6` | Service event icon background |
+| `expense` | `#2EAD76` | Expense events |
+| `expense-light` | `#D5F2E3` | Expense event icon background |
 | `destructive` | `#EF4444` | Delete actions, overdue reminders |
 | `destructive-light` | `#FEE2E2` | Overdue badge background |
 | `warning` | `#F59E0B` | Due-soon reminders |
@@ -171,7 +171,7 @@ No background, no border. `text-primary font-semibold` or `text-primary font-med
 - Border radius: 12px (`rounded-xl`)
 - Padding: `px-3.5 py-3`
 - Label above: `text-xs ink-muted font-semibold`, `mb-1.5`
-- Placeholder: `#A8A49D`
+- Placeholder: `#706C67`
 - Suffix units (gal, mi): `text-sm text-ink-muted` right-aligned inside field
 - Prefix ($): `text-sm text-ink-muted mr-1` left-aligned inside field
 
@@ -187,7 +187,7 @@ Track: `false: isDark ? '#2A2926' : '#E2E0DB', true: isDark ? '#2E5A9E' : '#A7C4
 
 ## 6. Charts
 
-- **Line chart** (fuel efficiency): 2.5px stroke, teal `#0D9488`, curved. Area fill at 10% opacity gradient. Data points: 4px radius, teal fill. Partial fills: hollow dashed circle with card-colored center.
+- **Line chart** (fuel efficiency): 2.5px stroke, teal `#1A9A8F`, curved. Area fill at 10% opacity gradient. Data points: 4px radius, teal fill. Partial fills: hollow dashed circle with card-colored center.
 - **Donut chart** (spending): `innerRadius: 38, radius: 58`. Center: total in weight 800, 16px. Inner circle color matches card background.
 - **Tooltip**: `#1C1B18` background, 8px radius, white text 12px weight 600, `tabular-nums`.
 - **Axis text**: `ink-muted`, 9-10px.

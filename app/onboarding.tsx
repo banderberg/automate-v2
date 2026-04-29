@@ -13,6 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import * as DocumentPicker from 'expo-document-picker';
+import { Ionicons } from '@expo/vector-icons';
 import { useVehicleStore } from '@/src/stores/vehicleStore';
 import { useSettingsStore } from '@/src/stores/settingsStore';
 import { ConfirmDialog } from '@/src/components/ConfirmDialog';
@@ -40,6 +41,7 @@ export default function OnboardingScreen() {
   );
   const [saving, setSaving] = useState(false);
   const [restoring, setRestoring] = useState(false);
+  const [completed, setCompleted] = useState(false);
   const navigatingRef = useRef(false);
   const { showDialog, dialogProps } = useDialog();
 
@@ -70,8 +72,8 @@ export default function OnboardingScreen() {
         },
         true
       );
-      await updateSetting('hasCompletedOnboarding', true);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setCompleted(true);
     } catch (err) {
       const msg = err instanceof Error ? err.message : '';
       showDialog("Couldn't Save Vehicle", msg || 'Check your entries and try again. If this keeps happening, try restarting the app.');
@@ -132,6 +134,46 @@ export default function OnboardingScreen() {
       setRestoring(false);
     }
   }, [restoring]);
+
+  const handleContinue = useCallback(async () => {
+    await updateSetting('hasCompletedOnboarding', true);
+  }, [updateSetting]);
+
+  if (completed) {
+    return (
+      <SafeAreaView className="flex-1 bg-surface dark:bg-surface-dark items-center justify-center px-8">
+        <View
+          style={{ width: 72, height: 72, borderRadius: 36, backgroundColor: '#D5F2E3' }}
+          className="items-center justify-center mb-6"
+        >
+          <Ionicons name="checkmark" size={36} color="#2EAD76" />
+        </View>
+        <Text className="text-2xl font-bold text-ink dark:text-ink-on-dark text-center mb-2">
+          You're all set
+        </Text>
+        <Text className="text-base text-ink-secondary dark:text-ink-secondary-on-dark text-center mb-8 leading-6">
+          Your next fill-up or service visit will start building your dashboard.
+        </Text>
+        <Pressable
+          onPress={handleContinue}
+          style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}
+          className="bg-primary py-4 rounded-2xl w-full items-center mb-3"
+          accessibilityLabel="Log your first event"
+          accessibilityRole="button"
+        >
+          <Text className="text-lg font-semibold text-white">Log Your First Event</Text>
+        </Pressable>
+        <Pressable
+          onPress={handleContinue}
+          className="py-3 items-center"
+          accessibilityLabel="Go to dashboard"
+          accessibilityRole="button"
+        >
+          <Text className="text-sm text-primary font-medium">Explore first</Text>
+        </Pressable>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView className="flex-1 bg-surface dark:bg-surface-dark">

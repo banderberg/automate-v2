@@ -233,7 +233,7 @@ export default function ExpenseEventModal() {
             multiSelect={false}
             label="Category *"
             error={categoryError}
-            accentColor="#10B981"
+            accentColor="#2EAD76"
             onAdd={async (name) => { await addCategory(name); }}
             onUpdate={async (id, name) => { await updateCategory(id, name); }}
             onDelete={async (id) => { await deleteCategory(id); }}

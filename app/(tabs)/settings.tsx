@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { View, Text, Pressable, ScrollView, Modal, FlatList } from 'react-native';
+import { View, Text, Pressable, ScrollView, Modal, FlatList, ActivityIndicator } from 'react-native';
 import { ConfirmDialog } from '@/src/components/ConfirmDialog';
 import { useDialog } from '@/src/hooks/useDialog';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -75,7 +75,7 @@ function RowItem({
           <Text className="text-sm text-ink-muted dark:text-ink-muted-on-dark">{value}</Text>
         )}
         {onPress && (
-          <Ionicons name="chevron-forward" size={16} color="#A8A49D" />
+          <Ionicons name="chevron-forward" size={16} color="#706C67" />
         )}
       </View>
     </Pressable>
@@ -428,18 +428,28 @@ export default function SettingsScreen() {
         {/* Data */}
         <SectionHeader title="Data" />
         <View className="border-t border-divider-subtle dark:border-divider-dark">
-          <RowItem
-            label={isBackingUp ? 'Preparing backup...' : 'Backup Data'}
-            subtitle="Save a copy of all vehicles and events"
-            onPress={isBackingUp ? undefined : handleBackup}
-            accessibilityLabel={isBackingUp ? 'Backup in progress' : 'Backup Data'}
-          />
-          <RowItem
-            label={isRestoring ? 'Restoring...' : 'Restore Data'}
-            subtitle="Replace all current data from a backup file"
-            onPress={isRestoring ? undefined : handleRestore}
-            accessibilityLabel={isRestoring ? 'Restore in progress' : 'Restore Data'}
-          />
+          <View className="flex-row items-center bg-card dark:bg-card-dark border-b border-divider-subtle dark:border-divider-dark">
+            <View className="flex-1">
+              <RowItem
+                label={isBackingUp ? 'Preparing backup...' : 'Backup Data'}
+                subtitle="Save a copy of all vehicles and events"
+                onPress={isBackingUp ? undefined : handleBackup}
+                accessibilityLabel={isBackingUp ? 'Backup in progress' : 'Backup Data'}
+              />
+            </View>
+            {isBackingUp && <ActivityIndicator size="small" color="#4272C4" style={{ marginRight: 16 }} />}
+          </View>
+          <View className="flex-row items-center bg-card dark:bg-card-dark border-b border-divider-subtle dark:border-divider-dark">
+            <View className="flex-1">
+              <RowItem
+                label={isRestoring ? 'Restoring...' : 'Restore Data'}
+                subtitle="Replace all current data from a backup file"
+                onPress={isRestoring ? undefined : handleRestore}
+                accessibilityLabel={isRestoring ? 'Restore in progress' : 'Restore Data'}
+              />
+            </View>
+            {isRestoring && <ActivityIndicator size="small" color="#4272C4" style={{ marginRight: 16 }} />}
+          </View>
           <RowItem
             label="Import Data"
             onPress={() => nav.push('/(modals)/import')}

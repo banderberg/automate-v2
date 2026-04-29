@@ -183,7 +183,7 @@ export function EventPhotos({ eventId, photos, onPhotosChange }: EventPhotosProp
               accessibilityLabel="Close photo preview"
               accessibilityRole="button"
             >
-              <Ionicons name="close" size={28} color="#FFFFFF" />
+              <Ionicons name="close" size={28} color="#F5F4F1" />
             </Pressable>
             <Text className="text-white text-base font-semibold">Photo</Text>
             <View className="w-7" />

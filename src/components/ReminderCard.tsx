@@ -11,7 +11,7 @@ interface ReminderCardProps {
 const STATUS_STYLES = {
   overdue: { badge: '#FEE2E2', text: '#EF4444', bar: '#EF4444' },
   soon: { badge: '#FEF3C7', text: '#92400E', bar: '#F59E0B' },
-  upcoming: { badge: '#D1FAE5', text: '#10B981', bar: '#10B981' },
+  upcoming: { badge: '#D5F2E3', text: '#2EAD76', bar: '#2EAD76' },
 };
 
 function formatDate(dateStr: string): string {

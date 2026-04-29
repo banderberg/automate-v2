@@ -56,7 +56,7 @@ export default function ManageVehiclesModal() {
               {item.nickname}
             </Text>
             {item.isActive && (
-              <View className="w-2 h-2 rounded-full bg-green-500" />
+              <View className="w-2 h-2 rounded-full bg-success" />
             )}
           </View>
           <Text className="text-sm text-ink-muted dark:text-ink-muted-on-dark" numberOfLines={1}>

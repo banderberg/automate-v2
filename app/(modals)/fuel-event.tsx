@@ -36,8 +36,8 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
-const FUEL_TEAL = '#0D9488';
-const FUEL_TEAL_BG = '#CCFBF1';
+const FUEL_TEAL = '#1A9A8F';
+const FUEL_TEAL_BG = '#D0F5EE';
 
 function SmartTag({ label }: { label: string }) {
   return (

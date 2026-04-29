@@ -24,9 +24,9 @@ type FilterType = 'all' | 'fuel' | 'service' | 'expense';
 
 const FILTER_CHIPS: { id: FilterType; label: string; color?: string }[] = [
   { id: 'all', label: 'All' },
-  { id: 'fuel', label: 'Fuel', color: '#0D9488' },
-  { id: 'service', label: 'Service', color: '#F97316' },
-  { id: 'expense', label: 'Expense', color: '#10B981' },
+  { id: 'fuel', label: 'Fuel', color: '#1A9A8F' },
+  { id: 'service', label: 'Service', color: '#E8772B' },
+  { id: 'expense', label: 'Expense', color: '#2EAD76' },
 ];
 
 interface SectionHeader {
@@ -210,7 +210,7 @@ export default function HistoryScreen() {
     (event: VehicleEvent) => {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       const typeLabel = event.type === 'fuel' ? 'fill-up' : event.type;
-      showDialog(`Delete ${typeLabel}?`, 'This cannot be undone.', [
+      showDialog(`Delete ${typeLabel}?`, 'You can undo this for a few seconds after.', [
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Delete',
@@ -245,8 +245,8 @@ export default function HistoryScreen() {
       <SafeAreaView className="flex-1 bg-surface dark:bg-surface-dark" edges={['top']}>
         <EmptyState
           icon={
-            <View style={{ width: 88, height: 88, borderRadius: 44, backgroundColor: '#0D948810', alignItems: 'center', justifyContent: 'center' }}>
-              <Ionicons name="receipt-outline" size={44} color="#0D9488" />
+            <View style={{ width: 88, height: 88, borderRadius: 44, backgroundColor: '#1A9A8F10', alignItems: 'center', justifyContent: 'center' }}>
+              <Ionicons name="receipt-outline" size={44} color="#1A9A8F" />
             </View>
           }
           title="No vehicle yet"
@@ -327,8 +327,8 @@ export default function HistoryScreen() {
           ) : (
             <EmptyState
               icon={
-                <View style={{ width: 88, height: 88, borderRadius: 44, backgroundColor: '#0D948810', alignItems: 'center', justifyContent: 'center' }}>
-                  <Ionicons name="receipt-outline" size={44} color="#0D9488" />
+                <View style={{ width: 88, height: 88, borderRadius: 44, backgroundColor: '#1A9A8F10', alignItems: 'center', justifyContent: 'center' }}>
+                  <Ionicons name="receipt-outline" size={44} color="#1A9A8F" />
                 </View>
               }
               title="Your timeline starts here"

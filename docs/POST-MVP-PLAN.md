@@ -320,10 +320,12 @@ These are not yet implemented. Each would get its own detailed plan document whe
 
 | Phase | Feature | Notes |
 |-------|---------|-------|
-| 11 | Cloud Sync (Google Drive) | Real-time or scheduled automatic backup. Much more complex than Phase 6. |
-| 12 | Home Screen Widgets | Quick-add fill-up from home screen. Expo has widget support via expo-widgets. |
-| 13 | Receipt OCR | Camera scan → auto-populate fuel event fields. Requires ML integration. |
-| 14 | VIN Scanning | Scan a VIN barcode with the camera to auto-populate vehicle details via NHTSA API. Eliminates manual entry of year/make/model during vehicle creation. Uses expo-camera or expo-barcode-scanner. |
-| 15 | Trip Logging | GPS-based trip recording for mileage reimbursement. |
-| 16 | Recurring Expenses | Auto-generate expense events on a schedule (insurance, loan payments). |
-| 17 | Maintenance Schedule Templates | Import manufacturer service intervals by make/model/year. |
+| 11 | Vehicle Document Storage | Store insurance, registration, and other vehicle documents as photos/PDFs with expiration alerts. See `docs/PHASE-11-VEHICLE-DOCUMENTS.md`. |
+| 12 | Full-Fidelity Backup (Zip) | Upgrade backup format from single `.db` file to `.zip` containing database + all on-disk files (event photos, vehicle documents). Solves the current limitation where backup metadata survives restore but files don't. Benefits both event photos (Phase 7) and vehicle documents (Phase 11). |
+| 13 | Cloud Sync (Google Drive) | Real-time or scheduled automatic backup. Much more complex than Phase 6. |
+| 14 | Home Screen Widgets | Quick-add fill-up from home screen. Expo has widget support via expo-widgets. |
+| 15 | Receipt OCR | Camera scan → auto-populate fuel event fields. Requires ML integration. |
+| 16 | VIN Scanning | Scan a VIN barcode with the camera to auto-populate vehicle details via NHTSA API. Eliminates manual entry of year/make/model during vehicle creation. Uses expo-camera or expo-barcode-scanner. |
+| 17 | Trip Logging | GPS-based trip recording for mileage reimbursement. |
+| 18 | Recurring Expenses | Auto-generate expense events on a schedule (insurance, loan payments). |
+| 19 | Maintenance Schedule Templates | Import manufacturer service intervals by make/model/year. |

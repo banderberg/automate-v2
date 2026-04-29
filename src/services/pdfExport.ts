@@ -52,11 +52,11 @@ function formatDate(dateStr: string): string {
 function getEventTypeColor(type: string): string {
   switch (type) {
     case 'fuel':
-      return '#0D9488';
+      return '#1A9A8F';
     case 'service':
-      return '#F97316';
+      return '#E8772B';
     case 'expense':
-      return '#10B981';
+      return '#2EAD76';
     default:
       return '#6B7280';
   }

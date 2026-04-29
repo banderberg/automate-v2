@@ -93,11 +93,11 @@ export default function DashboardScreen() {
           month: 'short',
           day: 'numeric',
         }),
-        dataPointColor: d.isPartial ? 'transparent' : '#0D9488',
+        dataPointColor: d.isPartial ? 'transparent' : '#1A9A8F',
         dataPointRadius: d.isPartial ? 4 : 5,
         customDataPoint: d.isPartial
           ? () => (
-              <View style={{ width: 8, height: 8, borderRadius: 4, borderWidth: 2, borderColor: '#0D9488', backgroundColor: isDark ? '#1A1917' : '#F5F4F1', borderStyle: 'dashed' }} />
+              <View style={{ width: 8, height: 8, borderRadius: 4, borderWidth: 2, borderColor: '#1A9A8F', backgroundColor: isDark ? '#1A1917' : '#F5F4F1', borderStyle: 'dashed' }} />
             )
           : undefined,
       }));
@@ -106,11 +106,11 @@ export default function DashboardScreen() {
   const donutData = useMemo(() => {
     const items = [];
     if (metrics.spendingBreakdown.fuel > 0)
-      items.push({ value: metrics.spendingBreakdown.fuel, color: '#0D9488', text: '' });
+      items.push({ value: metrics.spendingBreakdown.fuel, color: '#1A9A8F', text: '' });
     if (metrics.spendingBreakdown.service > 0)
-      items.push({ value: metrics.spendingBreakdown.service, color: '#F97316', text: '' });
+      items.push({ value: metrics.spendingBreakdown.service, color: '#E8772B', text: '' });
     if (metrics.spendingBreakdown.expense > 0)
-      items.push({ value: metrics.spendingBreakdown.expense, color: '#10B981', text: '' });
+      items.push({ value: metrics.spendingBreakdown.expense, color: '#2EAD76', text: '' });
     return items;
   }, [metrics.spendingBreakdown]);
 
@@ -215,7 +215,7 @@ export default function DashboardScreen() {
                     fontWeight: period === p.value ? '700' : '500',
                     color: period === p.value
                       ? (isDark ? '#F5F4F1' : '#1C1B18')
-                      : (isDark ? '#78756F' : '#A8A49D'),
+                      : (isDark ? '#8A8680' : '#706C67'),
                   }}
                 >
                   {p.label}
@@ -240,7 +240,7 @@ export default function DashboardScreen() {
             style={{
               fontSize: 10,
               fontWeight: '600',
-              color: isDark ? '#78756F' : '#A8A49D',
+              color: isDark ? '#8A8680' : '#706C67',
               letterSpacing: 2,
               textTransform: 'uppercase',
               marginBottom: 4,
@@ -253,7 +253,7 @@ export default function DashboardScreen() {
               style={{
                 fontSize: 22,
                 fontWeight: '500',
-                color: isDark ? '#78756F' : '#A8A49D',
+                color: isDark ? '#8A8680' : '#706C67',
                 marginRight: 2,
                 marginBottom: 2,
               }}
@@ -275,7 +275,7 @@ export default function DashboardScreen() {
               style={{
                 fontSize: 28,
                 fontWeight: '600',
-                color: isDark ? '#78756F' : '#A8A49D',
+                color: isDark ? '#8A8680' : '#706C67',
                 marginBottom: 2,
               }}
             >
@@ -292,7 +292,7 @@ export default function DashboardScreen() {
                 style={{
                   fontSize: 10,
                   fontWeight: '600',
-                  color: isDark ? '#78756F' : '#A8A49D',
+                  color: isDark ? '#8A8680' : '#706C67',
                   letterSpacing: 1.5,
                   textTransform: 'uppercase',
                 }}
@@ -301,7 +301,7 @@ export default function DashboardScreen() {
               </Text>
               <MetricInfo
                 explanation={`Total spending divided by total ${odoLabel} driven in the selected period.`}
-                color={isDark ? '#78756F' : '#A8A49D'}
+                color={isDark ? '#8A8680' : '#706C67'}
               />
             </View>
             <Text
@@ -324,7 +324,7 @@ export default function DashboardScreen() {
                 style={{
                   fontSize: 10,
                   fontWeight: '600',
-                  color: isDark ? '#78756F' : '#A8A49D',
+                  color: isDark ? '#8A8680' : '#706C67',
                   letterSpacing: 1.5,
                   textTransform: 'uppercase',
                 }}
@@ -333,7 +333,7 @@ export default function DashboardScreen() {
               </Text>
               <MetricInfo
                 explanation="Average fuel efficiency from full fill-ups only. Partial fills are excluded."
-                color={isDark ? '#78756F' : '#A8A49D'}
+                color={isDark ? '#8A8680' : '#706C67'}
               />
             </View>
             <View className="flex-row items-baseline" style={{ gap: 5 }}>
@@ -375,7 +375,7 @@ export default function DashboardScreen() {
               >
                 Fuel Efficiency
               </Text>
-              <Text style={{ fontSize: 11, color: isDark ? '#78756F' : '#A8A49D' }}>{effLabel}</Text>
+              <Text style={{ fontSize: 11, color: isDark ? '#8A8680' : '#706C67' }}>{effLabel}</Text>
             </View>
             <View
               accessibilityLabel={`Fuel efficiency chart, ${lineChartData.length} data points, average ${metrics.efficiency.average?.toFixed(1) ?? 'N/A'} ${effLabel}`}
@@ -384,23 +384,23 @@ export default function DashboardScreen() {
                 data={lineChartData}
                 width={chartWidth}
                 height={160}
-                color="#0D9488"
+                color="#1A9A8F"
                 thickness={2.5}
                 curved
                 areaChart
-                startFillColor="rgba(13, 148, 136, 0.10)"
-                endFillColor="rgba(13, 148, 136, 0.0)"
+                startFillColor="rgba(26, 154, 143, 0.10)"
+                endFillColor="rgba(26, 154, 143, 0.0)"
                 startOpacity={0.1}
                 endOpacity={0}
                 noOfSections={3}
                 yAxisColor="transparent"
                 xAxisColor={isDark ? '#2A2926' : '#F0EFEC'}
-                yAxisTextStyle={{ fontSize: 10, color: isDark ? '#78756F' : '#A8A49D' }}
-                xAxisLabelTextStyle={{ fontSize: 9, color: isDark ? '#78756F' : '#A8A49D' }}
+                yAxisTextStyle={{ fontSize: 10, color: isDark ? '#8A8680' : '#706C67' }}
+                xAxisLabelTextStyle={{ fontSize: 9, color: isDark ? '#8A8680' : '#706C67' }}
                 hideRules={false}
                 rulesColor={isDark ? '#2A292620' : '#F0EFEC80'}
                 rulesType="solid"
-                dataPointsColor="#0D9488"
+                dataPointsColor="#1A9A8F"
                 dataPointsRadius={4}
                 spacing={lineChartData.length > 1 ? Math.max(44, chartWidth / lineChartData.length) : 100}
                 initialSpacing={16}
@@ -408,9 +408,9 @@ export default function DashboardScreen() {
                 isAnimated
                 animationDuration={500}
                 pointerConfig={{
-                  pointerStripColor: '#0D948880',
+                  pointerStripColor: '#1A9A8F80',
                   pointerStripWidth: 1,
-                  pointerColor: '#0D9488',
+                  pointerColor: '#1A9A8F',
                   radius: 6,
                   pointerLabelWidth: 100,
                   pointerLabelHeight: 36,
@@ -425,7 +425,7 @@ export default function DashboardScreen() {
               />
             </View>
             {metrics.chartData.some((d) => d.isPartial) && (
-              <Text style={{ fontSize: 10, color: isDark ? '#54524D' : '#A8A49D', paddingHorizontal: 16, paddingBottom: 12 }}>
+              <Text style={{ fontSize: 10, color: isDark ? '#54524D' : '#706C67', paddingHorizontal: 16, paddingBottom: 12 }}>
                 Hollow dots = partial fills (excluded from average)
               </Text>
             )}
@@ -438,7 +438,7 @@ export default function DashboardScreen() {
             <Text style={{ fontSize: 13, fontWeight: '600', color: isDark ? '#F5F4F1' : '#1C1B18', marginBottom: 8 }}>
               Fuel Efficiency
             </Text>
-            <Text style={{ fontSize: 12, color: isDark ? '#78756F' : '#A8A49D', textAlign: 'center', paddingVertical: 12 }}>
+            <Text style={{ fontSize: 12, color: isDark ? '#8A8680' : '#706C67', textAlign: 'center', paddingVertical: 12 }}>
               Log 2 or more fill-ups to see your trend
             </Text>
           </View>
@@ -464,15 +464,15 @@ export default function DashboardScreen() {
                 centerLabelComponent={() => (
                   <View style={{ alignItems: 'center' }}>
                     <Text style={{ fontSize: 16, fontWeight: '800', color: isDark ? '#F5F4F1' : '#1C1B18', fontVariant: ['tabular-nums'] }}>
-                      ${metrics.spendingBreakdown.total.toFixed(0)}
+                      ${metrics.spendingBreakdown.total < 100 ? metrics.spendingBreakdown.total.toFixed(2) : metrics.spendingBreakdown.total.toFixed(0)}
                     </Text>
                   </View>
                 )}
               />
               <View className="flex-1 ml-6" style={{ gap: 14 }}>
-                <SpendingRow isDark={isDark} color="#0D9488" label="Fuel" amount={metrics.spendingBreakdown.fuel} total={metrics.spendingBreakdown.total} />
-                <SpendingRow isDark={isDark} color="#F97316" label="Service" amount={metrics.spendingBreakdown.service} total={metrics.spendingBreakdown.total} />
-                <SpendingRow isDark={isDark} color="#10B981" label="Expense" amount={metrics.spendingBreakdown.expense} total={metrics.spendingBreakdown.total} />
+                <SpendingRow isDark={isDark} color="#1A9A8F" label="Fuel" amount={metrics.spendingBreakdown.fuel} total={metrics.spendingBreakdown.total} />
+                <SpendingRow isDark={isDark} color="#E8772B" label="Service" amount={metrics.spendingBreakdown.service} total={metrics.spendingBreakdown.total} />
+                <SpendingRow isDark={isDark} color="#2EAD76" label="Expense" amount={metrics.spendingBreakdown.expense} total={metrics.spendingBreakdown.total} />
               </View>
             </View>
           </View>
@@ -553,7 +553,7 @@ function SpendingRow({
       <Text numberOfLines={1} style={{ fontSize: 13, fontWeight: '600', color: isDark ? '#F5F4F1' : '#1C1B18', fontVariant: ['tabular-nums'] }}>
         ${amount.toFixed(0)}
       </Text>
-      <Text numberOfLines={1} style={{ fontSize: 11, color: isDark ? '#78756F' : '#A8A49D', minWidth: 28, textAlign: 'right', fontVariant: ['tabular-nums'] }}>
+      <Text numberOfLines={1} style={{ fontSize: 11, color: isDark ? '#8A8680' : '#706C67', minWidth: 28, textAlign: 'right', fontVariant: ['tabular-nums'] }}>
         {pct}%
       </Text>
     </View>

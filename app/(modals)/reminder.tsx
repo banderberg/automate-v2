@@ -268,7 +268,7 @@ export default function ReminderModal() {
             multiSelect={false}
             label={kind === 'maintenance' ? 'Service Type *' : 'Category *'}
             error={selectionError}
-            accentColor={kind === 'maintenance' ? '#F97316' : '#10B981'}
+            accentColor={kind === 'maintenance' ? '#E8772B' : '#2EAD76'}
             onAdd={async (name) => { kind === 'maintenance' ? await addServiceType(name) : await addCategory(name); }}
             onUpdate={async (id, name) => { kind === 'maintenance' ? await updateServiceType(id, name) : await updateCategory(id, name); }}
             onDelete={async (id) => { kind === 'maintenance' ? await deleteServiceType(id) : await deleteCategory(id); }}

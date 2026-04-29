@@ -249,7 +249,7 @@ export default function ServiceEventModal() {
             multiSelect
             label="Service Types *"
             error={serviceTypeError}
-            accentColor="#F97316"
+            accentColor="#E8772B"
             onAdd={async (name) => { await addServiceType(name); }}
             onUpdate={async (id, name) => { await updateServiceType(id, name); }}
             onDelete={async (id) => { await deleteServiceType(id); }}

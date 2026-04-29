@@ -21,6 +21,12 @@ import type { ParsedImportData, ParsedEvent } from '@/src/services/dataImport';
 
 type DetectedFormat = 'fuelio' | 'fuelly' | 'automate' | 'unknown';
 
+let _importCache: {
+  parsedData: ParsedImportData;
+  detectedFormat: DetectedFormat;
+  selectedVehicleId: string | null;
+} | null = null;
+
 const FORMAT_LABELS: Record<DetectedFormat, string> = {
   fuelio: 'Fuelio Export',
   fuelly: 'Fuelly Export',
@@ -29,8 +35,8 @@ const FORMAT_LABELS: Record<DetectedFormat, string> = {
 };
 
 const FORMAT_COLORS: Record<DetectedFormat, { bg: string; text: string }> = {
-  fuelio: { bg: '#0D948820', text: '#0D9488' },
-  fuelly: { bg: '#F9731620', text: '#F97316' },
+  fuelio: { bg: '#1A9A8F20', text: '#1A9A8F' },
+  fuelly: { bg: '#E8772B20', text: '#E8772B' },
   automate: { bg: '#4272C420', text: '#4272C4' },
   unknown: { bg: '#EF444420', text: '#EF4444' },
 };
@@ -51,11 +57,19 @@ export default function ImportModal() {
 
   const [isReadingFile, setIsReadingFile] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
-  const [detectedFormat, setDetectedFormat] = useState<DetectedFormat | null>(null);
-  const [parsedData, setParsedData] = useState<ParsedImportData | null>(null);
-  const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>(null);
+  const [detectedFormat, setDetectedFormat] = useState<DetectedFormat | null>(
+    _importCache?.detectedFormat ?? null
+  );
+  const [parsedData, setParsedData] = useState<ParsedImportData | null>(
+    _importCache?.parsedData ?? null
+  );
+  const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>(
+    _importCache?.selectedVehicleId ?? null
+  );
   const [showVehiclePicker, setShowVehiclePicker] = useState(false);
   const { showDialog, dialogProps } = useDialog();
+
+  const clearCache = useCallback(() => { _importCache = null; }, []);
 
   const previewEvents = useMemo(() => {
     if (!parsedData) return [];
@@ -141,13 +155,13 @@ export default function ImportModal() {
         showDialog(
           'Import Complete with Warnings',
           `${summary}\n\n${result.errors.length} error${result.errors.length !== 1 ? 's' : ''}: ${result.errors.slice(0, 3).join('; ')}`,
-          [{ text: 'OK', onPress: () => nav.back() }]
+          [{ text: 'OK', onPress: () => { clearCache(); nav.back(); } }]
         );
       } else {
         showDialog(
           'Import Complete',
           summary,
-          [{ text: 'OK', onPress: () => nav.back() }]
+          [{ text: 'OK', onPress: () => { clearCache(); nav.back(); } }]
         );
       }
     } catch (e) {
@@ -162,7 +176,7 @@ export default function ImportModal() {
     <SafeAreaView className="flex-1 bg-surface dark:bg-surface-dark" edges={['top']}>
       <ModalHeader
         title="Import Data"
-        onCancel={() => nav.back()}
+        onCancel={() => { clearCache(); nav.back(); }}
         hideSave
       />
 
@@ -343,6 +357,9 @@ export default function ImportModal() {
                 <Pressable
                   onPress={() => {
                     setShowVehiclePicker(false);
+                    if (parsedData && detectedFormat) {
+                      _importCache = { parsedData, detectedFormat, selectedVehicleId };
+                    }
                     nav.push('/(modals)/vehicle');
                   }}
                   className="flex-row items-center px-4 py-3.5"

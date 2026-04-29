@@ -37,19 +37,15 @@ export function AddEventFAB() {
 
   const hasEvents = events.length > 0;
 
-  const handleQuickAdd = useCallback(() => {
+  const handleTap = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    if (!hasEvents) {
-      bottomSheetRef.current?.present();
-      return;
-    }
-    nav.push(TYPE_ROUTES[lastUsedType] ?? TYPE_ROUTES.fuel);
-  }, [lastUsedType, hasEvents, nav]);
+    bottomSheetRef.current?.present();
+  }, []);
 
   const handleLongPress = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    bottomSheetRef.current?.present();
-  }, []);
+    nav.push(TYPE_ROUTES[lastUsedType] ?? TYPE_ROUTES.fuel);
+  }, [lastUsedType, nav]);
 
   const handleDismiss = useCallback(() => {
     bottomSheetRef.current?.dismiss();
@@ -86,11 +82,11 @@ export function AddEventFAB() {
     <>
       {/* FAB button: tap for last-used type, long press for picker */}
       <Pressable
-        onPress={handleQuickAdd}
+        onPress={handleTap}
         onLongPress={handleLongPress}
         delayLongPress={400}
         className="absolute bottom-6 right-5 w-14 h-14 rounded-full bg-primary items-center justify-center shadow-lg"
-        accessibilityLabel={`${fabIcon.label}. Long press for more options.`}
+        accessibilityLabel={`Log activity. Long press to quickly repeat ${fabIcon.label}.`}
         accessibilityRole="button"
         style={{
           shadowColor: '#1C1B18',
@@ -123,11 +119,11 @@ export function AddEventFAB() {
             accessibilityLabel={isElectric ? 'Add Charge event' : 'Add Fill-Up event'}
             accessibilityRole="button"
           >
-            <View className="w-10 h-10 rounded-full items-center justify-center mr-4" style={{ backgroundColor: '#CCFBF1' }}>
+            <View className="w-10 h-10 rounded-full items-center justify-center mr-4" style={{ backgroundColor: '#D0F5EE' }}>
               <Ionicons
                 name={isElectric ? 'flash' : 'water'}
                 size={20}
-                color="#0D9488"
+                color="#1A9A8F"
               />
             </View>
             <Text className="text-base font-medium text-ink dark:text-ink-on-dark">
@@ -141,8 +137,8 @@ export function AddEventFAB() {
             accessibilityLabel="Add service"
             accessibilityRole="button"
           >
-            <View className="w-10 h-10 rounded-full items-center justify-center mr-4" style={{ backgroundColor: '#FFF7ED' }}>
-              <Ionicons name="construct" size={20} color="#f97316" />
+            <View className="w-10 h-10 rounded-full items-center justify-center mr-4" style={{ backgroundColor: '#FFF3E6' }}>
+              <Ionicons name="construct" size={20} color="#E8772B" />
             </View>
             <Text className="text-base font-medium text-ink dark:text-ink-on-dark">Service</Text>
           </Pressable>
@@ -153,8 +149,8 @@ export function AddEventFAB() {
             accessibilityLabel="Add expense"
             accessibilityRole="button"
           >
-            <View className="w-10 h-10 rounded-full items-center justify-center mr-4" style={{ backgroundColor: '#D1FAE5' }}>
-              <Ionicons name="receipt-outline" size={20} color="#10b981" />
+            <View className="w-10 h-10 rounded-full items-center justify-center mr-4" style={{ backgroundColor: '#D5F2E3' }}>
+              <Ionicons name="receipt-outline" size={20} color="#2EAD76" />
             </View>
             <Text className="text-base font-medium text-ink dark:text-ink-on-dark">Expense</Text>
           </Pressable>
