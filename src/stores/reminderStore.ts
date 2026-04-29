@@ -16,6 +16,7 @@ interface ReminderStore {
   updateReminder(id: string, fields: Partial<Reminder>): Promise<void>;
   deleteReminder(id: string): Promise<void>;
   recalculateForEvent(event: VehicleEvent, serviceTypeIds?: string[]): Promise<void>;
+  clearReminders(): void;
 }
 
 function getLinkedName(reminder: Reminder): string {
@@ -90,6 +91,10 @@ export const useReminderStore = create<ReminderStore>((set, get) => ({
   reminders: [],
   isLoading: false,
   error: null,
+
+  clearReminders() {
+    set({ reminders: [], error: null });
+  },
 
   async loadForVehicle(vehicleId) {
     set({ isLoading: true, error: null });

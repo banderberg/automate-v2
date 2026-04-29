@@ -6,7 +6,6 @@ import {
   Pressable,
   Image,
   Modal,
-  Alert,
   ActionSheetIOS,
   Platform,
 } from 'react-native';
@@ -16,6 +15,8 @@ import { File, Paths, Directory } from 'expo-file-system';
 import * as Crypto from 'expo-crypto';
 import { Ionicons } from '@expo/vector-icons';
 import type { LocalPhoto } from '../types';
+import { ConfirmDialog } from './ConfirmDialog';
+import { useDialog } from '../hooks/useDialog';
 
 interface EventPhotosProps {
   eventId: string | null;
@@ -34,6 +35,7 @@ function ensurePhotoDirectory(): void {
 
 export function EventPhotos({ eventId, photos, onPhotosChange }: EventPhotosProps) {
   const [previewPhoto, setPreviewPhoto] = useState<LocalPhoto | null>(null);
+  const { showDialog, dialogProps } = useDialog();
 
   const pickImage = useCallback(
     async (source: 'camera' | 'library') => {
@@ -47,7 +49,7 @@ export function EventPhotos({ eventId, photos, onPhotosChange }: EventPhotosProp
       if (source === 'camera') {
         const { status } = await ImagePicker.requestCameraPermissionsAsync();
         if (status !== 'granted') {
-          Alert.alert(
+          showDialog(
             'Permission needed',
             'Camera access is required to take a photo.'
           );
@@ -92,7 +94,7 @@ export function EventPhotos({ eventId, photos, onPhotosChange }: EventPhotosProp
         }
       );
     } else {
-      Alert.alert('Add Photo', '', [
+      showDialog('Add Photo', undefined, [
         { text: 'Take Photo', onPress: () => pickImage('camera') },
         { text: 'Choose from Library', onPress: () => pickImage('library') },
         { text: 'Cancel', style: 'cancel' },
@@ -102,14 +104,12 @@ export function EventPhotos({ eventId, photos, onPhotosChange }: EventPhotosProp
 
   const handleDeletePhoto = useCallback(
     (photo: LocalPhoto) => {
-      Alert.alert('Delete Photo', 'Remove this photo?', [
+      showDialog('Delete Photo', 'Remove this photo?', [
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Delete',
           style: 'destructive',
           onPress: () => {
-            // If this is a newly added photo that hasn't been saved to DB,
-            // also clean up the file from disk
             if (photo.isNew) {
               try {
                 const file = new File(photo.uri);
@@ -131,7 +131,7 @@ export function EventPhotos({ eventId, photos, onPhotosChange }: EventPhotosProp
 
   return (
     <View className="mb-4">
-      <Text className="text-xs text-gray-500 dark:text-gray-400 mb-1.5 font-semibold">
+      <Text className="text-xs text-ink-muted dark:text-ink-muted-on-dark mb-1.5 font-semibold">
         Photos
       </Text>
       <ScrollView
@@ -150,18 +150,19 @@ export function EventPhotos({ eventId, photos, onPhotosChange }: EventPhotosProp
               source={{ uri: photo.uri }}
               className="w-[80px] h-[80px] rounded-xl"
               resizeMode="cover"
+              accessible={false}
             />
           </Pressable>
         ))}
 
         <Pressable
           onPress={handleAddPress}
-          className="w-[80px] h-[80px] rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-600 items-center justify-center bg-surface dark:bg-surface-dark"
+          className="w-[80px] h-[80px] rounded-xl border-2 border-dashed border-divider dark:border-divider-dark items-center justify-center bg-surface dark:bg-surface-dark"
           accessibilityLabel="Add photo"
           accessibilityRole="button"
         >
-          <Ionicons name="camera-outline" size={24} color="#9CA3AF" />
-          <Text className="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">
+          <Ionicons name="camera-outline" size={24} color="#A8A49D" />
+          <Text className="text-[10px] text-ink-faint dark:text-ink-faint-on-dark mt-0.5">
             Add
           </Text>
         </Pressable>
@@ -174,7 +175,7 @@ export function EventPhotos({ eventId, photos, onPhotosChange }: EventPhotosProp
         transparent={false}
         onRequestClose={() => setPreviewPhoto(null)}
       >
-        <SafeAreaView className="flex-1 bg-black">
+        <SafeAreaView className="flex-1" style={{ backgroundColor: '#0E0E0C' }}>
           {/* Header */}
           <View className="flex-row items-center justify-between px-4 py-3">
             <Pressable
@@ -182,7 +183,7 @@ export function EventPhotos({ eventId, photos, onPhotosChange }: EventPhotosProp
               accessibilityLabel="Close photo preview"
               accessibilityRole="button"
             >
-              <Ionicons name="close" size={28} color="#FFFFFF" />
+              <Ionicons name="close" size={28} color="#F5F4F1" />
             </Pressable>
             <Text className="text-white text-base font-semibold">Photo</Text>
             <View className="w-7" />
@@ -195,6 +196,7 @@ export function EventPhotos({ eventId, photos, onPhotosChange }: EventPhotosProp
                 source={{ uri: previewPhoto.uri }}
                 className="w-full h-full"
                 resizeMode="contain"
+                accessibilityLabel="Full screen photo preview"
               />
             )}
           </View>
@@ -216,6 +218,7 @@ export function EventPhotos({ eventId, photos, onPhotosChange }: EventPhotosProp
           </View>
         </SafeAreaView>
       </Modal>
+      <ConfirmDialog {...dialogProps} />
     </View>
   );
 }

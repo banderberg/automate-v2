@@ -8,19 +8,23 @@ module.exports = {
   presets: [require('nativewind/preset')],
   theme: {
     extend: {
+      borderRadius: {
+        card: 20,
+      },
       colors: {
-        // Brand accent
-        primary: '#3B82F6',
-        'primary-light': '#DBEAFE',
-        'primary-dark': '#1E3A5F',
+        // Brand accent (warm-shifted blue to complement warm neutrals)
+        primary: '#4272C4',
+        'primary-light': '#DBE6F5',
+        'primary-dark': '#1E3554',
+        'primary-tint': '#6A9FD8',
 
-        // Event types
-        fuel: '#0D9488',
-        'fuel-light': '#CCFBF1',
-        service: '#F97316',
-        'service-light': '#FFF7ED',
-        expense: '#10B981',
-        'expense-light': '#D1FAE5',
+        // Event types (warmed to harmonize with neutral palette)
+        fuel: '#1A9A8F',
+        'fuel-light': '#D0F5EE',
+        service: '#E8772B',
+        'service-light': '#FFF3E6',
+        expense: '#2EAD76',
+        'expense-light': '#D5F2E3',
 
         // Semantic
         destructive: '#EF4444',
@@ -44,13 +48,13 @@ module.exports = {
         // Warm neutral text (light)
         ink: '#1C1B18',
         'ink-secondary': '#5C5A55',
-        'ink-muted': '#A8A49D',
+        'ink-muted': '#706C67',
         'ink-faint': '#78756F',
 
         // Warm neutral text (dark)
         'ink-on-dark': '#F5F4F1',
         'ink-secondary-on-dark': '#C5C2BC',
-        'ink-muted-on-dark': '#78756F',
+        'ink-muted-on-dark': '#8A8680',
         'ink-faint-on-dark': '#54524D',
       },
     },

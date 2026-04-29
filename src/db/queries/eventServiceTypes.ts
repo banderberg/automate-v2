@@ -29,6 +29,24 @@ export async function getByEvent(eventId: string): Promise<ServiceType[]> {
   return rows.map(mapRow);
 }
 
+export async function getLabelsByVehicle(vehicleId: string): Promise<Map<string, string>> {
+  const db = getDatabase();
+  const rows = await db.getAllAsync<{ eventId: string; label: string }>(
+    `SELECT est.eventId, GROUP_CONCAT(st.name, ', ') AS label
+     FROM event_service_type est
+     JOIN service_type st ON st.id = est.serviceTypeId
+     JOIN event e ON e.id = est.eventId
+     WHERE e.vehicleId = ?
+     GROUP BY est.eventId`,
+    [vehicleId]
+  );
+  const map = new Map<string, string>();
+  for (const row of rows) {
+    map.set(row.eventId, row.label);
+  }
+  return map;
+}
+
 export async function setForEvent(
   eventId: string,
   serviceTypeIds: string[]

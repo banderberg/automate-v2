@@ -4,8 +4,8 @@ import { useColorScheme } from 'nativewind';
 
 export default function TabLayout() {
   const { colorScheme } = useColorScheme();
-  const activeTint = colorScheme === 'dark' ? '#60a5fa' : '#3B82F6';
-  const inactiveTint = colorScheme === 'dark' ? '#78756F' : '#A8A49D';
+  const activeTint = colorScheme === 'dark' ? '#6A9FD8' : '#4272C4'; // primary-tint / primary
+  const inactiveTint = colorScheme === 'dark' ? '#8A8680' : '#706C67';
   const tabBarBg = colorScheme === 'dark' ? '#0E0E0C' : '#F5F4F1';
 
   return (
@@ -35,7 +35,7 @@ export default function TabLayout() {
         options={{
           title: 'History',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="time" size={size} color={color} />
+            <Ionicons name="receipt" size={size} color={color} />
           ),
           tabBarAccessibilityLabel: 'History tab',
         }}

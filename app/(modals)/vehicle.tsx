@@ -5,7 +5,6 @@ import {
   TextInput,
   ScrollView,
   Pressable,
-  Alert,
   KeyboardAvoidingView,
   Platform,
   Image,
@@ -20,8 +19,11 @@ import * as Crypto from 'expo-crypto';
 import * as Haptics from 'expo-haptics';
 import { Ionicons } from '@expo/vector-icons';
 import { ModalHeader } from '@/src/components/ModalHeader';
+import { ConfirmDialog } from '@/src/components/ConfirmDialog';
+import { useDialog } from '@/src/hooks/useDialog';
 import { SegmentedControl } from '@/src/components/SegmentedControl';
 import { useVehicleStore } from '@/src/stores/vehicleStore';
+import { useToastStore } from '@/src/stores/toastStore';
 import { useSettingsStore } from '@/src/stores/settingsStore';
 import { useEventStore } from '@/src/stores/eventStore';
 import { useReminderStore } from '@/src/stores/reminderStore';
@@ -61,6 +63,7 @@ export default function VehicleModal() {
   const [fuelCapacity, setFuelCapacity] = useState('');
   const [vinStatus, setVinStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [saving, setSaving] = useState(false);
+  const { showDialog, dialogProps } = useDialog();
 
   const originalOdometerUnit = useMemo(() => {
     if (!isEditing || !vehicleId) return odometerUnit;
@@ -95,7 +98,8 @@ export default function VehicleModal() {
   const canSave = useMemo(() => {
     if (saving) return false;
     if (!nickname.trim()) return false;
-    if (!year.trim() || isNaN(parseInt(year, 10))) return false;
+    const yearNum = parseInt(year, 10);
+    if (isNaN(yearNum) || yearNum < 1900 || yearNum > new Date().getFullYear() + 1) return false;
     if (!make.trim()) return false;
     if (!model.trim()) return false;
     return true;
@@ -113,7 +117,7 @@ export default function VehicleModal() {
     if (source === 'camera') {
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
       if (status !== 'granted') {
-        Alert.alert('Permission needed', 'Camera access is required to take a photo.');
+        showDialog('Permission needed', 'Camera access is required to take a photo.');
         return;
       }
       result = await ImagePicker.launchCameraAsync(options);
@@ -149,7 +153,7 @@ export default function VehicleModal() {
         }
       );
     } else {
-      Alert.alert('Vehicle Photo', '', [
+      showDialog('Vehicle Photo', undefined, [
         { text: 'Take Photo', onPress: () => pickImage('camera') },
         { text: 'Choose from Library', onPress: () => pickImage('library') },
         ...(imagePath
@@ -167,10 +171,26 @@ export default function VehicleModal() {
     setVinStatus('loading');
     const result = await decodeVin(cleaned);
     if (result && (result.year || result.make || result.model)) {
-      if (result.year) setYear(String(result.year));
-      if (result.make) setMake(result.make);
-      if (result.model) setModel(result.model);
-      setVinStatus('success');
+      const hasExisting = year.trim() || make.trim() || model.trim();
+      const applyDecoded = () => {
+        if (result.year) setYear(String(result.year));
+        if (result.make) setMake(result.make);
+        if (result.model) setModel(result.model);
+        setVinStatus('success');
+      };
+      if (hasExisting) {
+        const parts = [result.year && `${result.year}`, result.make, result.model].filter(Boolean).join(' ');
+        showDialog(
+          'Use VIN Details?',
+          `Replace current values with "${parts}"?`,
+          [
+            { text: 'Keep Current', style: 'cancel', onPress: () => setVinStatus('success') },
+            { text: 'Replace', onPress: applyDecoded },
+          ]
+        );
+      } else {
+        applyDecoded();
+      }
     } else {
       setVinStatus('error');
     }
@@ -187,7 +207,7 @@ export default function VehicleModal() {
     (unit: OdometerUnit) => {
       if (isEditing && unit !== originalOdometerUnit) {
         const eventCount = events.length;
-        Alert.alert(
+        showDialog(
           'Convert Odometer Readings',
           `This will convert ${eventCount} odometer reading${eventCount !== 1 ? 's' : ''} from ${originalOdometerUnit} to ${unit}. Continue?`,
           [
@@ -223,9 +243,11 @@ export default function VehicleModal() {
         imagePath,
       };
 
+      const vehicleName = nickname.trim();
       if (isEditing && vehicleId) {
         await updateVehicle(vehicleId, { ...data, odometerUnit });
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        useToastStore.getState().show(`${vehicleName} updated`);
         router.back();
       } else {
         const isFirst = vehicles.length === 0;
@@ -235,17 +257,19 @@ export default function VehicleModal() {
             await updateSetting('hasCompletedOnboarding', true);
           }
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          useToastStore.getState().show(`${vehicleName} added`);
           router.back();
         } else {
-          Alert.alert(
+          showDialog(
             'Make Active?',
-            `Make "${nickname.trim()}" the active vehicle?`,
+            `Make "${vehicleName}" the active vehicle?`,
             [
               {
                 text: 'No',
                 onPress: async () => {
                   await addVehicle(data, false);
                   Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                  useToastStore.getState().show(`${vehicleName} added`);
                   router.back();
                 },
               },
@@ -254,6 +278,7 @@ export default function VehicleModal() {
                 onPress: async () => {
                   await addVehicle(data, true);
                   Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                  useToastStore.getState().show(`${vehicleName} added`);
                   router.back();
                 },
               },
@@ -261,12 +286,25 @@ export default function VehicleModal() {
           );
         }
       }
-    } catch {
-      Alert.alert('Error', 'Failed to save vehicle. Please try again.');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : '';
+      showDialog("Couldn't Save Vehicle", msg || 'Check your entries and try again. If this keeps happening, try restarting the app.');
     } finally {
       setSaving(false);
     }
   }, [canSave, nickname, year, make, model, trim, vin, fuelType, odometerUnit, volumeUnit, fuelCapacity, imagePath, isEditing, vehicleId, vehicles.length, settings.hasCompletedOnboarding]);
+
+  const handleCancel = useCallback(() => {
+    const hasInput = !!(nickname.trim() || year || make.trim() || model.trim());
+    if (isEditing || hasInput) {
+      showDialog('Discard Changes?', 'You have unsaved changes.', [
+        { text: 'Keep Editing', style: 'cancel' },
+        { text: 'Discard', style: 'destructive', onPress: () => router.back() },
+      ]);
+    } else {
+      router.back();
+    }
+  }, [isEditing, nickname, year, make, model, router]);
 
   const handleDelete = useCallback(() => {
     if (!vehicleId) return;
@@ -279,10 +317,9 @@ export default function VehicleModal() {
     const others = vehicles.filter((v) => v.id !== vehicleId);
 
     if (isOnly) {
-      Alert.alert(
+      showDialog(
         'Cannot Delete',
-        'Add another vehicle before deleting this one.',
-        [{ text: 'OK' }]
+        'Add another vehicle before deleting this one.'
       );
       return;
     }
@@ -292,7 +329,7 @@ export default function VehicleModal() {
     const cascadeCount = eventCount + reminderCount;
 
     if (isActive && others.length > 0) {
-      Alert.alert(
+      showDialog(
         'Choose New Active Vehicle',
         `Choose the vehicle to activate after deleting "${vehicle.nickname}".`,
         [
@@ -304,7 +341,7 @@ export default function VehicleModal() {
                 await deleteVehicle(vehicleId);
                 router.back();
               } catch {
-                Alert.alert('Error', 'Failed to delete vehicle.');
+                showDialog("Couldn't Delete Vehicle", 'Something went wrong. Try again or restart the app.');
               }
             },
           })),
@@ -312,7 +349,7 @@ export default function VehicleModal() {
         ]
       );
     } else {
-      Alert.alert(
+      showDialog(
         'Delete Vehicle',
         `Delete "${vehicle.nickname}"? This will permanently remove ${cascadeCount > 0 ? `${cascadeCount} event${cascadeCount !== 1 ? 's' : ''} and reminder${cascadeCount !== 1 ? 's' : ''}` : 'it'}.`,
         [
@@ -325,7 +362,7 @@ export default function VehicleModal() {
                 await deleteVehicle(vehicleId);
                 router.back();
               } catch {
-                Alert.alert('Error', 'Failed to delete vehicle.');
+                showDialog("Couldn't Delete Vehicle", 'Something went wrong. Try again or restart the app.');
               }
             },
           },
@@ -338,7 +375,7 @@ export default function VehicleModal() {
     <SafeAreaView className="flex-1 bg-surface dark:bg-surface-dark" edges={['top']}>
       <ModalHeader
         title={isEditing ? 'Edit Vehicle' : 'Add Vehicle'}
-        onCancel={() => router.back()}
+        onCancel={handleCancel}
         onSave={handleSave}
         saveDisabled={!canSave}
       />
@@ -347,8 +384,8 @@ export default function VehicleModal() {
         className="flex-1"
       >
         <ScrollView className="flex-1 px-4 pt-4" keyboardShouldPersistTaps="handled">
-          {/* Photo */}
-          <View className="items-center mb-6">
+          {/* ── Your Vehicle ── */}
+          <View className="items-center mb-4">
             <Pressable
               onPress={handlePhotoPress}
               className="w-[120px] h-[120px] rounded-full bg-surface dark:bg-surface-dark items-center justify-center overflow-hidden border-2 border-divider dark:border-divider-dark"
@@ -370,7 +407,28 @@ export default function VehicleModal() {
             </Pressable>
           </View>
 
-          {/* VIN */}
+          <View className="mb-6">
+            <Text className="text-xs text-ink-muted dark:text-ink-muted-on-dark mb-1.5 font-semibold">
+              Nickname *
+            </Text>
+            <View className="bg-surface dark:bg-surface-dark rounded-xl border border-divider dark:border-divider-dark px-3.5 py-3">
+              <TextInput
+                className="text-base text-ink dark:text-ink-on-dark"
+                value={nickname}
+                onChangeText={(t) => setNickname(t.slice(0, 30))}
+                placeholder="e.g., The Corolla"
+                placeholderTextColor="#A8A49D"
+                maxLength={30}
+                accessibilityLabel="Vehicle nickname"
+              />
+            </View>
+          </View>
+
+          {/* ── Vehicle Details ── */}
+          <Text className="text-xs text-ink-muted dark:text-ink-muted-on-dark font-semibold uppercase mb-3" style={{ letterSpacing: 1.5 }}>
+            Vehicle Details
+          </Text>
+
           <View className="mb-4">
             <Text className="text-xs text-ink-muted dark:text-ink-muted-on-dark mb-1.5 font-semibold">
               VIN
@@ -391,36 +449,22 @@ export default function VehicleModal() {
                 accessibilityLabel="Vehicle Identification Number"
               />
               {vinStatus === 'loading' && (
-                <ActivityIndicator size="small" color="#3B82F6" />
+                <ActivityIndicator size="small" color="#4272C4" />
               )}
             </View>
             {vinStatus === 'success' && (
-              <Text className="text-xs text-green-600 mt-1">Auto-filled from VIN</Text>
+              <View className="flex-row items-center mt-1.5 gap-1">
+                <Ionicons name="checkmark-circle" size={14} color="#10B981" />
+                <Text className="text-xs" style={{ color: '#10B981' }}>
+                  Filled {[year && year, make, model].filter(Boolean).join(', ')} from VIN
+                </Text>
+              </View>
             )}
             {vinStatus === 'error' && (
-              <Text className="text-xs text-warning mt-1">Couldn't look up VIN — enter details manually</Text>
+              <Text className="text-xs mt-1" style={{ color: '#F59E0B' }}>Couldn't look up VIN. Enter details manually.</Text>
             )}
           </View>
 
-          {/* Nickname */}
-          <View className="mb-4">
-            <Text className="text-xs text-ink-muted dark:text-ink-muted-on-dark mb-1.5 font-semibold">
-              Nickname *
-            </Text>
-            <View className="bg-surface dark:bg-surface-dark rounded-xl border border-divider dark:border-divider-dark px-3.5 py-3">
-              <TextInput
-                className="text-base text-ink dark:text-ink-on-dark"
-                value={nickname}
-                onChangeText={(t) => setNickname(t.slice(0, 30))}
-                placeholder="e.g., The Corolla"
-                placeholderTextColor="#A8A49D"
-                maxLength={30}
-                accessibilityLabel="Vehicle nickname"
-              />
-            </View>
-          </View>
-
-          {/* Year */}
           <View className="mb-4">
             <Text className="text-xs text-ink-muted dark:text-ink-muted-on-dark mb-1.5 font-semibold">
               Year *
@@ -439,7 +483,6 @@ export default function VehicleModal() {
             </View>
           </View>
 
-          {/* Make */}
           <View className="mb-4">
             <Text className="text-xs text-ink-muted dark:text-ink-muted-on-dark mb-1.5 font-semibold">
               Make *
@@ -451,12 +494,12 @@ export default function VehicleModal() {
                 onChangeText={setMake}
                 placeholder="Toyota"
                 placeholderTextColor="#A8A49D"
+                maxLength={50}
                 accessibilityLabel="Vehicle make"
               />
             </View>
           </View>
 
-          {/* Model */}
           <View className="mb-4">
             <Text className="text-xs text-ink-muted dark:text-ink-muted-on-dark mb-1.5 font-semibold">
               Model *
@@ -468,13 +511,13 @@ export default function VehicleModal() {
                 onChangeText={setModel}
                 placeholder="Corolla"
                 placeholderTextColor="#A8A49D"
+                maxLength={50}
                 accessibilityLabel="Vehicle model"
               />
             </View>
           </View>
 
-          {/* Trim */}
-          <View className="mb-4">
+          <View className="mb-6">
             <Text className="text-xs text-ink-muted dark:text-ink-muted-on-dark mb-1.5 font-semibold">
               Trim
             </Text>
@@ -485,12 +528,17 @@ export default function VehicleModal() {
                 onChangeText={setTrim}
                 placeholder="SE, XLE, etc."
                 placeholderTextColor="#A8A49D"
+                maxLength={30}
                 accessibilityLabel="Vehicle trim"
               />
             </View>
           </View>
 
-          {/* Fuel Type */}
+          {/* ── Configuration ── */}
+          <Text className="text-xs text-ink-muted dark:text-ink-muted-on-dark font-semibold uppercase mb-3" style={{ letterSpacing: 1.5 }}>
+            Configuration
+          </Text>
+
           <View className="mb-4">
             <Text className="text-xs text-ink-muted dark:text-ink-muted-on-dark mb-2 font-semibold">
               Fuel Type
@@ -507,7 +555,6 @@ export default function VehicleModal() {
             />
           </View>
 
-          {/* Odometer Unit */}
           <View className="mb-4">
             <Text className="text-xs text-ink-muted dark:text-ink-muted-on-dark mb-2 font-semibold">
               Odometer Unit
@@ -523,7 +570,6 @@ export default function VehicleModal() {
             />
           </View>
 
-          {/* Fuel Capacity */}
           <View className="mb-4">
             <Text className="text-xs text-ink-muted dark:text-ink-muted-on-dark mb-1.5 font-semibold">
               Fuel Capacity
@@ -542,7 +588,6 @@ export default function VehicleModal() {
             </View>
           </View>
 
-          {/* Delete button (edit mode) */}
           {isEditing && (
             <Pressable
               onPress={handleDelete}
@@ -557,6 +602,7 @@ export default function VehicleModal() {
           <View className="h-8" />
         </ScrollView>
       </KeyboardAvoidingView>
+      <ConfirmDialog {...dialogProps} />
     </SafeAreaView>
   );
 }

@@ -52,11 +52,11 @@ function formatDate(dateStr: string): string {
 function getEventTypeColor(type: string): string {
   switch (type) {
     case 'fuel':
-      return '#0D9488';
+      return '#1A9A8F';
     case 'service':
-      return '#F97316';
+      return '#E8772B';
     case 'expense':
-      return '#10B981';
+      return '#2EAD76';
     default:
       return '#6B7280';
   }
@@ -81,17 +81,17 @@ function buildDescription(
 ): string {
   switch (row.type) {
     case 'fuel': {
-      const vol = row.volume != null ? row.volume.toFixed(2) : '—';
+      const vol = row.volume != null ? row.volume.toFixed(2) : '-';
       const unit = row.volumeUnit || 'gal';
-      const price = row.pricePerUnit != null ? `$${row.pricePerUnit.toFixed(3)}` : '—';
-      return `Fill-Up — ${vol} ${unit} @ ${price}/${unit === 'gallons' ? 'gal' : unit === 'litres' ? 'L' : unit}`;
+      const price = row.pricePerUnit != null ? `$${row.pricePerUnit.toFixed(3)}` : '-';
+      return `Fill-Up: ${vol} ${unit} @ ${price}/${unit === 'gallons' ? 'gal' : unit === 'litres' ? 'L' : unit}`;
     }
     case 'service':
-      return serviceTypeNames || '—';
+      return serviceTypeNames || '-';
     case 'expense':
-      return row.categoryName || '—';
+      return row.categoryName || '-';
     default:
-      return '—';
+      return '-';
   }
 }
 
@@ -105,8 +105,8 @@ function buildHtml(
   const totalSpent = rows.reduce((sum, r) => sum + r.cost, 0);
   const totalEvents = rows.length;
 
-  const periodStart = startDate ? formatDate(startDate) : (rows.length > 0 ? formatDate(rows[rows.length - 1].date) : '—');
-  const periodEnd = endDate ? formatDate(endDate) : (rows.length > 0 ? formatDate(rows[0].date) : '—');
+  const periodStart = startDate ? formatDate(startDate) : (rows.length > 0 ? formatDate(rows[rows.length - 1].date) : '-');
+  const periodEnd = endDate ? formatDate(endDate) : (rows.length > 0 ? formatDate(rows[0].date) : '-');
 
   const vehicleTitle = escapeHtml(vehicle.nickname);
   const vehicleSubtitle = escapeHtml(
@@ -136,7 +136,7 @@ function buildHtml(
           const typeLabel = getEventTypeLabel(row.type);
           const odometerStr = row.odometer != null
             ? `${row.odometer.toLocaleString()} ${row.odometerUnit === 'kilometers' ? 'km' : 'mi'}`
-            : '—';
+            : '-';
           const notesStr = row.notes ? escapeHtml(row.notes) : '';
           const placeStr = row.placeName ? escapeHtml(row.placeName) : '';
 

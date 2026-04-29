@@ -1,12 +1,15 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { View, Text, Pressable, Animated } from 'react-native';
 import { useEventStore } from '../stores/eventStore';
+import { useColorScheme } from 'nativewind';
 
 export function UndoSnackbar() {
   const pendingDelete = useEventStore((s) => s.pendingDelete);
   const undoDelete = useEventStore((s) => s.undoDelete);
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === 'dark';
   const [visible, setVisible] = useState(false);
-  const [opacity] = useState(new Animated.Value(0));
+  const opacity = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     if (pendingDelete) {
@@ -37,7 +40,7 @@ export function UndoSnackbar() {
           backgroundColor: '#1C1B18',
           shadowColor: '#000',
           shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.15,
+          shadowOpacity: isDark ? 0 : 0.15,
           shadowRadius: 12,
           elevation: 8,
         }}

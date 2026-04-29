@@ -5,7 +5,6 @@ import {
   TextInput,
   ScrollView,
   Pressable,
-  Alert,
   KeyboardAvoidingView,
   Platform,
   Image,
@@ -14,9 +13,17 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import * as DocumentPicker from 'expo-document-picker';
+import { Ionicons } from '@expo/vector-icons';
 import { useVehicleStore } from '@/src/stores/vehicleStore';
 import { useSettingsStore } from '@/src/stores/settingsStore';
+import { ConfirmDialog } from '@/src/components/ConfirmDialog';
+import { SegmentedControl } from '@/src/components/SegmentedControl';
+import { useDialog } from '@/src/hooks/useDialog';
 import { getBackupInfo, restoreBackup } from '@/src/services/backup';
+import { getVolumeUnitForFuelType } from '@/src/constants/units';
+
+type FuelType = 'gas' | 'diesel' | 'electric';
+type OdometerUnit = 'miles' | 'kilometers';
 
 export default function OnboardingScreen() {
   const router = useRouter();
@@ -28,14 +35,21 @@ export default function OnboardingScreen() {
   const [year, setYear] = useState('');
   const [make, setMake] = useState('');
   const [model, setModel] = useState('');
+  const [fuelType, setFuelType] = useState<FuelType>('gas');
+  const [odometerUnit, setOdometerUnit] = useState<OdometerUnit>(
+    settings.defaultOdometerUnit as OdometerUnit
+  );
   const [saving, setSaving] = useState(false);
   const [restoring, setRestoring] = useState(false);
+  const [completed, setCompleted] = useState(false);
   const navigatingRef = useRef(false);
+  const { showDialog, dialogProps } = useDialog();
 
   const canSave = useMemo(() => {
     if (saving) return false;
     if (!nickname.trim()) return false;
-    if (!year.trim() || isNaN(parseInt(year, 10))) return false;
+    const yearNum = parseInt(year, 10);
+    if (isNaN(yearNum) || yearNum < 1900 || yearNum > new Date().getFullYear() + 1) return false;
     if (!make.trim()) return false;
     if (!model.trim()) return false;
     return true;
@@ -52,21 +66,22 @@ export default function OnboardingScreen() {
           year: parseInt(year, 10),
           make: make.trim(),
           model: model.trim(),
-          fuelType: 'gas',
-          odometerUnit: settings.defaultOdometerUnit,
-          volumeUnit: settings.defaultFuelUnit,
+          fuelType,
+          odometerUnit,
+          volumeUnit: getVolumeUnitForFuelType(fuelType, settings.defaultFuelUnit),
         },
         true
       );
-      await updateSetting('hasCompletedOnboarding', true);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    } catch {
-      Alert.alert('Error', 'Failed to save vehicle. Please try again.');
+      setCompleted(true);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : '';
+      showDialog("Couldn't Save Vehicle", msg || 'Check your entries and try again. If this keeps happening, try restarting the app.');
       navigatingRef.current = false;
     } finally {
       setSaving(false);
     }
-  }, [canSave, nickname, year, make, model, settings.defaultOdometerUnit, settings.defaultFuelUnit]);
+  }, [canSave, nickname, year, make, model, fuelType, odometerUnit, settings.defaultFuelUnit]);
 
   const handleRestore = useCallback(async () => {
     if (restoring) return;
@@ -84,14 +99,14 @@ export default function OnboardingScreen() {
         info = await getBackupInfo(fileUri);
       } catch (e) {
         const message = e instanceof Error ? e.message : 'Could not read the selected file.';
-        Alert.alert('Invalid Backup', message);
+        showDialog('Invalid Backup', message);
         setRestoring(false);
         return;
       }
 
       setRestoring(false);
 
-      Alert.alert(
+      showDialog(
         'Restore Backup?',
         `This backup contains ${info.vehicleCount} vehicle${info.vehicleCount !== 1 ? 's' : ''}, ${info.eventCount} event${info.eventCount !== 1 ? 's' : ''}, and ${info.reminderCount} reminder${info.reminderCount !== 1 ? 's' : ''}.\n\nThis will restore all your data.`,
         [
@@ -105,7 +120,7 @@ export default function OnboardingScreen() {
                 Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
               } catch (e) {
                 const message = e instanceof Error ? e.message : 'An unexpected error occurred.';
-                Alert.alert('Restore Failed', message);
+                showDialog('Restore Failed', message);
               } finally {
                 setRestoring(false);
               }
@@ -115,10 +130,50 @@ export default function OnboardingScreen() {
       );
     } catch (e) {
       const message = e instanceof Error ? e.message : 'An unexpected error occurred.';
-      Alert.alert('Restore Failed', message);
+      showDialog('Restore Failed', message);
       setRestoring(false);
     }
   }, [restoring]);
+
+  const handleContinue = useCallback(async () => {
+    await updateSetting('hasCompletedOnboarding', true);
+  }, [updateSetting]);
+
+  if (completed) {
+    return (
+      <SafeAreaView className="flex-1 bg-surface dark:bg-surface-dark items-center justify-center px-8">
+        <View
+          style={{ width: 72, height: 72, borderRadius: 36, backgroundColor: '#D5F2E3' }}
+          className="items-center justify-center mb-6"
+        >
+          <Ionicons name="checkmark" size={36} color="#2EAD76" />
+        </View>
+        <Text className="text-2xl font-bold text-ink dark:text-ink-on-dark text-center mb-2">
+          You're all set
+        </Text>
+        <Text className="text-base text-ink-secondary dark:text-ink-secondary-on-dark text-center mb-8 leading-6">
+          Your next fill-up or service visit will start building your dashboard.
+        </Text>
+        <Pressable
+          onPress={handleContinue}
+          style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}
+          className="bg-primary py-4 rounded-2xl w-full items-center mb-3"
+          accessibilityLabel="Log your first event"
+          accessibilityRole="button"
+        >
+          <Text className="text-lg font-semibold text-white">Log Your First Event</Text>
+        </Pressable>
+        <Pressable
+          onPress={handleContinue}
+          className="py-3 items-center"
+          accessibilityLabel="Go to dashboard"
+          accessibilityRole="button"
+        >
+          <Text className="text-sm text-primary font-medium">Explore first</Text>
+        </Pressable>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView className="flex-1 bg-surface dark:bg-surface-dark">
@@ -230,6 +285,39 @@ export default function OnboardingScreen() {
               </View>
             </View>
 
+            {/* Fuel type */}
+            <View className="mb-4">
+              <Text className="text-xs text-ink-muted dark:text-ink-muted-on-dark mb-2 font-semibold">
+                Fuel Type
+              </Text>
+              <SegmentedControl
+                options={[
+                  { value: 'gas' as FuelType, label: 'Gas' },
+                  { value: 'diesel' as FuelType, label: 'Diesel' },
+                  { value: 'electric' as FuelType, label: 'Electric' },
+                ]}
+                selectedValue={fuelType}
+                onValueChange={setFuelType}
+                accessibilityLabel="Fuel type"
+              />
+            </View>
+
+            {/* Odometer unit */}
+            <View className="mb-4">
+              <Text className="text-xs text-ink-muted dark:text-ink-muted-on-dark mb-2 font-semibold">
+                Odometer Unit
+              </Text>
+              <SegmentedControl
+                options={[
+                  { value: 'miles' as OdometerUnit, label: 'Miles' },
+                  { value: 'kilometers' as OdometerUnit, label: 'Kilometers' },
+                ]}
+                selectedValue={odometerUnit}
+                onValueChange={setOdometerUnit}
+                accessibilityLabel="Odometer unit"
+              />
+            </View>
+
             {/* Save button */}
             <Pressable
               onPress={handleSave}
@@ -269,6 +357,7 @@ export default function OnboardingScreen() {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+      <ConfirmDialog {...dialogProps} />
     </SafeAreaView>
   );
 }

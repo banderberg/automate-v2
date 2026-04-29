@@ -1,11 +1,10 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   View,
   Text,
   TextInput,
   ScrollView,
   Pressable,
-  Alert,
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
@@ -17,8 +16,11 @@ import { DateField } from '@/src/components/DateField';
 import { OdometerField } from '@/src/components/OdometerField';
 import { ChipPicker } from '@/src/components/ChipPicker';
 import { EventPhotos } from '@/src/components/EventPhotos';
+import { ConfirmDialog } from '@/src/components/ConfirmDialog';
+import { useDialog } from '@/src/hooks/useDialog';
 import { useVehicleStore } from '@/src/stores/vehicleStore';
 import { useEventStore } from '@/src/stores/eventStore';
+import { useToastStore } from '@/src/stores/toastStore';
 import { useReferenceDataStore } from '@/src/stores/referenceDataStore';
 import { validateOdometer } from '@/src/services/odometerValidator';
 import * as eventQueries from '@/src/db/queries/events';
@@ -34,7 +36,7 @@ export default function ExpenseEventModal() {
   const updateEvent = useEventStore((s) => s.updateEvent);
   const deleteEvent = useEventStore((s) => s.deleteEvent);
   const events = useEventStore((s) => s.events);
-  const categories = useReferenceDataStore((s) => s.categories);
+  const rawCategories = useReferenceDataStore((s) => s.categories);
   const addCategory = useReferenceDataStore((s) => s.addCategory);
   const updateCategory = useReferenceDataStore((s) => s.updateCategory);
   const deleteCategory = useReferenceDataStore((s) => s.deleteCategory);
@@ -51,9 +53,22 @@ export default function ExpenseEventModal() {
   const [categoryError, setCategoryError] = useState('');
   const [bounds, setBounds] = useState<{ floor: number | null; ceiling: number | null }>({ floor: null, ceiling: null });
   const [saving, setSaving] = useState(false);
+  const isDirty = useRef(false);
+  const { showDialog, dialogProps } = useDialog();
 
   const odometerUnit = activeVehicle?.odometerUnit ?? 'miles';
   const title = isEditing ? 'Edit Expense' : 'Add Expense';
+
+  const categories = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const e of events) {
+      if (e.categoryId) counts.set(e.categoryId, (counts.get(e.categoryId) ?? 0) + 1);
+    }
+    return [...rawCategories].sort((a, b) => {
+      const diff = (counts.get(b.id) ?? 0) - (counts.get(a.id) ?? 0);
+      return diff !== 0 ? diff : a.name.localeCompare(b.name);
+    });
+  }, [rawCategories, events]);
 
   useEffect(() => {
     if (!activeVehicle) return;
@@ -90,6 +105,13 @@ export default function ExpenseEventModal() {
     })();
   }, [activeVehicle?.id, date]);
 
+  useEffect(() => {
+    const val = parseInt(odometer, 10);
+    if (isNaN(val) || !val) return;
+    const result = validateOdometer(val, bounds);
+    setOdometerError(result.valid ? '' : result.message ?? 'Invalid odometer');
+  }, [bounds]);
+
   const handleOdometerBlur = useCallback(() => {
     const val = parseInt(odometer, 10);
     if (isNaN(val) || !val) {
@@ -101,6 +123,7 @@ export default function ExpenseEventModal() {
   }, [odometer, bounds]);
 
   const handleCategoryChange = useCallback((ids: string[]) => {
+    isDirty.current = true;
     setSelectedCategoryIds(ids);
     if (ids.length > 0) setCategoryError('');
   }, []);
@@ -141,38 +164,62 @@ export default function ExpenseEventModal() {
         await addEvent(eventData, undefined, photoUris);
       }
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      const costStr = cost ? `, $${parseFloat(cost).toFixed(2)}` : '';
+      useToastStore.getState().show(`Expense ${isEditing ? 'updated' : 'saved'}${costStr}`);
       router.back();
-    } catch {
-      Alert.alert('Error', 'Failed to save event. Please try again.');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : '';
+      showDialog("Couldn't Save Expense", msg || 'Check your entries and try again. If this keeps happening, try restarting the app.');
     } finally {
       setSaving(false);
     }
   }, [canSave, activeVehicle, date, odometer, cost, selectedCategoryIds, notes, isEditing, eventId]);
 
+  const handleCancel = useCallback(() => {
+    if (isDirty.current) {
+      showDialog('Discard Changes?', 'You have unsaved changes.', [
+        { text: 'Keep Editing', style: 'cancel' },
+        { text: 'Discard', style: 'destructive', onPress: () => router.back() },
+      ]);
+    } else {
+      router.back();
+    }
+  }, [router]);
+
   const handleDelete = useCallback(() => {
     if (!eventId) return;
-    router.back();
-    setTimeout(() => deleteEvent(eventId), 100);
+    showDialog('Delete Expense', 'This cannot be undone.', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: async () => {
+          await deleteEvent(eventId);
+          router.back();
+        },
+      },
+    ]);
   }, [eventId, deleteEvent, router]);
 
   return (
     <SafeAreaView className="flex-1 bg-surface dark:bg-surface-dark" edges={['top']}>
       <ModalHeader
         title={title}
-        onCancel={() => router.back()}
+        onCancel={handleCancel}
         onSave={handleSave}
         saveDisabled={!canSave}
+        isSaving={saving}
       />
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         className="flex-1"
       >
         <ScrollView className="flex-1 px-4 pt-4" contentContainerStyle={{ paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
-          <DateField value={date} onChange={setDate} />
+          <DateField value={date} onChange={(d) => { isDirty.current = true; setDate(d); }} />
 
           <OdometerField
             value={odometer}
-            onChange={setOdometer}
+            onChange={(v) => { isDirty.current = true; setOdometer(v); }}
             onBlur={handleOdometerBlur}
             unit={odometerUnit}
             error={odometerError}
@@ -186,7 +233,7 @@ export default function ExpenseEventModal() {
             multiSelect={false}
             label="Category *"
             error={categoryError}
-            accentColor="#10B981"
+            accentColor="#2EAD76"
             onAdd={async (name) => { await addCategory(name); }}
             onUpdate={async (id, name) => { await updateCategory(id, name); }}
             onDelete={async (id) => { await deleteCategory(id); }}
@@ -201,7 +248,7 @@ export default function ExpenseEventModal() {
               <TextInput
                 className="flex-1 text-base text-ink dark:text-ink-on-dark"
                 value={cost}
-                onChangeText={setCost}
+                onChangeText={(t) => { isDirty.current = true; setCost(t); }}
                 keyboardType="decimal-pad"
                 placeholder="0.00"
                 placeholderTextColor="#A8A49D"
@@ -218,7 +265,7 @@ export default function ExpenseEventModal() {
             <TextInput
               className="bg-card dark:bg-card-dark rounded-xl border border-divider dark:border-divider-dark px-3.5 py-3 text-base text-ink dark:text-ink-on-dark"
               value={notes}
-              onChangeText={(t) => setNotes(t.slice(0, 500))}
+              onChangeText={(t) => { isDirty.current = true; setNotes(t.slice(0, 500)); }}
               multiline
               numberOfLines={3}
               textAlignVertical="top"
@@ -232,7 +279,7 @@ export default function ExpenseEventModal() {
           <EventPhotos
             eventId={isEditing && eventId ? eventId : null}
             photos={photos}
-            onPhotosChange={setPhotos}
+            onPhotosChange={(p) => { isDirty.current = true; setPhotos(p); }}
           />
 
           {isEditing && (
@@ -240,14 +287,15 @@ export default function ExpenseEventModal() {
               onPress={handleDelete}
               style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
               className="mb-8 py-3 rounded-xl border border-destructive items-center"
-              accessibilityLabel="Delete event"
+              accessibilityLabel="Delete expense"
               accessibilityRole="button"
             >
-              <Text className="text-destructive font-semibold text-base">Delete Event</Text>
+              <Text className="text-destructive font-semibold text-base">Delete Expense</Text>
             </Pressable>
           )}
         </ScrollView>
       </KeyboardAvoidingView>
+      <ConfirmDialog {...dialogProps} />
     </SafeAreaView>
   );
 }

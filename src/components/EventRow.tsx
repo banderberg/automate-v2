@@ -1,4 +1,5 @@
-import { View, Text, Pressable } from 'react-native';
+import React from 'react';
+import { View, Text, Pressable, type TextStyle } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import type { VehicleEvent, Place } from '../types';
 
@@ -6,27 +7,30 @@ interface EventRowProps {
   event: VehicleEvent;
   odometerUnit: 'miles' | 'kilometers';
   place?: Place | null;
+  label?: string;
   onPress: () => void;
   currency?: string;
 }
 
 const TYPE_CONFIG = {
-  fuel: { color: '#0D9488', bgColor: '#CCFBF1', icon: 'water' as const, label: 'Fuel event' },
-  service: { color: '#F97316', bgColor: '#FFF7ED', icon: 'construct' as const, label: 'Service event' },
-  expense: { color: '#10B981', bgColor: '#D1FAE5', icon: 'cash' as const, label: 'Expense event' },
+  fuel: { color: '#1A9A8F', bgColor: '#D0F5EE', icon: 'water' as const, label: 'Fuel event' },
+  service: { color: '#E8772B', bgColor: '#FFF3E6', icon: 'construct' as const, label: 'Service event' },
+  expense: { color: '#2EAD76', bgColor: '#D5F2E3', icon: 'receipt-outline' as const, label: 'Expense event' },
 };
+
+const tabularNums: TextStyle = { fontVariant: ['tabular-nums'] };
 
 function formatDate(dateStr: string): string {
   const d = new Date(dateStr + 'T00:00:00');
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
-export function EventRow({ event, odometerUnit, place, onPress, currency = '$' }: EventRowProps) {
+function EventRowInner({ event, odometerUnit, place, label, onPress, currency = '$' }: EventRowProps) {
   const config = TYPE_CONFIG[event.type];
   const unitLabel = odometerUnit === 'miles' ? 'mi' : 'km';
   const dateText = formatDate(event.date);
-  const placeName = place?.name;
-  const topLine = placeName ? `${dateText} · ${placeName}` : dateText;
+  const descriptor = label || place?.name;
+  const topLine = descriptor ? `${dateText} · ${descriptor}` : dateText;
 
   return (
     <Pressable
@@ -39,23 +43,25 @@ export function EventRow({ event, odometerUnit, place, onPress, currency = '$' }
         className="w-9 h-9 rounded-full items-center justify-center mr-3"
         style={{ backgroundColor: config.bgColor }}
       >
-        <Ionicons name={config.icon} size={18} color={config.color} accessibilityLabel={config.label} />
+        <Ionicons name={config.icon} size={18} color={config.color} accessible={false} />
       </View>
 
       <View className="flex-1 mr-2">
         <Text className="text-sm text-ink dark:text-ink-on-dark" numberOfLines={1}>
           {topLine}
         </Text>
-        <Text className="text-xs text-ink-muted dark:text-ink-muted-on-dark">
+        <Text className="text-xs text-ink-muted dark:text-ink-muted-on-dark" numberOfLines={1} style={tabularNums}>
           {event.odometer != null
             ? `${event.odometer.toLocaleString('en-US')} ${unitLabel}`
-            : '—'}
+            : '--'}
         </Text>
       </View>
 
-      <Text className="text-sm font-semibold text-ink dark:text-ink-on-dark">
+      <Text className="text-sm font-semibold text-ink dark:text-ink-on-dark" numberOfLines={1} style={tabularNums}>
         {currency}{event.cost.toFixed(2)}
       </Text>
     </Pressable>
   );
 }
+
+export const EventRow = React.memo(EventRowInner);

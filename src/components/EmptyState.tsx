@@ -12,7 +12,7 @@ interface EmptyStateProps {
 export function EmptyState({ icon, title, description, actionLabel, onAction }: EmptyStateProps) {
   return (
     <View className="flex-1 items-center justify-center px-8">
-      <View className="mb-4 opacity-40">{icon}</View>
+      <View className="mb-4">{icon}</View>
       <Text className="text-lg font-bold text-ink dark:text-ink-on-dark text-center mb-2">
         {title}
       </Text>

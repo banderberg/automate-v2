@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   View,
   Text,
@@ -6,18 +6,21 @@ import {
   Switch,
   ScrollView,
   Pressable,
-  Alert,
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useColorScheme } from 'nativewind';
 import * as Haptics from 'expo-haptics';
 import { ModalHeader } from '@/src/components/ModalHeader';
+import { ConfirmDialog } from '@/src/components/ConfirmDialog';
+import { useDialog } from '@/src/hooks/useDialog';
 import { SegmentedControl } from '@/src/components/SegmentedControl';
 import { ChipPicker } from '@/src/components/ChipPicker';
 import { DateField } from '@/src/components/DateField';
 import { useVehicleStore } from '@/src/stores/vehicleStore';
+import { useToastStore } from '@/src/stores/toastStore';
 import { useEventStore } from '@/src/stores/eventStore';
 import { useReminderStore } from '@/src/stores/reminderStore';
 import { useReferenceDataStore } from '@/src/stores/referenceDataStore';
@@ -36,6 +39,8 @@ const TIME_UNITS: { value: TimeUnitOption; label: string }[] = [
 
 export default function ReminderModal() {
   const router = useRouter();
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === 'dark';
   const { reminderId } = useLocalSearchParams<{ reminderId?: string }>();
   const isEditing = !!reminderId;
   const activeVehicle = useVehicleStore((s) => s.activeVehicle);
@@ -46,6 +51,12 @@ export default function ReminderModal() {
   const deleteReminder = useReminderStore((s) => s.deleteReminder);
   const serviceTypes = useReferenceDataStore((s) => s.serviceTypes);
   const categories = useReferenceDataStore((s) => s.categories);
+  const addServiceType = useReferenceDataStore((s) => s.addServiceType);
+  const updateServiceType = useReferenceDataStore((s) => s.updateServiceType);
+  const deleteServiceType = useReferenceDataStore((s) => s.deleteServiceType);
+  const addCategory = useReferenceDataStore((s) => s.addCategory);
+  const updateCategory = useReferenceDataStore((s) => s.updateCategory);
+  const deleteCategory = useReferenceDataStore((s) => s.deleteCategory);
 
   const [kind, setKind] = useState<ReminderKind>('maintenance');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -59,6 +70,19 @@ export default function ReminderModal() {
   const [intervalError, setIntervalError] = useState('');
   const [selectionError, setSelectionError] = useState('');
   const [saving, setSaving] = useState(false);
+  const isDirty = useRef(false);
+  const markDirty = useCallback(() => { isDirty.current = true; }, []);
+  const distanceIntervalRef = useRef<TextInput>(null);
+  const timeIntervalRef = useRef<TextInput>(null);
+
+  useEffect(() => {
+    if (distanceEnabled) setTimeout(() => distanceIntervalRef.current?.focus(), 100);
+  }, [distanceEnabled]);
+
+  useEffect(() => {
+    if (timeEnabled) setTimeout(() => timeIntervalRef.current?.focus(), 100);
+  }, [timeEnabled]);
+  const { showDialog, dialogProps } = useDialog();
 
   const odometerUnit = activeVehicle?.odometerUnit ?? 'miles';
   const odoLabel = getOdometerLabel(odometerUnit);
@@ -92,14 +116,12 @@ export default function ReminderModal() {
   const matchingEvent = useMemo(() => {
     if (selectedIds.length === 0 || !activeVehicle) return null;
     const selectedId = selectedIds[0];
-    if (kind === 'maintenance') {
+    if (kind === 'expense') {
       return events.find(
-        (e) => e.type === 'service'
+        (e) => e.type === 'expense' && e.categoryId === selectedId
       ) ?? null;
     }
-    return events.find(
-      (e) => e.type === 'expense' && e.categoryId === selectedId
-    ) ?? null;
+    return null;
   }, [events, selectedIds, kind, activeVehicle]);
 
   const hasBaseline = useMemo(() => {
@@ -160,9 +182,11 @@ export default function ReminderModal() {
         await addReminder(data);
       }
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      useToastStore.getState().show(`Reminder ${isEditing ? 'updated' : 'saved'}`);
       router.back();
-    } catch {
-      Alert.alert('Error', 'Failed to save reminder. Please try again.');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : '';
+      showDialog("Couldn't Save Reminder", msg || 'Check your entries and try again. If this keeps happening, try restarting the app.');
     } finally {
       setSaving(false);
     }
@@ -170,7 +194,7 @@ export default function ReminderModal() {
 
   const handleDelete = useCallback(() => {
     if (!reminderId) return;
-    Alert.alert('Delete Reminder', 'Are you sure you want to delete this reminder?', [
+    showDialog('Delete Reminder', 'Are you sure you want to delete this reminder?', [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Delete',
@@ -185,8 +209,20 @@ export default function ReminderModal() {
 
   const handleSelectionChange = useCallback((ids: string[]) => {
     setSelectedIds(ids);
+    markDirty();
     if (ids.length > 0) setSelectionError('');
   }, []);
+
+  const handleCancel = useCallback(() => {
+    if (isDirty.current) {
+      showDialog('Discard Changes?', 'You have unsaved changes.', [
+        { text: 'Keep Editing', style: 'cancel' },
+        { text: 'Discard', style: 'destructive', onPress: () => router.back() },
+      ]);
+    } else {
+      router.back();
+    }
+  }, [router]);
 
   const chipItems = kind === 'maintenance' ? serviceTypes : categories;
 
@@ -194,9 +230,10 @@ export default function ReminderModal() {
     <SafeAreaView className="flex-1 bg-surface dark:bg-surface-dark" edges={['top']}>
       <ModalHeader
         title={isEditing ? 'Edit Reminder' : 'Add Reminder'}
-        onCancel={() => router.back()}
+        onCancel={handleCancel}
         onSave={handleSave}
         saveDisabled={!canSave}
+        isSaving={saving}
       />
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -217,6 +254,7 @@ export default function ReminderModal() {
               onValueChange={(v) => {
                 setKind(v);
                 setSelectedIds([]);
+                markDirty();
               }}
               disabled={isEditing}
               accessibilityLabel="Reminder type"
@@ -230,118 +268,144 @@ export default function ReminderModal() {
             multiSelect={false}
             label={kind === 'maintenance' ? 'Service Type *' : 'Category *'}
             error={selectionError}
-            accentColor={kind === 'maintenance' ? '#F97316' : '#10B981'}
+            accentColor={kind === 'maintenance' ? '#E8772B' : '#2EAD76'}
+            onAdd={async (name) => { kind === 'maintenance' ? await addServiceType(name) : await addCategory(name); }}
+            onUpdate={async (id, name) => { kind === 'maintenance' ? await updateServiceType(id, name) : await updateCategory(id, name); }}
+            onDelete={async (id) => { kind === 'maintenance' ? await deleteServiceType(id) : await deleteCategory(id); }}
           />
 
-          {/* Repeat every */}
-          <Text className="text-xs text-ink-muted dark:text-ink-muted-on-dark mb-2 mt-2 font-semibold">
-            Repeat Every
-          </Text>
-
-          {/* Distance toggle */}
-          <View className="flex-row items-center bg-surface dark:bg-surface-dark rounded-xl border border-divider dark:border-divider-dark px-3.5 py-3 mb-3">
-            <View className="flex-1 mr-3">
-              <Text className="text-base text-ink dark:text-ink-on-dark">By Distance</Text>
-            </View>
-            <Switch
-              value={distanceEnabled}
-              onValueChange={(v) => {
-                setDistanceEnabled(v);
-                setIntervalError('');
-              }}
-              trackColor={{ false: '#E2E0DB', true: '#93C5FD' }}
-              thumbColor={distanceEnabled ? '#3B82F6' : '#f4f3f4'}
-              accessibilityLabel="Enable distance-based repeat"
-            />
-          </View>
-          {distanceEnabled && (
-            <View className="flex-row items-center mb-4 ml-4 gap-2">
-              <Text className="text-sm text-ink-secondary dark:text-ink-secondary-on-dark">Every</Text>
-              <View className="flex-row items-center bg-surface dark:bg-surface-dark rounded-xl border border-divider dark:border-divider-dark px-3 py-2">
-                <TextInput
-                  className="text-base text-ink dark:text-ink-on-dark min-w-[60px] text-center"
-                  value={distanceInterval}
-                  onChangeText={setDistanceInterval}
-                  keyboardType="number-pad"
-                  placeholder="5000"
-                  placeholderTextColor="#A8A49D"
-                  accessibilityLabel={`Distance interval in ${odoLabel}`}
-                />
-              </View>
-              <Text className="text-sm text-ink-secondary dark:text-ink-secondary-on-dark">{odoLabel}</Text>
-            </View>
+          {selectedIds.length === 0 && (
+            <Text className="text-xs text-ink-faint dark:text-ink-faint-on-dark text-center py-6">
+              Pick what you want to be reminded about
+            </Text>
           )}
 
-          {/* Time toggle */}
-          <View className="flex-row items-center bg-surface dark:bg-surface-dark rounded-xl border border-divider dark:border-divider-dark px-3.5 py-3 mb-3">
-            <View className="flex-1 mr-3">
-              <Text className="text-base text-ink dark:text-ink-on-dark">By Time</Text>
-            </View>
-            <Switch
-              value={timeEnabled}
-              onValueChange={(v) => {
-                setTimeEnabled(v);
-                setIntervalError('');
-              }}
-              trackColor={{ false: '#E2E0DB', true: '#93C5FD' }}
-              thumbColor={timeEnabled ? '#3B82F6' : '#f4f3f4'}
-              accessibilityLabel="Enable time-based repeat"
-            />
-          </View>
-          {timeEnabled && (
-            <View className="flex-row items-center mb-4 ml-4 gap-2 flex-wrap">
-              <Text className="text-sm text-ink-secondary dark:text-ink-secondary-on-dark">Every</Text>
-              <View className="flex-row items-center bg-surface dark:bg-surface-dark rounded-xl border border-divider dark:border-divider-dark px-3 py-2">
-                <TextInput
-                  className="text-base text-ink dark:text-ink-on-dark min-w-[40px] text-center"
-                  value={timeInterval}
-                  onChangeText={setTimeInterval}
-                  keyboardType="number-pad"
-                  placeholder="6"
-                  placeholderTextColor="#A8A49D"
-                  accessibilityLabel="Time interval"
-                />
-              </View>
-              <View className="flex-row gap-1">
-                {TIME_UNITS.map((u) => (
-                  <Pressable
-                    key={u.value}
-                    onPress={() => setTimeUnit(u.value)}
-                    className={`px-3 py-1.5 rounded-full ${
-                      timeUnit === u.value
-                        ? 'bg-primary'
-                        : 'bg-surface dark:bg-surface-dark border border-divider dark:border-divider-dark'
-                    }`}
-                    accessibilityLabel={`${u.label}${timeUnit === u.value ? ', selected' : ''}`}
-                    accessibilityRole="button"
-                  >
-                    <Text
-                      className={`text-xs font-semibold ${
-                        timeUnit === u.value ? 'text-white' : 'text-ink-secondary dark:text-ink-secondary-on-dark'
-                      }`}
-                    >
-                      {u.label}
-                    </Text>
-                  </Pressable>
-                ))}
-              </View>
-            </View>
-          )}
-
-          {intervalError ? (
-            <Text className="text-xs text-destructive mb-3">{intervalError}</Text>
-          ) : null}
-
-          {/* Starting from */}
           {selectedIds.length > 0 && (
             <>
+              {/* Repeat every */}
               <Text className="text-xs text-ink-muted dark:text-ink-muted-on-dark mb-2 mt-2 font-semibold">
+                Repeat Every
+              </Text>
+
+              {/* Distance toggle */}
+              <View className="flex-row items-center bg-surface dark:bg-surface-dark rounded-xl border border-divider dark:border-divider-dark px-3.5 py-3 mb-3">
+                <View className="flex-1 mr-3">
+                  <Text className="text-base text-ink dark:text-ink-on-dark">By Distance</Text>
+                </View>
+                <Switch
+                  value={distanceEnabled}
+                  onValueChange={(v) => {
+                    setDistanceEnabled(v);
+                    setIntervalError('');
+                    markDirty();
+                  }}
+                  trackColor={{ false: isDark ? '#2A2926' : '#E2E0DB', true: isDark ? '#2E5A9E' : '#A7C4E4' }}
+                  thumbColor={distanceEnabled ? '#4272C4' : isDark ? '#1A1917' : '#FEFDFB'}
+                  accessibilityLabel="Enable distance-based repeat"
+                />
+              </View>
+              {distanceEnabled && (
+                <View className="flex-row items-center mb-4 ml-4 gap-2">
+                  <Text className="text-sm text-ink-secondary dark:text-ink-secondary-on-dark">Every</Text>
+                  <View className="flex-row items-center bg-surface dark:bg-surface-dark rounded-xl border border-divider dark:border-divider-dark px-3 py-2">
+                    <TextInput
+                      ref={distanceIntervalRef}
+                      className="text-base text-ink dark:text-ink-on-dark min-w-[60px] text-center"
+                      value={distanceInterval}
+                      onChangeText={(t) => { setDistanceInterval(t); markDirty(); }}
+                      keyboardType="number-pad"
+                      placeholder="5000"
+                      placeholderTextColor="#A8A49D"
+                      accessibilityLabel={`Distance interval in ${odoLabel}`}
+                    />
+                  </View>
+                  <Text className="text-sm text-ink-secondary dark:text-ink-secondary-on-dark">{odoLabel}</Text>
+                </View>
+              )}
+
+              {/* Time toggle */}
+              <View className="flex-row items-center bg-surface dark:bg-surface-dark rounded-xl border border-divider dark:border-divider-dark px-3.5 py-3 mb-3">
+                <View className="flex-1 mr-3">
+                  <Text className="text-base text-ink dark:text-ink-on-dark">By Time</Text>
+                </View>
+                <Switch
+                  value={timeEnabled}
+                  onValueChange={(v) => {
+                    setTimeEnabled(v);
+                    setIntervalError('');
+                    markDirty();
+                  }}
+                  trackColor={{ false: isDark ? '#2A2926' : '#E2E0DB', true: isDark ? '#2E5A9E' : '#A7C4E4' }}
+                  thumbColor={timeEnabled ? '#4272C4' : isDark ? '#1A1917' : '#FEFDFB'}
+                  accessibilityLabel="Enable time-based repeat"
+                />
+              </View>
+              {timeEnabled && (
+                <View className="flex-row items-center mb-4 ml-4 gap-2 flex-wrap">
+                  <Text className="text-sm text-ink-secondary dark:text-ink-secondary-on-dark">Every</Text>
+                  <View className="flex-row items-center bg-surface dark:bg-surface-dark rounded-xl border border-divider dark:border-divider-dark px-3 py-2">
+                    <TextInput
+                      ref={timeIntervalRef}
+                      className="text-base text-ink dark:text-ink-on-dark min-w-[40px] text-center"
+                      value={timeInterval}
+                      onChangeText={(t) => { setTimeInterval(t); markDirty(); }}
+                      keyboardType="number-pad"
+                      placeholder="6"
+                      placeholderTextColor="#A8A49D"
+                      accessibilityLabel="Time interval"
+                    />
+                  </View>
+                  <View className="flex-row gap-1">
+                    {TIME_UNITS.map((u) => (
+                      <Pressable
+                        key={u.value}
+                        onPress={() => { setTimeUnit(u.value); markDirty(); }}
+                        className={`px-3 py-2.5 rounded-full ${
+                          timeUnit === u.value
+                            ? 'bg-primary'
+                            : 'bg-surface dark:bg-surface-dark border border-divider dark:border-divider-dark'
+                        }`}
+                        accessibilityLabel={`${u.label}${timeUnit === u.value ? ', selected' : ''}`}
+                        accessibilityRole="button"
+                      >
+                        <Text
+                          className={`text-xs font-semibold ${
+                            timeUnit === u.value ? 'text-white' : 'text-ink-secondary dark:text-ink-secondary-on-dark'
+                          }`}
+                        >
+                          {u.label}
+                        </Text>
+                      </Pressable>
+                    ))}
+                  </View>
+                </View>
+              )}
+
+              {intervalError ? (
+                <Text className="text-xs text-destructive mb-3">{intervalError}</Text>
+              ) : null}
+
+              {!distanceEnabled && !timeEnabled && (
+                <Text className="text-xs text-ink-faint dark:text-ink-faint-on-dark text-center py-4">
+                  Enable at least one interval
+                </Text>
+              )}
+            </>
+          )}
+
+          {/* Starting from */}
+          {selectedIds.length > 0 && (distanceEnabled || timeEnabled) && (
+            <>
+              <Text className="text-xs text-ink-muted dark:text-ink-muted-on-dark mb-1 mt-2 font-semibold">
                 Starting From
+              </Text>
+              <Text className="text-xs text-ink-faint dark:text-ink-faint-on-dark mb-3">
+                The date and odometer when the clock starts for this reminder. The next due date is calculated from here.
               </Text>
               {hasBaseline && matchingEvent ? (
                 <View className="bg-surface dark:bg-surface-dark rounded-xl border border-divider dark:border-divider-dark px-3.5 py-3 mb-4">
                   <Text className="text-sm text-ink dark:text-ink-on-dark">
-                    Last event on {matchingEvent.date}
+                    Last recorded on {matchingEvent.date}
                     {matchingEvent.odometer != null && ` at ${matchingEvent.odometer.toLocaleString('en-US')} ${odoLabel}`}
                   </Text>
                 </View>
@@ -350,7 +414,7 @@ export default function ReminderModal() {
                   {timeEnabled && (
                     <DateField
                       value={baselineDate}
-                      onChange={setBaselineDate}
+                      onChange={(v) => { setBaselineDate(v); markDirty(); }}
                       label="Start tracking from"
                     />
                   )}
@@ -363,7 +427,7 @@ export default function ReminderModal() {
                         <TextInput
                           className="flex-1 text-base text-ink dark:text-ink-on-dark"
                           value={baselineOdometer}
-                          onChangeText={setBaselineOdometer}
+                          onChangeText={(t) => { setBaselineOdometer(t); markDirty(); }}
                           keyboardType="number-pad"
                           placeholder="Current odometer"
                           placeholderTextColor="#A8A49D"
@@ -392,6 +456,7 @@ export default function ReminderModal() {
           <View className="h-8" />
         </ScrollView>
       </KeyboardAvoidingView>
+      <ConfirmDialog {...dialogProps} />
     </SafeAreaView>
   );
 }
