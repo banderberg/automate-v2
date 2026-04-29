@@ -12,6 +12,7 @@ import { useSettingsStore } from '@/src/stores/settingsStore';
 import { useVehicleStore } from '@/src/stores/vehicleStore';
 import { useEventStore } from '@/src/stores/eventStore';
 import { useReminderStore } from '@/src/stores/reminderStore';
+import { reloadAllStores } from '@/src/stores/orchestrator';
 import { createBackup, getBackupInfo, restoreBackup } from '@/src/services/backup';
 import { loadTestData } from '@/src/db/testData';
 import { useReferenceDataStore } from '@/src/stores/referenceDataStore';
@@ -213,6 +214,8 @@ export default function SettingsScreen() {
               setIsRestoring(true);
               try {
                 await restoreBackup(fileUri);
+                await reloadAllStores();
+
                 showDialog('Restore Complete', 'Your data has been restored successfully.');
               } catch (e) {
                 const message = e instanceof Error ? e.message : 'An unexpected error occurred.';
@@ -244,16 +247,7 @@ export default function SettingsScreen() {
             setIsLoadingTestData(true);
             try {
               const result = await loadTestData();
-              const vehicleStore = useVehicleStore.getState();
-              await vehicleStore.initialize();
-              const active = useVehicleStore.getState().activeVehicle;
-              if (active) {
-                await Promise.all([
-                  useEventStore.getState().loadForVehicle(active.id),
-                  useReminderStore.getState().loadForVehicle(active.id),
-                ]);
-              }
-              await useSettingsStore.getState().initialize();
+              await reloadAllStores();
               showDialog(
                 'Test Data Loaded',
                 `Created ${result.vehicles} vehicles, ${result.events} events, and ${result.reminders} reminders spanning 2 years.`,

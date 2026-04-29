@@ -12,12 +12,14 @@ interface DocumentStore {
   loadForVehicle(vehicleId: string): Promise<void>;
   addDocument(
     data: Omit<VehicleDocument, 'id' | 'createdAt' | 'updatedAt' | 'notificationId'>,
+    vehicleName?: string,
     scheduleNotification?: boolean
   ): Promise<VehicleDocument>;
   updateDocument(
     id: string,
     fields: Partial<VehicleDocument>,
-    newFilePath?: string
+    newFilePath?: string,
+    vehicleName?: string
   ): Promise<void>;
   deleteDocument(id: string): Promise<void>;
   clearDocuments(): void;
@@ -62,16 +64,12 @@ export const useDocumentStore = create<DocumentStore>((set, get) => ({
     }
   },
 
-  async addDocument(data, scheduleNotification = true) {
+  async addDocument(data, vehicleName = 'your vehicle', scheduleNotification = true) {
     set({ error: null });
     try {
       let notificationId: string | undefined;
 
       if (scheduleNotification && data.expirationDate) {
-        const { useVehicleStore } = await import('./vehicleStore');
-        const vehicle = useVehicleStore.getState().vehicles.find((v) => v.id === data.vehicleId);
-        const vehicleName = vehicle?.nickname ?? 'your vehicle';
-
         const nid = await scheduleExpirationNotification(
           data.expirationDate,
           data.name,
@@ -97,7 +95,7 @@ export const useDocumentStore = create<DocumentStore>((set, get) => ({
     }
   },
 
-  async updateDocument(id, fields, newFilePath) {
+  async updateDocument(id, fields, newFilePath, vehicleName = 'your vehicle') {
     set({ error: null });
     try {
       const existing = get().documents.find((d) => d.id === id);
@@ -127,9 +125,6 @@ export const useDocumentStore = create<DocumentStore>((set, get) => ({
         }
 
         if (fields.expirationDate) {
-          const { useVehicleStore } = await import('./vehicleStore');
-          const vehicle = useVehicleStore.getState().vehicles.find((v) => v.id === existing.vehicleId);
-          const vehicleName = vehicle?.nickname ?? 'your vehicle';
           const docName = fields.name ?? existing.name;
 
           const nid = await scheduleExpirationNotification(

@@ -19,6 +19,7 @@ import { useSettingsStore } from '@/src/stores/settingsStore';
 import { ConfirmDialog } from '@/src/components/ConfirmDialog';
 import { SegmentedControl } from '@/src/components/SegmentedControl';
 import { useDialog } from '@/src/hooks/useDialog';
+import { reloadAllStores } from '@/src/stores/orchestrator';
 import { getBackupInfo, restoreBackup } from '@/src/services/backup';
 import { getVolumeUnitForFuelType } from '@/src/constants/units';
 
@@ -117,6 +118,8 @@ export default function OnboardingScreen() {
               setRestoring(true);
               try {
                 await restoreBackup(fileUri);
+                await reloadAllStores();
+
                 Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
               } catch (e) {
                 const message = e instanceof Error ? e.message : 'An unexpected error occurred.';

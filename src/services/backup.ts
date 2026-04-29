@@ -1,11 +1,6 @@
 import * as SQLite from 'expo-sqlite';
 import { File, Paths } from 'expo-file-system';
 import { closeDatabase, initializeDatabase, DATABASE_NAME } from '../db/client';
-import { useSettingsStore } from '../stores/settingsStore';
-import { useVehicleStore } from '../stores/vehicleStore';
-import { useEventStore } from '../stores/eventStore';
-import { useReminderStore } from '../stores/reminderStore';
-import { useReferenceDataStore } from '../stores/referenceDataStore';
 
 export interface BackupInfo {
   vehicleCount: number;
@@ -168,17 +163,4 @@ export async function restoreBackup(fileUri: string): Promise<void> {
   }
 
   await initializeDatabase();
-  await reloadAllStores();
-}
-
-async function reloadAllStores(): Promise<void> {
-  await useSettingsStore.getState().initialize();
-  await useVehicleStore.getState().initialize();
-  await useReferenceDataStore.getState().initialize();
-
-  const activeVehicle = useVehicleStore.getState().activeVehicle;
-  if (activeVehicle) {
-    await useEventStore.getState().loadForVehicle(activeVehicle.id);
-    await useReminderStore.getState().loadForVehicle(activeVehicle.id);
-  }
 }

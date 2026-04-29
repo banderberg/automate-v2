@@ -28,6 +28,7 @@ import { useDialog } from '@/src/hooks/useDialog';
 import { ChipPicker } from '@/src/components/ChipPicker';
 import { DateField } from '@/src/components/DateField';
 import { useDocumentStore } from '@/src/stores/documentStore';
+import { useVehicleStore } from '@/src/stores/vehicleStore';
 import { useToastStore } from '@/src/stores/toastStore';
 import type { VehicleDocumentType } from '@/src/types';
 
@@ -76,6 +77,8 @@ export default function DocumentModal() {
   }>();
   const isEditing = !!documentId;
 
+  const activeVehicle = useVehicleStore((s) => s.activeVehicle);
+  const vehicleName = activeVehicle?.nickname ?? 'your vehicle';
   const documents = useDocumentStore((s) => s.documents);
   const addDocument = useDocumentStore((s) => s.addDocument);
   const updateDocument = useDocumentStore((s) => s.updateDocument);
@@ -257,19 +260,23 @@ export default function DocumentModal() {
         await updateDocument(
           documentId,
           fields,
-          fileChanged ? filePath : undefined
+          fileChanged ? filePath : undefined,
+          vehicleName
         );
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         useToastStore.getState().show('Document updated');
       } else {
-        await addDocument({
-          vehicleId: resolvedVehicleId,
-          name: name.trim(),
-          type: docType,
-          filePath: filePath!,
-          expirationDate: expirationEnabled ? expirationDate : undefined,
-          notes: notes.trim() || undefined,
-        });
+        await addDocument(
+          {
+            vehicleId: resolvedVehicleId,
+            name: name.trim(),
+            type: docType,
+            filePath: filePath!,
+            expirationDate: expirationEnabled ? expirationDate : undefined,
+            notes: notes.trim() || undefined,
+          },
+          vehicleName
+        );
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         useToastStore.getState().show('Document saved');
       }

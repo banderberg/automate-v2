@@ -83,64 +83,22 @@ src/
     seed.ts              # Seed data
     testData.ts          # Development test data
     queries/
-      categories.ts
+      namedEntities.ts   # Generic CRUD factory for service_type + category tables
+      odometerConversion.ts # Bulk odometer unit conversion (DB mutations)
       events.ts
       eventPhotos.ts
       eventServiceTypes.ts
       places.ts
       reminders.ts
-      serviceTypes.ts
       settings.ts
       vehicleDocuments.ts
       vehicles.ts
-  stores/
-    documentStore.ts
-    eventStore.ts
-    referenceDataStore.ts
-    reminderStore.ts
-    settingsStore.ts
-    toastStore.ts
-    vehicleStore.ts
-  services/
-    backup.ts
-    costPerMile.ts
-    csvExport.ts
-    dataImport.ts
-    fuelEfficiency.ts
-    notifications.ts
-    odometerEstimator.ts
-    odometerValidator.ts
-    pdfExport.ts
-    reminderScheduler.ts
-    unitConversion.ts
-    vinDecoder.ts
-    __tests__/           # Unit tests for services
-  hooks/
-    useActiveVehicle.ts
-    useDashboardMetrics.ts
-    useDialog.ts
-    useGuardedNavigate.ts
-  components/
-    AddEventFAB.tsx
-    ChipPicker.tsx
-    ConfirmDialog.tsx
-    DateField.tsx
-    EmptyState.tsx
-    ErrorToast.tsx
-    EventPhotos.tsx
-    EventRow.tsx
-    MetricInfo.tsx
-    ModalHeader.tsx
-    OdometerField.tsx
-    PlaceAutocomplete.tsx
-    ReminderCard.tsx
-    SegmentedControl.tsx
-    Skeleton.tsx
-    UndoSnackbar.tsx
-    VehicleSwitcher.tsx
-  constants/
-    seedData.ts
-    units.ts
+  stores/                # Zustand stores (no store imports another store)
+    orchestrator.ts      # Cross-store workflows — the only module importing multiple stores
+  services/              # Pure business logic — no store imports, no DB mutations
+  hooks/                 # Custom React hooks
+  components/            # Reusable UI components
+  constants/             # Seed data lists, unit definitions, theme tokens
   types/
     index.ts             # All TypeScript interfaces
 

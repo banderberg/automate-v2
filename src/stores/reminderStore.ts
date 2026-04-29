@@ -3,7 +3,7 @@ import type { Reminder, ReminderWithStatus, VehicleEvent } from '../types';
 import * as reminderQueries from '../db/queries/reminders';
 import * as eventQueries from '../db/queries/events';
 import { computeNextDue } from '../services/reminderScheduler';
-import { useReferenceDataStore } from './referenceDataStore';
+import { getDatabase } from '../db/client';
 import * as notificationService from '../services/notifications';
 
 interface ReminderStore {
@@ -12,22 +12,28 @@ interface ReminderStore {
   error: string | null;
 
   loadForVehicle(vehicleId: string): Promise<void>;
-  addReminder(data: Omit<Reminder, 'id' | 'createdAt' | 'updatedAt' | 'notificationId'>): Promise<Reminder>;
-  updateReminder(id: string, fields: Partial<Reminder>): Promise<void>;
+  addReminder(data: Omit<Reminder, 'id' | 'createdAt' | 'updatedAt' | 'notificationId'>, vehicleName?: string): Promise<Reminder>;
+  updateReminder(id: string, fields: Partial<Reminder>, vehicleName?: string): Promise<void>;
   deleteReminder(id: string): Promise<void>;
   recalculateForEvent(event: VehicleEvent, serviceTypeIds?: string[]): Promise<void>;
   clearReminders(): void;
 }
 
-function getLinkedName(reminder: Reminder): string {
-  const { serviceTypes, categories } = useReferenceDataStore.getState();
+async function getLinkedName(reminder: Reminder): Promise<string> {
+  const db = getDatabase();
   if (reminder.serviceTypeId) {
-    const st = serviceTypes.find((s) => s.id === reminder.serviceTypeId);
-    return st?.name ?? 'Unknown';
+    const row = await db.getFirstAsync<{ name: string }>(
+      'SELECT name FROM service_type WHERE id = ?',
+      [reminder.serviceTypeId]
+    );
+    return row?.name ?? 'Unknown';
   }
   if (reminder.categoryId) {
-    const cat = categories.find((c) => c.id === reminder.categoryId);
-    return cat?.name ?? 'Unknown';
+    const row = await db.getFirstAsync<{ name: string }>(
+      'SELECT name FROM category WHERE id = ?',
+      [reminder.categoryId]
+    );
+    return row?.name ?? 'Unknown';
   }
   return 'Unknown';
 }
@@ -38,24 +44,22 @@ async function enrichReminder(
   today: string
 ): Promise<ReminderWithStatus> {
   const nextDue = computeNextDue(reminder, currentOdometer, today);
+  const linkedName = await getLinkedName(reminder);
   return {
     ...reminder,
     ...nextDue,
-    linkedName: getLinkedName(reminder),
+    linkedName,
   };
 }
 
 async function scheduleNotificationForReminder(
   reminder: Reminder,
   linkedName: string,
-  nextDate: string | null
+  nextDate: string | null,
+  vehicleName: string
 ): Promise<string | undefined> {
   if (!nextDate) return undefined;
   try {
-    const { useVehicleStore } = await import('./vehicleStore');
-    const vehicle = useVehicleStore.getState().vehicles.find((v) => v.id === reminder.vehicleId);
-    const vehicleName = vehicle?.nickname ?? 'your vehicle';
-
     if (reminder.notificationId) {
       await notificationService.cancelReminder(reminder.notificationId);
     }
@@ -115,7 +119,7 @@ export const useReminderStore = create<ReminderStore>((set, get) => ({
     }
   },
 
-  async addReminder(data) {
+  async addReminder(data, vehicleName) {
     set({ error: null });
     try {
       const reminder = await reminderQueries.insert(data);
@@ -123,7 +127,7 @@ export const useReminderStore = create<ReminderStore>((set, get) => ({
       const today = new Date().toISOString().split('T')[0];
       const enriched = await enrichReminder(reminder, maxOdometer, today);
 
-      const notifId = await scheduleNotificationForReminder(reminder, enriched.linkedName, enriched.nextDate);
+      const notifId = await scheduleNotificationForReminder(reminder, enriched.linkedName, enriched.nextDate, vehicleName ?? 'your vehicle');
       if (notifId) {
         enriched.notificationId = notifId;
       }
@@ -142,7 +146,7 @@ export const useReminderStore = create<ReminderStore>((set, get) => ({
     }
   },
 
-  async updateReminder(id, fields) {
+  async updateReminder(id, fields, vehicleName) {
     set({ error: null });
     try {
       await reminderQueries.update(id, fields);
@@ -155,7 +159,7 @@ export const useReminderStore = create<ReminderStore>((set, get) => ({
       const today = new Date().toISOString().split('T')[0];
       const enriched = await enrichReminder(updated, maxOdometer, today);
 
-      const notifId = await scheduleNotificationForReminder(updated, enriched.linkedName, enriched.nextDate);
+      const notifId = await scheduleNotificationForReminder(updated, enriched.linkedName, enriched.nextDate, vehicleName ?? 'your vehicle');
       if (notifId) {
         enriched.notificationId = notifId;
       }
