@@ -9,6 +9,7 @@ interface DateFieldProps {
   onChange: (date: string) => void;
   label?: string;
   maxDate?: Date;
+  minDate?: Date;
   required?: boolean;
 }
 
@@ -31,6 +32,7 @@ export function DateField({
   onChange,
   label = 'Date',
   maxDate,
+  minDate,
   required = true,
 }: DateFieldProps) {
   const { colorScheme } = useColorScheme();
@@ -75,6 +77,7 @@ export function DateField({
             display={Platform.OS === 'ios' ? 'spinner' : 'default'}
             onChange={handleChange}
             maximumDate={today}
+            minimumDate={minDate}
             themeVariant={colorScheme === 'dark' ? 'dark' : 'light'}
           />
           {Platform.OS === 'ios' && (

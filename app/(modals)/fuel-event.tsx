@@ -160,12 +160,12 @@ export default function FuelEventModal() {
   }, []);
 
   useEffect(() => {
-    if (!activeVehicle || !date) return;
+    if (!activeVehicle || !date || !boundsLoaded) return;
     (async () => {
-      const b = await eventQueries.getOdometerBounds(activeVehicle.id, date);
+      const b = await eventQueries.getOdometerBounds(activeVehicle.id, date, eventId);
       setBounds(b);
     })();
-  }, [activeVehicle?.id, date]);
+  }, [activeVehicle?.id, date, boundsLoaded]);
 
   // --- Derived computation (replaces three-way sync) ---
 

@@ -1,4 +1,4 @@
-import { useRef, useCallback, useMemo } from 'react';
+import { useRef, useCallback } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { useColorScheme } from 'nativewind';
 import { Ionicons } from '@expo/vector-icons';
@@ -11,7 +11,6 @@ import {
 } from '@gorhom/bottom-sheet';
 import type { BottomSheetBackdropProps } from '@gorhom/bottom-sheet';
 import { useVehicleStore } from '../stores/vehicleStore';
-import { useEventStore } from '../stores/eventStore';
 
 type EventRoute = '/(modals)/fuel-event' | '/(modals)/service-event' | '/(modals)/expense-event';
 
@@ -28,24 +27,11 @@ export function AddEventFAB() {
   const isDark = colorScheme === 'dark';
   const activeVehicle = useVehicleStore((s) => s.activeVehicle);
   const isElectric = activeVehicle?.fuelType === 'electric';
-  const events = useEventStore((s) => s.events);
-
-  const lastUsedType = useMemo(() => {
-    if (events.length === 0) return 'fuel';
-    return events[0].type;
-  }, [events]);
-
-  const hasEvents = events.length > 0;
 
   const handleTap = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     bottomSheetRef.current?.present();
   }, []);
-
-  const handleLongPress = useCallback(() => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    nav.push(TYPE_ROUTES[lastUsedType] ?? TYPE_ROUTES.fuel);
-  }, [lastUsedType, nav]);
 
   const handleDismiss = useCallback(() => {
     bottomSheetRef.current?.dismiss();
@@ -58,13 +44,6 @@ export function AddEventFAB() {
     },
     [handleDismiss, nav]
   );
-
-  const fabIcon = useMemo((): { name: keyof typeof Ionicons.glyphMap; label: string } => {
-    if (!hasEvents) return { name: 'add', label: 'Log activity' };
-    if (lastUsedType === 'service') return { name: 'construct', label: 'Log service' };
-    if (lastUsedType === 'expense') return { name: 'receipt-outline', label: 'Log expense' };
-    return { name: isElectric ? 'flash' : 'water', label: isElectric ? 'Log charge' : 'Log fill-up' };
-  }, [hasEvents, lastUsedType, isElectric]);
 
   const renderBackdrop = useCallback(
     (props: BottomSheetBackdropProps) => (
@@ -80,13 +59,10 @@ export function AddEventFAB() {
 
   return (
     <>
-      {/* FAB button: tap for last-used type, long press for picker */}
       <Pressable
         onPress={handleTap}
-        onLongPress={handleLongPress}
-        delayLongPress={400}
         className="absolute bottom-6 right-5 w-14 h-14 rounded-full bg-primary items-center justify-center shadow-lg"
-        accessibilityLabel={`Log activity. Long press to quickly repeat ${fabIcon.label}.`}
+        accessibilityLabel="Log activity"
         accessibilityRole="button"
         style={{
           shadowColor: '#1C1B18',
@@ -96,10 +72,8 @@ export function AddEventFAB() {
           elevation: 6,
         }}
       >
-        <Ionicons name={fabIcon.name} size={hasEvents ? 24 : 30} color="white" />
+        <Ionicons name="add" size={30} color="white" />
       </Pressable>
-
-      {/* Action sheet (long-press menu) */}
       <BottomSheetModal
         ref={bottomSheetRef}
         enableDynamicSizing

@@ -122,3 +122,18 @@ export interface LocalPhoto {
   uri: string;        // local file URI
   isNew?: boolean;    // true for newly added, not yet persisted
 }
+
+export type VehicleDocumentType = 'insurance' | 'registration' | 'title' | 'emissions' | 'inspection' | 'other';
+
+export interface VehicleDocument {
+  id: string;
+  vehicleId: string;
+  name: string;
+  type: VehicleDocumentType;
+  filePath: string;
+  expirationDate?: string;
+  notificationId?: string;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+}

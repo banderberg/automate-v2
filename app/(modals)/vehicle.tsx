@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   View,
   Text,
@@ -21,12 +21,14 @@ import { Ionicons } from '@expo/vector-icons';
 import { ModalHeader } from '@/src/components/ModalHeader';
 import { ConfirmDialog } from '@/src/components/ConfirmDialog';
 import { useDialog } from '@/src/hooks/useDialog';
+import { useGuardedNavigate } from '@/src/hooks/useGuardedNavigate';
 import { SegmentedControl } from '@/src/components/SegmentedControl';
 import { useVehicleStore } from '@/src/stores/vehicleStore';
 import { useToastStore } from '@/src/stores/toastStore';
 import { useSettingsStore } from '@/src/stores/settingsStore';
 import { useEventStore } from '@/src/stores/eventStore';
 import { useReminderStore } from '@/src/stores/reminderStore';
+import { useDocumentStore } from '@/src/stores/documentStore';
 import { decodeVin } from '@/src/services/vinDecoder';
 import { getVolumeUnitForFuelType } from '@/src/constants/units';
 import type { Vehicle } from '@/src/types';
@@ -48,6 +50,9 @@ export default function VehicleModal() {
   const updateSetting = useSettingsStore((s) => s.updateSetting);
   const events = useEventStore((s) => s.events);
   const reminders = useReminderStore((s) => s.reminders);
+  const documentCount = useDocumentStore((s) => s.documents.length);
+  const loadDocuments = useDocumentStore((s) => s.loadForVehicle);
+  const nav = useGuardedNavigate();
 
   const [imagePath, setImagePath] = useState<string | undefined>();
   const [vin, setVin] = useState('');
@@ -63,6 +68,8 @@ export default function VehicleModal() {
   const [fuelCapacity, setFuelCapacity] = useState('');
   const [vinStatus, setVinStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [saving, setSaving] = useState(false);
+  const isDirty = useRef(false);
+  const markDirty = useCallback(() => { isDirty.current = true; }, []);
   const { showDialog, dialogProps } = useDialog();
 
   const originalOdometerUnit = useMemo(() => {
@@ -87,6 +94,12 @@ export default function VehicleModal() {
     setOdometerUnit(existing.odometerUnit);
     setFuelCapacity(existing.fuelCapacity ? String(existing.fuelCapacity) : '');
   }, []);
+
+  useEffect(() => {
+    if (isEditing && vehicleId) {
+      loadDocuments(vehicleId);
+    }
+  }, [isEditing, vehicleId]);
 
   const volumeUnit = useMemo(
     () => getVolumeUnitForFuelType(fuelType, settings.defaultFuelUnit),
@@ -134,6 +147,7 @@ export default function VehicleModal() {
     const destFile = new File(Paths.document, filename);
     sourceFile.copy(destFile);
     setImagePath(destFile.uri);
+    markDirty();
   }, []);
 
   const handlePhotoPress = useCallback(() => {
@@ -149,7 +163,7 @@ export default function VehicleModal() {
         (index) => {
           if (index === 0) pickImage('camera');
           else if (index === 1) pickImage('library');
-          else if (index === 2 && imagePath) setImagePath(undefined);
+          else if (index === 2 && imagePath) { setImagePath(undefined); markDirty(); }
         }
       );
     } else {
@@ -157,7 +171,7 @@ export default function VehicleModal() {
         { text: 'Take Photo', onPress: () => pickImage('camera') },
         { text: 'Choose from Library', onPress: () => pickImage('library') },
         ...(imagePath
-          ? [{ text: 'Remove Photo', style: 'destructive' as const, onPress: () => setImagePath(undefined) }]
+          ? [{ text: 'Remove Photo', style: 'destructive' as const, onPress: () => { setImagePath(undefined); markDirty(); } }]
           : []),
         { text: 'Cancel', style: 'cancel' as const },
       ]);
@@ -199,6 +213,7 @@ export default function VehicleModal() {
   const handleFuelTypeChange = useCallback(
     (ft: FuelType) => {
       setFuelType(ft);
+      markDirty();
     },
     []
   );
@@ -295,8 +310,8 @@ export default function VehicleModal() {
   }, [canSave, nickname, year, make, model, trim, vin, fuelType, odometerUnit, volumeUnit, fuelCapacity, imagePath, isEditing, vehicleId, vehicles.length, settings.hasCompletedOnboarding]);
 
   const handleCancel = useCallback(() => {
-    const hasInput = !!(nickname.trim() || year || make.trim() || model.trim());
-    if (isEditing || hasInput) {
+    const hasInput = !isEditing && !!(nickname.trim() || year || make.trim() || model.trim());
+    if (isDirty.current || hasInput) {
       showDialog('Discard Changes?', 'You have unsaved changes.', [
         { text: 'Keep Editing', style: 'cancel' },
         { text: 'Discard', style: 'destructive', onPress: () => router.back() },
@@ -415,7 +430,7 @@ export default function VehicleModal() {
               <TextInput
                 className="text-base text-ink dark:text-ink-on-dark"
                 value={nickname}
-                onChangeText={(t) => setNickname(t.slice(0, 30))}
+                onChangeText={(t) => { setNickname(t.slice(0, 30)); markDirty(); }}
                 placeholder="e.g., The Corolla"
                 placeholderTextColor="#A8A49D"
                 maxLength={30}
@@ -440,6 +455,7 @@ export default function VehicleModal() {
                 onChangeText={(t) => {
                   setVin(t.toUpperCase().slice(0, 17));
                   if (vinStatus !== 'idle') setVinStatus('idle');
+                  markDirty();
                 }}
                 onBlur={handleVinBlur}
                 placeholder="17-character VIN"
@@ -473,7 +489,7 @@ export default function VehicleModal() {
               <TextInput
                 className="text-base text-ink dark:text-ink-on-dark"
                 value={year}
-                onChangeText={(t) => setYear(t.replace(/[^0-9]/g, '').slice(0, 4))}
+                onChangeText={(t) => { setYear(t.replace(/[^0-9]/g, '').slice(0, 4)); markDirty(); }}
                 placeholder="2024"
                 placeholderTextColor="#A8A49D"
                 keyboardType="number-pad"
@@ -491,7 +507,7 @@ export default function VehicleModal() {
               <TextInput
                 className="text-base text-ink dark:text-ink-on-dark"
                 value={make}
-                onChangeText={setMake}
+                onChangeText={(t) => { setMake(t); markDirty(); }}
                 placeholder="Toyota"
                 placeholderTextColor="#A8A49D"
                 maxLength={50}
@@ -508,7 +524,7 @@ export default function VehicleModal() {
               <TextInput
                 className="text-base text-ink dark:text-ink-on-dark"
                 value={model}
-                onChangeText={setModel}
+                onChangeText={(t) => { setModel(t); markDirty(); }}
                 placeholder="Corolla"
                 placeholderTextColor="#A8A49D"
                 maxLength={50}
@@ -525,7 +541,7 @@ export default function VehicleModal() {
               <TextInput
                 className="text-base text-ink dark:text-ink-on-dark"
                 value={trim}
-                onChangeText={setTrim}
+                onChangeText={(t) => { setTrim(t); markDirty(); }}
                 placeholder="SE, XLE, etc."
                 placeholderTextColor="#A8A49D"
                 maxLength={30}
@@ -578,7 +594,7 @@ export default function VehicleModal() {
               <TextInput
                 className="flex-1 text-base text-ink dark:text-ink-on-dark"
                 value={fuelCapacity}
-                onChangeText={setFuelCapacity}
+                onChangeText={(t) => { setFuelCapacity(t); markDirty(); }}
                 placeholder="Optional"
                 placeholderTextColor="#A8A49D"
                 keyboardType="decimal-pad"
@@ -589,14 +605,38 @@ export default function VehicleModal() {
           </View>
 
           {isEditing && (
-            <Pressable
-              onPress={handleDelete}
-              className="mt-4 mb-8 py-3 rounded-xl border border-destructive items-center"
-              accessibilityLabel="Delete vehicle"
-              accessibilityRole="button"
-            >
-              <Text className="text-destructive font-semibold text-base">Delete Vehicle</Text>
-            </Pressable>
+            <>
+              <Text
+                className="text-xs text-ink-muted dark:text-ink-muted-on-dark font-semibold uppercase mb-3 mt-6"
+                style={{ letterSpacing: 1.5 }}
+              >
+                Documents
+              </Text>
+              <Pressable
+                onPress={() => nav.push(`/(modals)/vehicle-documents?vehicleId=${vehicleId}`)}
+                className="flex-row items-center justify-between px-4 py-4 bg-card dark:bg-card-dark rounded-xl border border-divider dark:border-divider-dark mb-4"
+                accessibilityLabel={`Documents, ${documentCount} stored`}
+                accessibilityRole="button"
+              >
+                <View className="flex-row items-center gap-3">
+                  <Ionicons name="document-text-outline" size={20} color="#A8A49D" />
+                  <Text className="text-base text-ink dark:text-ink-on-dark">Documents</Text>
+                </View>
+                <View className="flex-row items-center gap-2">
+                  <Text className="text-sm text-ink-muted dark:text-ink-muted-on-dark">{documentCount}</Text>
+                  <Ionicons name="chevron-forward" size={16} color="#A8A49D" />
+                </View>
+              </Pressable>
+
+              <Pressable
+                onPress={handleDelete}
+                className="mt-4 mb-8 py-3 rounded-xl border border-destructive items-center"
+                accessibilityLabel="Delete vehicle"
+                accessibilityRole="button"
+              >
+                <Text className="text-destructive font-semibold text-base">Delete Vehicle</Text>
+              </Pressable>
+            </>
           )}
 
           <View className="h-8" />

@@ -190,18 +190,27 @@ export async function getMaxOdometer(
 
 export async function getOdometerBounds(
   vehicleId: string,
-  date: string
+  date: string,
+  excludeEventId?: string
 ): Promise<{ floor: number | null; ceiling: number | null }> {
   const db = getDatabase();
 
+  const excludeClause = excludeEventId ? ' AND id != ?' : '';
+  const floorParams: (string)[] = [vehicleId, date];
+  const ceilingParams: (string)[] = [vehicleId, date];
+  if (excludeEventId) {
+    floorParams.push(excludeEventId);
+    ceilingParams.push(excludeEventId);
+  }
+
   const floorRow = await db.getFirstAsync<{ val: number | null }>(
-    'SELECT MAX(odometer) AS val FROM event WHERE vehicleId = ? AND date < ? AND odometer IS NOT NULL',
-    [vehicleId, date]
+    `SELECT MAX(odometer) AS val FROM event WHERE vehicleId = ? AND date < ? AND odometer IS NOT NULL${excludeClause}`,
+    floorParams
   );
 
   const ceilingRow = await db.getFirstAsync<{ val: number | null }>(
-    'SELECT MIN(odometer) AS val FROM event WHERE vehicleId = ? AND date > ? AND odometer IS NOT NULL',
-    [vehicleId, date]
+    `SELECT MIN(odometer) AS val FROM event WHERE vehicleId = ? AND date > ? AND odometer IS NOT NULL${excludeClause}`,
+    ceilingParams
   );
 
   return {
