@@ -8,11 +8,15 @@ module.exports = {
   presets: [require('nativewind/preset')],
   theme: {
     extend: {
+      borderRadius: {
+        card: 20,
+      },
       colors: {
-        // Brand accent
-        primary: '#3B82F6',
-        'primary-light': '#DBEAFE',
-        'primary-dark': '#1E3A5F',
+        // Brand accent (warm-shifted blue to complement warm neutrals)
+        primary: '#4272C4',
+        'primary-light': '#DBE6F5',
+        'primary-dark': '#1E3554',
+        'primary-tint': '#6A9FD8',
 
         // Event types
         fuel: '#0D9488',
@@ -44,7 +48,7 @@ module.exports = {
         // Warm neutral text (light)
         ink: '#1C1B18',
         'ink-secondary': '#5C5A55',
-        'ink-muted': '#A8A49D',
+        'ink-muted': '#827E78',
         'ink-faint': '#78756F',
 
         // Warm neutral text (dark)

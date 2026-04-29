@@ -1,3 +1,4 @@
+import React, { useMemo } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import type { ReminderWithStatus } from '../types';
 
@@ -47,17 +48,17 @@ function progressRatio(reminder: ReminderWithStatus): number {
   return 0;
 }
 
-export function ReminderCard({ reminder, odometerUnit, onPress }: ReminderCardProps) {
+function ReminderCardInner({ reminder, odometerUnit, onPress }: ReminderCardProps) {
   const styles = STATUS_STYLES[reminder.status];
   const statusLabel = reminder.status.charAt(0).toUpperCase() + reminder.status.slice(1);
-  const ratio = progressRatio(reminder);
+  const ratio = useMemo(() => progressRatio(reminder), [reminder.distanceRemaining, reminder.distanceInterval, reminder.daysRemaining, reminder.timeInterval, reminder.timeUnit]);
   const odoLabel = odometerUnit === 'miles' ? 'mi' : 'km';
   const pctLabel = `${Math.round(ratio * 100)}%`;
 
   return (
     <Pressable
       onPress={onPress}
-      className="bg-card dark:bg-card-dark rounded-2xl p-4 border border-divider-subtle dark:border-divider-dark active:opacity-80"
+      className="bg-card dark:bg-card-dark rounded-card p-4 border border-divider-subtle dark:border-divider-dark active:opacity-80"
       accessibilityLabel={`${reminder.linkedName} reminder, status: ${statusLabel}, ${pctLabel} progress`}
       accessibilityRole="button"
     >
@@ -85,13 +86,13 @@ export function ReminderCard({ reminder, odometerUnit, onPress }: ReminderCardPr
             style={{ width: `${ratio * 100}%`, backgroundColor: styles.bar }}
           />
         </View>
-        <Text className="text-xs text-ink-muted dark:text-ink-muted-on-dark w-8 text-right">{pctLabel}</Text>
+        <Text className="text-xs text-ink-muted dark:text-ink-muted-on-dark w-8 text-right" style={{ fontVariant: ['tabular-nums'] }}>{pctLabel}</Text>
       </View>
 
       {/* Next due info */}
       <View className="gap-1">
         {reminder.nextOdometer != null && (
-          <Text className="text-xs text-ink-muted dark:text-ink-muted-on-dark">
+          <Text className="text-xs text-ink-muted dark:text-ink-muted-on-dark" numberOfLines={1} style={{ fontVariant: ['tabular-nums'] }}>
             Next: {reminder.nextOdometer.toLocaleString('en-US')} {odoLabel}
             {reminder.distanceRemaining != null && (
               <Text>
@@ -101,7 +102,7 @@ export function ReminderCard({ reminder, odometerUnit, onPress }: ReminderCardPr
           </Text>
         )}
         {reminder.nextDate != null && (
-          <Text className="text-xs text-ink-muted dark:text-ink-muted-on-dark">
+          <Text className="text-xs text-ink-muted dark:text-ink-muted-on-dark" numberOfLines={1} style={{ fontVariant: ['tabular-nums'] }}>
             Next: {formatDate(reminder.nextDate)}
             {reminder.daysRemaining != null && (
               <Text>
@@ -114,3 +115,5 @@ export function ReminderCard({ reminder, odometerUnit, onPress }: ReminderCardPr
     </Pressable>
   );
 }
+
+export const ReminderCard = React.memo(ReminderCardInner);

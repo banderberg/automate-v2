@@ -1,5 +1,6 @@
 import { useRef, useState, useCallback, useMemo } from 'react';
 import { View, Text, Pressable, FlatList } from 'react-native';
+import { useColorScheme } from 'nativewind';
 import { Ionicons } from '@expo/vector-icons';
 import {
   BottomSheetModal,
@@ -24,6 +25,8 @@ export function PlaceAutocomplete({
   placeType,
   label = 'Place',
 }: PlaceAutocompleteProps) {
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === 'dark';
   const selectSheetRef = useRef<BottomSheetModal>(null);
   const addSheetRef = useRef<BottomSheetModal>(null);
   const places = useReferenceDataStore((s) => s.places);
@@ -114,15 +117,15 @@ export function PlaceAutocomplete({
         snapPoints={['60%']}
         backdropComponent={renderBackdrop}
         enablePanDownToClose
-        handleIndicatorStyle={{ backgroundColor: '#E2E0DB' }}
-        backgroundStyle={{ backgroundColor: '#FEFDFB' }}
+        handleIndicatorStyle={{ backgroundColor: isDark ? '#2A2926' : '#E2E0DB' }}
+        backgroundStyle={{ backgroundColor: isDark ? '#1A1917' : '#FEFDFB' }}
         keyboardBehavior="interactive"
         keyboardBlurBehavior="restore"
       >
         <BottomSheetView style={{ flex: 1, paddingBottom: 20 }}>
           <View className="px-4 pb-3">
             <BottomSheetTextInput
-              className="text-sm text-ink bg-surface rounded-xl px-3.5 py-2.5"
+              className="text-sm text-ink dark:text-ink-on-dark bg-surface dark:bg-surface-dark rounded-xl px-3.5 py-2.5"
               value={search}
               onChangeText={setSearch}
               placeholder="Search places..."
@@ -143,15 +146,15 @@ export function PlaceAutocomplete({
               >
                 <Ionicons name="location" size={16} color="#5C5A55" />
                 <View className="flex-1 ml-3">
-                  <Text className="text-sm text-ink">{item.name}</Text>
+                  <Text className="text-sm text-ink dark:text-ink-on-dark" numberOfLines={1}>{item.name}</Text>
                   {item.address && (
-                    <Text className="text-xs text-ink-muted" numberOfLines={1}>
+                    <Text className="text-xs text-ink-muted dark:text-ink-muted-on-dark" numberOfLines={1}>
                       {item.address}
                     </Text>
                   )}
                 </View>
                 {item.id === value && (
-                  <Ionicons name="checkmark" size={18} color="#3B82F6" />
+                  <Ionicons name="checkmark" size={18} color="#4272C4" />
                 )}
               </Pressable>
             )}
@@ -163,7 +166,7 @@ export function PlaceAutocomplete({
                 accessibilityRole="button"
               >
                 <View className="w-6 h-6 rounded-full bg-primary-light items-center justify-center">
-                  <Ionicons name="add" size={16} color="#3B82F6" />
+                  <Ionicons name="add" size={16} color="#4272C4" />
                 </View>
                 <Text className="text-sm text-primary font-semibold ml-3">Add new place</Text>
               </Pressable>
@@ -177,30 +180,30 @@ export function PlaceAutocomplete({
         enableDynamicSizing
         backdropComponent={renderBackdrop}
         enablePanDownToClose
-        handleIndicatorStyle={{ backgroundColor: '#E2E0DB' }}
-        backgroundStyle={{ backgroundColor: '#FEFDFB' }}
+        handleIndicatorStyle={{ backgroundColor: isDark ? '#2A2926' : '#E2E0DB' }}
+        backgroundStyle={{ backgroundColor: isDark ? '#1A1917' : '#FEFDFB' }}
         keyboardBehavior="interactive"
         keyboardBlurBehavior="restore"
         stackBehavior="push"
       >
         <BottomSheetView style={{ paddingBottom: 40 }}>
-          <Text className="px-4 pt-2 pb-3 text-base font-semibold text-ink">
+          <Text className="px-4 pt-2 pb-3 text-base font-semibold text-ink dark:text-ink-on-dark">
             Add New Place
           </Text>
 
           <View className="px-4">
-            <Text className="text-xs text-ink-muted mb-1 font-semibold">Name *</Text>
+            <Text className="text-xs text-ink-muted dark:text-ink-muted-on-dark mb-1 font-semibold">Name *</Text>
             <BottomSheetTextInput
-              className="text-sm text-ink bg-surface rounded-xl px-3.5 py-2.5 mb-3"
+              className="text-sm text-ink dark:text-ink-on-dark bg-surface dark:bg-surface-dark rounded-xl px-3.5 py-2.5 mb-3"
               value={newName}
               onChangeText={setNewName}
               placeholder="e.g., Shell on Main St"
               placeholderTextColor="#A8A49D"
             />
 
-            <Text className="text-xs text-ink-muted mb-1 font-semibold">Address</Text>
+            <Text className="text-xs text-ink-muted dark:text-ink-muted-on-dark mb-1 font-semibold">Address</Text>
             <BottomSheetTextInput
-              className="text-sm text-ink bg-surface rounded-xl px-3.5 py-2.5 mb-4"
+              className="text-sm text-ink dark:text-ink-on-dark bg-surface dark:bg-surface-dark rounded-xl px-3.5 py-2.5 mb-4"
               value={newAddress}
               onChangeText={setNewAddress}
               placeholder="Optional"

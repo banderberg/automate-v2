@@ -1,11 +1,14 @@
 import { useState, useCallback, useMemo } from 'react';
-import { View, Text, Pressable, ScrollView, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, Pressable, ScrollView, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { useColorScheme } from 'nativewind';
 import { Ionicons } from '@expo/vector-icons';
 import * as DocumentPicker from 'expo-document-picker';
 import { File as ExpoFile } from 'expo-file-system';
 import { ModalHeader } from '@/src/components/ModalHeader';
+import { ConfirmDialog } from '@/src/components/ConfirmDialog';
+import { useDialog } from '@/src/hooks/useDialog';
 import { useVehicleStore } from '@/src/stores/vehicleStore';
 import {
   detectFormat,
@@ -28,7 +31,7 @@ const FORMAT_LABELS: Record<DetectedFormat, string> = {
 const FORMAT_COLORS: Record<DetectedFormat, { bg: string; text: string }> = {
   fuelio: { bg: '#0D948820', text: '#0D9488' },
   fuelly: { bg: '#F9731620', text: '#F97316' },
-  automate: { bg: '#3B82F620', text: '#3B82F6' },
+  automate: { bg: '#4272C420', text: '#4272C4' },
   unknown: { bg: '#EF444420', text: '#EF4444' },
 };
 
@@ -42,6 +45,8 @@ function formatCost(cost: number): string {
 
 export default function ImportModal() {
   const router = useRouter();
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === 'dark';
   const vehicles = useVehicleStore((s) => s.vehicles);
 
   const [isReadingFile, setIsReadingFile] = useState(false);
@@ -50,6 +55,7 @@ export default function ImportModal() {
   const [parsedData, setParsedData] = useState<ParsedImportData | null>(null);
   const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>(null);
   const [showVehiclePicker, setShowVehiclePicker] = useState(false);
+  const { showDialog, dialogProps } = useDialog();
 
   const previewEvents = useMemo(() => {
     if (!parsedData) return [];
@@ -66,7 +72,7 @@ export default function ImportModal() {
   const handleSelectFile = useCallback(async () => {
     try {
       const result = await DocumentPicker.getDocumentAsync({
-        type: ['text/csv', 'text/comma-separated-values', 'application/csv', '*/*'],
+        type: ['text/csv', 'text/comma-separated-values', 'application/csv', 'text/plain'],
         copyToCacheDirectory: true,
       });
 
@@ -106,7 +112,7 @@ export default function ImportModal() {
       setIsReadingFile(false);
     } catch (e) {
       const message = e instanceof Error ? e.message : 'Could not read the selected file.';
-      Alert.alert('File Error', message);
+      showDialog('File Error', message);
       setIsReadingFile(false);
     }
   }, []);
@@ -132,13 +138,13 @@ export default function ImportModal() {
       const summary = parts.join(', ') + '.';
 
       if (result.errors.length > 0) {
-        Alert.alert(
+        showDialog(
           'Import Complete with Warnings',
           `${summary}\n\n${result.errors.length} error${result.errors.length !== 1 ? 's' : ''}: ${result.errors.slice(0, 3).join('; ')}`,
           [{ text: 'OK', onPress: () => router.back() }]
         );
       } else {
-        Alert.alert(
+        showDialog(
           'Import Complete',
           summary,
           [{ text: 'OK', onPress: () => router.back() }]
@@ -146,7 +152,7 @@ export default function ImportModal() {
       }
     } catch (e) {
       const message = e instanceof Error ? e.message : 'An unexpected error occurred during import.';
-      Alert.alert('Import Failed', message);
+      showDialog('Import Failed', message);
     } finally {
       setIsImporting(false);
     }
@@ -168,8 +174,8 @@ export default function ImportModal() {
         <Pressable
           onPress={handleSelectFile}
           disabled={isReadingFile || isImporting}
-          className="flex-row items-center justify-center bg-card dark:bg-card-dark rounded-2xl py-4 px-4 mb-4"
-          style={{ shadowOpacity: 0.04, shadowRadius: 16, shadowOffset: { width: 0, height: 4 }, elevation: 3 }}
+          className="flex-row items-center justify-center bg-card dark:bg-card-dark rounded-card py-4 px-4 mb-4"
+          style={{ shadowOpacity: isDark ? 0 : 0.04, shadowRadius: 16, shadowOffset: { width: 0, height: 4 }, elevation: isDark ? 0 : 3 }}
           accessibilityLabel="Select CSV file to import"
           accessibilityRole="button"
         >
@@ -177,7 +183,7 @@ export default function ImportModal() {
             <ActivityIndicator size="small" />
           ) : (
             <>
-              <Ionicons name="document-outline" size={20} color="#3B82F6" />
+              <Ionicons name="document-outline" size={20} color="#4272C4" />
               <Text className="text-base font-semibold text-primary ml-2">
                 {parsedData ? 'Choose Different File' : 'Choose CSV File'}
               </Text>
@@ -204,7 +210,7 @@ export default function ImportModal() {
 
         {/* Unknown format warning */}
         {detectedFormat === 'unknown' && (
-          <View className="bg-card dark:bg-card-dark rounded-2xl p-4 mb-4" style={{ shadowOpacity: 0.04, shadowRadius: 16, shadowOffset: { width: 0, height: 4 }, elevation: 3 }}>
+          <View className="bg-card dark:bg-card-dark rounded-card p-4 mb-4" style={{ shadowOpacity: isDark ? 0 : 0.04, shadowRadius: 16, shadowOffset: { width: 0, height: 4 }, elevation: isDark ? 0 : 3 }}>
             <View className="flex-row items-center mb-2">
               <Ionicons name="warning-outline" size={20} color="#EF4444" />
               <Text className="text-base font-semibold text-destructive ml-2">
@@ -224,8 +230,8 @@ export default function ImportModal() {
               Preview ({parsedData.events.length} event{parsedData.events.length !== 1 ? 's' : ''})
             </Text>
             <View
-              className="bg-card dark:bg-card-dark rounded-2xl overflow-hidden mb-4"
-              style={{ shadowOpacity: 0.04, shadowRadius: 16, shadowOffset: { width: 0, height: 4 }, elevation: 3 }}
+              className="bg-card dark:bg-card-dark rounded-card overflow-hidden mb-4"
+              style={{ shadowOpacity: isDark ? 0 : 0.04, shadowRadius: 16, shadowOffset: { width: 0, height: 4 }, elevation: isDark ? 0 : 3 }}
             >
               {previewEvents.map((event, index) => (
                 <View
@@ -265,7 +271,7 @@ export default function ImportModal() {
         )}
 
         {parsedData && parsedData.events.length === 0 && (
-          <View className="bg-card dark:bg-card-dark rounded-2xl p-4 mb-4" style={{ shadowOpacity: 0.04, shadowRadius: 16, shadowOffset: { width: 0, height: 4 }, elevation: 3 }}>
+          <View className="bg-card dark:bg-card-dark rounded-card p-4 mb-4" style={{ shadowOpacity: isDark ? 0 : 0.04, shadowRadius: 16, shadowOffset: { width: 0, height: 4 }, elevation: isDark ? 0 : 3 }}>
             <Text className="text-sm text-ink-secondary dark:text-ink-secondary-on-dark text-center">
               No events found in this file.
             </Text>
@@ -280,8 +286,8 @@ export default function ImportModal() {
             </Text>
             <Pressable
               onPress={() => setShowVehiclePicker(!showVehiclePicker)}
-              className="flex-row items-center bg-card dark:bg-card-dark rounded-2xl px-4 py-3.5 mb-2"
-              style={{ shadowOpacity: 0.04, shadowRadius: 16, shadowOffset: { width: 0, height: 4 }, elevation: 3 }}
+              className="flex-row items-center bg-card dark:bg-card-dark rounded-card px-4 py-3.5 mb-2"
+              style={{ shadowOpacity: isDark ? 0 : 0.04, shadowRadius: 16, shadowOffset: { width: 0, height: 4 }, elevation: isDark ? 0 : 3 }}
               accessibilityLabel={`Selected vehicle: ${selectedVehicle?.nickname ?? 'None selected'}`}
               accessibilityRole="button"
             >
@@ -304,8 +310,8 @@ export default function ImportModal() {
 
             {showVehiclePicker && (
               <View
-                className="bg-card dark:bg-card-dark rounded-2xl overflow-hidden mb-4"
-                style={{ shadowOpacity: 0.04, shadowRadius: 16, shadowOffset: { width: 0, height: 4 }, elevation: 3 }}
+                className="bg-card dark:bg-card-dark rounded-card overflow-hidden mb-4"
+                style={{ shadowOpacity: isDark ? 0 : 0.04, shadowRadius: 16, shadowOffset: { width: 0, height: 4 }, elevation: isDark ? 0 : 3 }}
               >
                 {vehicles.map((v) => (
                   <Pressable
@@ -343,7 +349,7 @@ export default function ImportModal() {
                   accessibilityLabel="Add new vehicle"
                   accessibilityRole="button"
                 >
-                  <Ionicons name="add-circle-outline" size={20} color="#3B82F6" />
+                  <Ionicons name="add-circle-outline" size={20} color="#4272C4" />
                   <Text className="text-base text-primary font-semibold ml-2">
                     Add New Vehicle
                   </Text>
@@ -388,6 +394,7 @@ export default function ImportModal() {
 
         <View className="h-8" />
       </ScrollView>
+      <ConfirmDialog {...dialogProps} />
     </SafeAreaView>
   );
 }

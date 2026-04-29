@@ -5,7 +5,6 @@ import {
   TextInput,
   ScrollView,
   Pressable,
-  Alert,
   KeyboardAvoidingView,
   Platform,
   Image,
@@ -16,7 +15,14 @@ import * as Haptics from 'expo-haptics';
 import * as DocumentPicker from 'expo-document-picker';
 import { useVehicleStore } from '@/src/stores/vehicleStore';
 import { useSettingsStore } from '@/src/stores/settingsStore';
+import { SegmentedControl } from '@/src/components/SegmentedControl';
+import { ConfirmDialog } from '@/src/components/ConfirmDialog';
+import { useDialog } from '@/src/hooks/useDialog';
 import { getBackupInfo, restoreBackup } from '@/src/services/backup';
+import { getVolumeUnitForFuelType } from '@/src/constants/units';
+
+type FuelType = 'gas' | 'diesel' | 'electric';
+type OdometerUnit = 'miles' | 'kilometers';
 
 export default function OnboardingScreen() {
   const router = useRouter();
@@ -28,14 +34,20 @@ export default function OnboardingScreen() {
   const [year, setYear] = useState('');
   const [make, setMake] = useState('');
   const [model, setModel] = useState('');
+  const [fuelType, setFuelType] = useState<FuelType>('gas');
+  const [odometerUnit, setOdometerUnit] = useState<OdometerUnit>(
+    settings.defaultOdometerUnit as OdometerUnit
+  );
   const [saving, setSaving] = useState(false);
   const [restoring, setRestoring] = useState(false);
   const navigatingRef = useRef(false);
+  const { showDialog, dialogProps } = useDialog();
 
   const canSave = useMemo(() => {
     if (saving) return false;
     if (!nickname.trim()) return false;
-    if (!year.trim() || isNaN(parseInt(year, 10))) return false;
+    const yearNum = parseInt(year, 10);
+    if (isNaN(yearNum) || yearNum < 1900 || yearNum > new Date().getFullYear() + 1) return false;
     if (!make.trim()) return false;
     if (!model.trim()) return false;
     return true;
@@ -52,21 +64,22 @@ export default function OnboardingScreen() {
           year: parseInt(year, 10),
           make: make.trim(),
           model: model.trim(),
-          fuelType: 'gas',
-          odometerUnit: settings.defaultOdometerUnit,
-          volumeUnit: settings.defaultFuelUnit,
+          fuelType,
+          odometerUnit,
+          volumeUnit: getVolumeUnitForFuelType(fuelType, settings.defaultFuelUnit),
         },
         true
       );
       await updateSetting('hasCompletedOnboarding', true);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    } catch {
-      Alert.alert('Error', 'Failed to save vehicle. Please try again.');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : '';
+      showDialog("Couldn't Save Vehicle", msg || 'Check your entries and try again. If this keeps happening, try restarting the app.');
       navigatingRef.current = false;
     } finally {
       setSaving(false);
     }
-  }, [canSave, nickname, year, make, model, settings.defaultOdometerUnit, settings.defaultFuelUnit]);
+  }, [canSave, nickname, year, make, model, fuelType, odometerUnit, settings.defaultFuelUnit]);
 
   const handleRestore = useCallback(async () => {
     if (restoring) return;
@@ -84,14 +97,14 @@ export default function OnboardingScreen() {
         info = await getBackupInfo(fileUri);
       } catch (e) {
         const message = e instanceof Error ? e.message : 'Could not read the selected file.';
-        Alert.alert('Invalid Backup', message);
+        showDialog('Invalid Backup', message);
         setRestoring(false);
         return;
       }
 
       setRestoring(false);
 
-      Alert.alert(
+      showDialog(
         'Restore Backup?',
         `This backup contains ${info.vehicleCount} vehicle${info.vehicleCount !== 1 ? 's' : ''}, ${info.eventCount} event${info.eventCount !== 1 ? 's' : ''}, and ${info.reminderCount} reminder${info.reminderCount !== 1 ? 's' : ''}.\n\nThis will restore all your data.`,
         [
@@ -105,7 +118,7 @@ export default function OnboardingScreen() {
                 Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
               } catch (e) {
                 const message = e instanceof Error ? e.message : 'An unexpected error occurred.';
-                Alert.alert('Restore Failed', message);
+                showDialog('Restore Failed', message);
               } finally {
                 setRestoring(false);
               }
@@ -115,7 +128,7 @@ export default function OnboardingScreen() {
       );
     } catch (e) {
       const message = e instanceof Error ? e.message : 'An unexpected error occurred.';
-      Alert.alert('Restore Failed', message);
+      showDialog('Restore Failed', message);
       setRestoring(false);
     }
   }, [restoring]);
@@ -230,6 +243,39 @@ export default function OnboardingScreen() {
               </View>
             </View>
 
+            {/* Fuel Type */}
+            <View className="mb-4">
+              <Text className="text-xs text-ink-muted dark:text-ink-muted-on-dark mb-2 font-semibold">
+                Fuel Type
+              </Text>
+              <SegmentedControl
+                options={[
+                  { value: 'gas' as FuelType, label: 'Gas' },
+                  { value: 'diesel' as FuelType, label: 'Diesel' },
+                  { value: 'electric' as FuelType, label: 'Electric' },
+                ]}
+                selectedValue={fuelType}
+                onValueChange={setFuelType}
+                accessibilityLabel="Fuel type"
+              />
+            </View>
+
+            {/* Odometer Unit */}
+            <View className="mb-4">
+              <Text className="text-xs text-ink-muted dark:text-ink-muted-on-dark mb-2 font-semibold">
+                Odometer
+              </Text>
+              <SegmentedControl
+                options={[
+                  { value: 'miles' as OdometerUnit, label: 'Miles' },
+                  { value: 'kilometers' as OdometerUnit, label: 'Kilometers' },
+                ]}
+                selectedValue={odometerUnit}
+                onValueChange={setOdometerUnit}
+                accessibilityLabel="Odometer unit"
+              />
+            </View>
+
             {/* Save button */}
             <Pressable
               onPress={handleSave}
@@ -269,6 +315,7 @@ export default function OnboardingScreen() {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+      <ConfirmDialog {...dialogProps} />
     </SafeAreaView>
   );
 }

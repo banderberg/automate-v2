@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { View, Text, Pressable, Platform } from 'react-native';
+import { useColorScheme } from 'nativewind';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -8,6 +9,7 @@ interface DateFieldProps {
   onChange: (date: string) => void;
   label?: string;
   maxDate?: Date;
+  required?: boolean;
 }
 
 function formatDisplayDate(dateStr: string): string {
@@ -29,7 +31,9 @@ export function DateField({
   onChange,
   label = 'Date',
   maxDate,
+  required = true,
 }: DateFieldProps) {
+  const { colorScheme } = useColorScheme();
   const [showPicker, setShowPicker] = useState(false);
   const dateValue = new Date(value + 'T12:00:00');
   const today = maxDate ?? new Date();
@@ -49,7 +53,7 @@ export function DateField({
   return (
     <View className="mb-4">
       <Text className="text-xs text-ink-muted dark:text-ink-muted-on-dark mb-1.5 font-semibold">
-        {label} *
+        {label}{required ? ' *' : ''}
       </Text>
       <Pressable
         onPress={() => setShowPicker(!showPicker)}
@@ -71,12 +75,13 @@ export function DateField({
             display={Platform.OS === 'ios' ? 'spinner' : 'default'}
             onChange={handleChange}
             maximumDate={today}
-            themeVariant="light"
+            themeVariant={colorScheme === 'dark' ? 'dark' : 'light'}
           />
           {Platform.OS === 'ios' && (
             <Pressable
               onPress={() => setShowPicker(false)}
-              className="items-center py-2"
+              className="items-center py-3"
+              hitSlop={8}
               accessibilityLabel="Done selecting date"
               accessibilityRole="button"
             >

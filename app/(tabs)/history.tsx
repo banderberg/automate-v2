@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo, useRef } from 'react';
-import { View, Text, Pressable, Alert } from 'react-native';
+import { View, Text, Pressable, ActivityIndicator, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -11,6 +11,8 @@ import { AddEventFAB } from '@/src/components/AddEventFAB';
 import { EmptyState } from '@/src/components/EmptyState';
 import { EventRow } from '@/src/components/EventRow';
 import { UndoSnackbar } from '@/src/components/UndoSnackbar';
+import { ConfirmDialog } from '@/src/components/ConfirmDialog';
+import { useDialog } from '@/src/hooks/useDialog';
 import { useVehicleStore } from '@/src/stores/vehicleStore';
 import { useEventStore } from '@/src/stores/eventStore';
 import { useReferenceDataStore } from '@/src/stores/referenceDataStore';
@@ -72,21 +74,26 @@ function groupByMonth(events: VehicleEvent[]): ListItem[] {
 function SwipeableEventRow({
   event,
   odometerUnit,
-  placeName,
   onPress,
   onDelete,
   onLongPress,
 }: {
   event: VehicleEvent;
   odometerUnit: 'miles' | 'kilometers';
-  placeName?: string;
   onPress: () => void;
   onDelete: () => void;
   onLongPress: () => void;
 }) {
   const swipeableRef = useRef<Swipeable>(null);
   const places = useReferenceDataStore((s) => s.places);
+  const categories = useReferenceDataStore((s) => s.categories);
+  const serviceLabels = useEventStore((s) => s.serviceLabels);
   const place = event.placeId ? places.find((p) => p.id === event.placeId) : null;
+  const eventLabel = event.type === 'expense'
+    ? (event.categoryId ? categories.find((c) => c.id === event.categoryId)?.name : undefined)
+    : event.type === 'service'
+      ? serviceLabels.get(event.id)
+      : undefined;
 
   const renderRightActions = useCallback(
     () => (
@@ -96,7 +103,7 @@ function SwipeableEventRow({
           onDelete();
         }}
         className="bg-destructive justify-center items-center px-6"
-        accessibilityLabel="Delete event"
+        accessibilityLabel="Delete"
         accessibilityRole="button"
       >
         <Ionicons name="trash-outline" size={20} color="white" />
@@ -114,6 +121,7 @@ function SwipeableEventRow({
             event={event}
             odometerUnit={odometerUnit}
             place={place}
+            label={eventLabel}
             onPress={onPress}
           />
         </View>
@@ -127,7 +135,19 @@ export default function HistoryScreen() {
   const vehicleCount = useVehicleStore((s) => s.vehicles.length);
   const { activeVehicle, events } = useActiveVehicle();
   const deleteEvent = useEventStore((s) => s.deleteEvent);
+  const isLoading = useEventStore((s) => s.isLoading);
+  const places = useReferenceDataStore((s) => s.places);
+  const categories = useReferenceDataStore((s) => s.categories);
+  const serviceLabels = useEventStore((s) => s.serviceLabels);
   const [activeFilters, setActiveFilters] = useState<Set<FilterType>>(new Set(['all']));
+  const [searchQuery, setSearchQuery] = useState('');
+  const { showDialog, dialogProps } = useDialog();
+
+  const placeMap = useMemo(() => {
+    const m = new Map<string, typeof places[0]>();
+    for (const p of places) m.set(p.id, p);
+    return m;
+  }, [places]);
 
   const handleFilterToggle = useCallback((filter: FilterType) => {
     setActiveFilters((prev) => {
@@ -144,9 +164,32 @@ export default function HistoryScreen() {
   }, []);
 
   const filteredEvents = useMemo(() => {
-    if (activeFilters.has('all')) return events;
-    return events.filter((e) => activeFilters.has(e.type));
-  }, [events, activeFilters]);
+    let result = events;
+    if (!activeFilters.has('all')) {
+      result = result.filter((e) => activeFilters.has(e.type));
+    }
+    const q = searchQuery.trim().toLowerCase();
+    if (q) {
+      result = result.filter((e) => {
+        if (e.notes?.toLowerCase().includes(q)) return true;
+        if (e.cost.toFixed(2).includes(q)) return true;
+        if (e.placeId) {
+          const place = placeMap.get(e.placeId);
+          if (place?.name.toLowerCase().includes(q)) return true;
+        }
+        if (e.type === 'expense' && e.categoryId) {
+          const cat = categories.find((c) => c.id === e.categoryId);
+          if (cat?.name.toLowerCase().includes(q)) return true;
+        }
+        if (e.type === 'service') {
+          const label = serviceLabels.get(e.id);
+          if (label?.toLowerCase().includes(q)) return true;
+        }
+        return false;
+      });
+    }
+    return result;
+  }, [events, activeFilters, searchQuery, placeMap, categories, serviceLabels]);
 
   const listItems = useMemo(() => groupByMonth(filteredEvents), [filteredEvents]);
 
@@ -165,14 +208,22 @@ export default function HistoryScreen() {
   const handleDelete = useCallback(
     (event: VehicleEvent) => {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-      deleteEvent(event.id);
+      const typeLabel = event.type === 'fuel' ? 'fill-up' : event.type;
+      showDialog(`Delete ${typeLabel}?`, 'This cannot be undone.', [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => deleteEvent(event.id),
+        },
+      ]);
     },
     [deleteEvent]
   );
 
   const handleLongPress = useCallback(
     (event: VehicleEvent) => {
-      Alert.alert('Event Options', '', [
+      showDialog('Options', undefined, [
         {
           text: 'Edit',
           onPress: () => handleEventPress(event),
@@ -192,9 +243,9 @@ export default function HistoryScreen() {
     return (
       <SafeAreaView className="flex-1 bg-surface dark:bg-surface-dark" edges={['top']}>
         <EmptyState
-          icon={<Ionicons name="car-outline" size={64} color="#A8A49D" />}
-          title="Add a Vehicle to Get Started"
-          description="Track fuel, service, and expenses for your vehicle."
+          icon={<View style={{ opacity: 0.4 }}><Ionicons name="car-sport-outline" size={64} color="#A8A49D" /></View>}
+          title="Your garage is empty"
+          description="Add a vehicle and AutoMate handles the rest."
           actionLabel="Add Vehicle"
           onAction={() => router.push('/(modals)/vehicle')}
         />
@@ -206,6 +257,28 @@ export default function HistoryScreen() {
     <SafeAreaView className="flex-1 bg-surface dark:bg-surface-dark" edges={['top']}>
       <VehicleSwitcher />
 
+      {/* Search bar */}
+      <View className="px-4 pt-3 pb-1">
+        <View className="flex-row items-center bg-card dark:bg-card-dark rounded-xl border border-divider dark:border-divider-dark px-3 py-2">
+          <Ionicons name="search" size={16} color="#A8A49D" />
+          <TextInput
+            className="flex-1 text-sm text-ink dark:text-ink-on-dark ml-2"
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            placeholder="Search notes, places, categories..."
+            placeholderTextColor="#A8A49D"
+            returnKeyType="search"
+            clearButtonMode="while-editing"
+            accessibilityLabel="Search history"
+          />
+          {searchQuery.length > 0 && (
+            <Pressable onPress={() => setSearchQuery('')} hitSlop={14} accessibilityLabel="Clear search">
+              <Ionicons name="close-circle" size={16} color="#A8A49D" />
+            </Pressable>
+          )}
+        </View>
+      </View>
+
       {/* Filter bar */}
       <View className="flex-row px-4 py-3 gap-2">
         {FILTER_CHIPS.map((chip) => {
@@ -214,12 +287,12 @@ export default function HistoryScreen() {
             <Pressable
               key={chip.id}
               onPress={() => handleFilterToggle(chip.id)}
-              className={`px-4 py-1.5 rounded-full border ${
+              className={`px-4 py-2.5 rounded-full border ${
                 isActive ? 'border-transparent' : 'border-divider dark:border-divider-dark'
               }`}
               style={
                 isActive
-                  ? { backgroundColor: chip.color || '#3B82F6' }
+                  ? { backgroundColor: chip.color || '#4272C4' }
                   : undefined
               }
               accessibilityLabel={`Filter ${chip.label}${isActive ? ', active' : ''}`}
@@ -238,13 +311,31 @@ export default function HistoryScreen() {
         })}
       </View>
 
+      {isLoading && (
+        <View className="absolute inset-0 z-10 items-center pt-40" pointerEvents="none">
+          <ActivityIndicator size="small" color="#A8A49D" />
+        </View>
+      )}
+
       {filteredEvents.length === 0 ? (
         <View className="flex-1">
-          <EmptyState
-            icon={<Ionicons name="time-outline" size={64} color="#A8A49D" />}
-            title="No Events Yet"
-            description="No events yet. Tap + to log your first fill-up, service, or expense."
-          />
+          {searchQuery.trim() || !activeFilters.has('all') ? (
+            <EmptyState
+              icon={<View style={{ opacity: 0.4 }}><Ionicons name="search-outline" size={64} color="#A8A49D" /></View>}
+              title="No matches"
+              description="Try a different search term or clear your filters."
+            />
+          ) : (
+            <EmptyState
+              icon={
+                <View style={{ width: 88, height: 88, borderRadius: 44, backgroundColor: '#0D948810', alignItems: 'center', justifyContent: 'center' }}>
+                  <Ionicons name="receipt-outline" size={44} color="#0D9488" />
+                </View>
+              }
+              title="Your timeline starts here"
+              description="Tap + to log a fill-up, service, or expense. Each entry builds your car's story."
+            />
+          )}
         </View>
       ) : (
         <FlashList
@@ -263,7 +354,7 @@ export default function HistoryScreen() {
                   <Text className="text-sm font-semibold text-ink dark:text-ink-on-dark">
                     {item.month}
                   </Text>
-                  <Text className="text-sm font-semibold text-ink-muted dark:text-ink-muted-on-dark">
+                  <Text className="text-sm font-semibold text-ink-muted dark:text-ink-muted-on-dark" numberOfLines={1}>
                     ${item.total.toFixed(2)}
                   </Text>
                 </View>
@@ -285,6 +376,7 @@ export default function HistoryScreen() {
 
       <UndoSnackbar />
       <AddEventFAB />
+      <ConfirmDialog {...dialogProps} />
     </SafeAreaView>
   );
 }

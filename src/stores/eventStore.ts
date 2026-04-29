@@ -5,6 +5,7 @@ import * as eventServiceTypeQueries from '../db/queries/eventServiceTypes';
 import * as eventPhotoQueries from '../db/queries/eventPhotos';
 import { estimateOdometer } from '../services/odometerEstimator';
 import { useReminderStore } from './reminderStore';
+import { useReferenceDataStore } from './referenceDataStore';
 
 interface PendingDelete {
   event: VehicleEvent;
@@ -14,6 +15,7 @@ interface PendingDelete {
 
 interface EventStore {
   events: VehicleEvent[];
+  serviceLabels: Map<string, string>;
   isLoading: boolean;
   error: string | null;
   pendingDelete: PendingDelete | null;
@@ -54,6 +56,7 @@ function insertSorted(events: VehicleEvent[], event: VehicleEvent): VehicleEvent
 
 export const useEventStore = create<EventStore>((set, get) => ({
   events: [],
+  serviceLabels: new Map(),
   isLoading: false,
   error: null,
   pendingDelete: null,
@@ -73,8 +76,11 @@ export const useEventStore = create<EventStore>((set, get) => ({
   async loadForVehicle(vehicleId) {
     set({ isLoading: true, error: null });
     try {
-      const events = await eventQueries.getByVehicle(vehicleId);
-      set({ events, isLoading: false });
+      const [events, serviceLabels] = await Promise.all([
+        eventQueries.getByVehicle(vehicleId),
+        eventServiceTypeQueries.getLabelsByVehicle(vehicleId),
+      ]);
+      set({ events, serviceLabels, isLoading: false });
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Failed to load events';
       set({ error: msg, isLoading: false });
@@ -96,7 +102,18 @@ export const useEventStore = create<EventStore>((set, get) => ({
         }
       }
 
-      set((state) => ({ events: insertSorted(state.events, event) }));
+      set((state) => {
+        const serviceLabels = new Map(state.serviceLabels);
+        if (data.type === 'service' && serviceTypeIds && serviceTypeIds.length > 0) {
+          const { serviceTypes } = useReferenceDataStore.getState();
+          const names = serviceTypeIds
+            .map((id) => serviceTypes.find((st) => st.id === id)?.name)
+            .filter(Boolean)
+            .join(', ');
+          if (names) serviceLabels.set(event.id, names);
+        }
+        return { events: insertSorted(state.events, event), serviceLabels };
+      });
 
       useReminderStore.getState().recalculateForEvent(event, serviceTypeIds);
 
@@ -150,7 +167,20 @@ export const useEventStore = create<EventStore>((set, get) => ({
           if (dateDiff !== 0) return dateDiff;
           return b.createdAt.localeCompare(a.createdAt);
         });
-        return { events };
+        const serviceLabels = new Map(state.serviceLabels);
+        if (serviceTypeIds) {
+          if (serviceTypeIds.length > 0) {
+            const { serviceTypes } = useReferenceDataStore.getState();
+            const names = serviceTypeIds
+              .map((stId) => serviceTypes.find((st) => st.id === stId)?.name)
+              .filter(Boolean)
+              .join(', ');
+            if (names) serviceLabels.set(id, names);
+          } else {
+            serviceLabels.delete(id);
+          }
+        }
+        return { events, serviceLabels };
       });
 
       useReminderStore.getState().recalculateForEvent(updatedEvent, serviceTypeIds);
@@ -238,6 +268,7 @@ export const useEventStore = create<EventStore>((set, get) => ({
         if (recentFuel.length > 0) {
           const last = recentFuel[0];
           defaults.pricePerUnit = last.pricePerUnit;
+          defaults.discountPerUnit = last.discountPerUnit;
           defaults.placeId = last.placeId;
         }
       }

@@ -1,10 +1,13 @@
 import { useState, useCallback } from 'react';
-import { View, Text, Pressable, ScrollView, Modal, FlatList, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, Pressable, ScrollView, Modal, FlatList } from 'react-native';
+import { ConfirmDialog } from '@/src/components/ConfirmDialog';
+import { useDialog } from '@/src/hooks/useDialog';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Sharing from 'expo-sharing';
 import * as DocumentPicker from 'expo-document-picker';
+import Constants from 'expo-constants';
 import { useSettingsStore } from '@/src/stores/settingsStore';
 import { useVehicleStore } from '@/src/stores/vehicleStore';
 import { useEventStore } from '@/src/stores/eventStore';
@@ -40,11 +43,13 @@ function SectionHeader({ title }: { title: string }) {
 
 function RowItem({
   label,
+  subtitle,
   value,
   onPress,
   accessibilityLabel,
 }: {
   label: string;
+  subtitle?: string;
   value?: string;
   onPress?: () => void;
   accessibilityLabel?: string;
@@ -57,7 +62,12 @@ function RowItem({
       accessibilityRole={onPress ? 'button' : 'text'}
       disabled={!onPress}
     >
-      <Text className="text-base text-ink dark:text-ink-on-dark">{label}</Text>
+      <View className="flex-1 mr-3">
+        <Text className="text-base text-ink dark:text-ink-on-dark">{label}</Text>
+        {subtitle && (
+          <Text className="text-xs text-ink-muted dark:text-ink-muted-on-dark mt-0.5">{subtitle}</Text>
+        )}
+      </View>
       <View className="flex-row items-center gap-2">
         {value && (
           <Text className="text-sm text-ink-muted dark:text-ink-muted-on-dark">{value}</Text>
@@ -83,7 +93,7 @@ function PickerModal({ visible, title, options, selectedValue, onSelect, onClose
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <Pressable
-        className="flex-1 bg-black/40 justify-end"
+        className="flex-1 justify-end" style={{ backgroundColor: 'rgba(28, 27, 24, 0.4)' }}
         onPress={onClose}
         accessibilityLabel="Close picker"
       >
@@ -121,7 +131,7 @@ function PickerModal({ visible, title, options, selectedValue, onSelect, onClose
                   {item.label}
                 </Text>
                 {selectedValue === item.value && (
-                  <Ionicons name="checkmark" size={20} color="#3B82F6" />
+                  <Ionicons name="checkmark" size={20} color="#4272C4" />
                 )}
               </Pressable>
             )}
@@ -142,6 +152,7 @@ export default function SettingsScreen() {
   const [isBackingUp, setIsBackingUp] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
   const [isLoadingTestData, setIsLoadingTestData] = useState(false);
+  const { showDialog, dialogProps } = useDialog();
 
   const handleBackup = useCallback(async () => {
     if (isBackingUp) return;
@@ -154,7 +165,7 @@ export default function SettingsScreen() {
       });
     } catch (e) {
       const message = e instanceof Error ? e.message : 'An unexpected error occurred.';
-      Alert.alert('Backup Failed', message);
+      showDialog('Backup Failed', message);
     } finally {
       setIsBackingUp(false);
     }
@@ -177,14 +188,14 @@ export default function SettingsScreen() {
         info = await getBackupInfo(fileUri);
       } catch (e) {
         const message = e instanceof Error ? e.message : 'Could not read the selected file.';
-        Alert.alert('Invalid Backup', message);
+        showDialog('Invalid Backup', message);
         setIsRestoring(false);
         return;
       }
 
       setIsRestoring(false);
 
-      Alert.alert(
+      showDialog(
         'Restore Backup?',
         `This backup contains ${info.vehicleCount} vehicle${info.vehicleCount !== 1 ? 's' : ''}, ${info.eventCount} event${info.eventCount !== 1 ? 's' : ''}, and ${info.reminderCount} reminder${info.reminderCount !== 1 ? 's' : ''}.\n\nRestoring will replace ALL current data. This cannot be undone.`,
         [
@@ -196,10 +207,10 @@ export default function SettingsScreen() {
               setIsRestoring(true);
               try {
                 await restoreBackup(fileUri);
-                Alert.alert('Restore Complete', 'Your data has been restored successfully.');
+                showDialog('Restore Complete', 'Your data has been restored successfully.');
               } catch (e) {
                 const message = e instanceof Error ? e.message : 'An unexpected error occurred.';
-                Alert.alert('Restore Failed', message);
+                showDialog('Restore Failed', message);
               } finally {
                 setIsRestoring(false);
               }
@@ -209,13 +220,13 @@ export default function SettingsScreen() {
       );
     } catch (e) {
       const message = e instanceof Error ? e.message : 'An unexpected error occurred.';
-      Alert.alert('Restore Failed', message);
+      showDialog('Restore Failed', message);
       setIsRestoring(false);
     }
   }, [isRestoring]);
 
   const handleLoadTestData = useCallback(() => {
-    Alert.alert(
+    showDialog(
       'Load Test Data?',
       'This will replace all current vehicles, events, and reminders with 2 years of sample data. This cannot be undone.',
       [
@@ -237,13 +248,13 @@ export default function SettingsScreen() {
                 ]);
               }
               await useSettingsStore.getState().initialize();
-              Alert.alert(
+              showDialog(
                 'Test Data Loaded',
                 `Created ${result.vehicles} vehicles, ${result.events} events, and ${result.reminders} reminders spanning 2 years.`,
               );
             } catch (e) {
               const message = e instanceof Error ? e.message : 'An unexpected error occurred.';
-              Alert.alert('Failed', message);
+              showDialog('Failed', message);
             } finally {
               setIsLoadingTestData(false);
             }
@@ -311,7 +322,7 @@ export default function SettingsScreen() {
         <Text className="text-2xl font-bold text-ink dark:text-ink-on-dark">Settings</Text>
       </View>
 
-      <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 40 }}>
+      <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
         {/* Appearance */}
         <SectionHeader title="Appearance" />
         <View className="bg-card dark:bg-card-dark border-y border-divider-subtle dark:border-divider-dark">
@@ -383,30 +394,18 @@ export default function SettingsScreen() {
         {/* Data */}
         <SectionHeader title="Data" />
         <View className="border-t border-divider-subtle dark:border-divider-dark">
-          <View>
-            <RowItem
-              label="Backup Data"
-              onPress={handleBackup}
-              accessibilityLabel="Backup Data"
-            />
-            {isBackingUp && (
-              <View className="absolute right-12 top-0 bottom-0 justify-center">
-                <ActivityIndicator size="small" />
-              </View>
-            )}
-          </View>
-          <View>
-            <RowItem
-              label="Restore Data"
-              onPress={handleRestore}
-              accessibilityLabel="Restore Data"
-            />
-            {isRestoring && (
-              <View className="absolute right-12 top-0 bottom-0 justify-center">
-                <ActivityIndicator size="small" />
-              </View>
-            )}
-          </View>
+          <RowItem
+            label={isBackingUp ? 'Preparing backup...' : 'Backup Data'}
+            subtitle="Save a copy of all vehicles and events"
+            onPress={isBackingUp ? undefined : handleBackup}
+            accessibilityLabel={isBackingUp ? 'Backup in progress' : 'Backup Data'}
+          />
+          <RowItem
+            label={isRestoring ? 'Restoring...' : 'Restore Data'}
+            subtitle="Replace all current data from a backup file"
+            onPress={isRestoring ? undefined : handleRestore}
+            accessibilityLabel={isRestoring ? 'Restore in progress' : 'Restore Data'}
+          />
           <RowItem
             label="Import Data"
             onPress={() => router.push('/(modals)/import')}
@@ -419,28 +418,46 @@ export default function SettingsScreen() {
           />
         </View>
 
+        {/* Help */}
+        <SectionHeader title="Help" />
+        <View className="border-t border-divider-subtle dark:border-divider-dark">
+          <RowItem
+            label="How is Cost / Mile calculated?"
+            subtitle="Total spending divided by total distance driven in the selected period."
+            accessibilityLabel="Cost per mile is total spending divided by total distance driven"
+          />
+          <RowItem
+            label="How is fuel efficiency calculated?"
+            subtitle="Distance between full fill-ups divided by fuel volume. Partial fills are excluded."
+            accessibilityLabel="Fuel efficiency is distance between full fill-ups divided by fuel volume"
+          />
+          <RowItem
+            label="What is a partial fill?"
+            subtitle="When you don't fill the tank completely. Marked partial fills are excluded from efficiency calculations because the math requires full-to-full measurements."
+            accessibilityLabel="Partial fill explanation"
+          />
+          <RowItem
+            label="How do reminders work?"
+            subtitle="Set a distance or time interval. AutoMate estimates when you'll reach the threshold based on your driving patterns and notifies you."
+            accessibilityLabel="Reminder explanation"
+          />
+        </View>
+
         {/* About */}
         <SectionHeader title="About" />
         <View className="border-t border-divider-subtle dark:border-divider-dark">
-          <RowItem label="AutoMate v2.0" />
+          <RowItem label={`AutoMate v${Constants.expoConfig?.version ?? '2.0'}`} />
         </View>
 
         {__DEV__ && (
           <>
             <SectionHeader title="Developer" />
             <View className="border-t border-divider-subtle dark:border-divider-dark">
-              <View>
-                <RowItem
-                  label="Load Test Data"
-                  onPress={handleLoadTestData}
-                  accessibilityLabel="Load test data with 2 years of sample events"
-                />
-                {isLoadingTestData && (
-                  <View className="absolute right-12 top-0 bottom-0 justify-center">
-                    <ActivityIndicator size="small" />
-                  </View>
-                )}
-              </View>
+              <RowItem
+                label={isLoadingTestData ? 'Loading test data...' : 'Load Test Data'}
+                onPress={isLoadingTestData ? undefined : handleLoadTestData}
+                accessibilityLabel="Load test data with 2 years of sample events"
+              />
             </View>
           </>
         )}
@@ -454,6 +471,7 @@ export default function SettingsScreen() {
         onSelect={pickerConfig.onSelect}
         onClose={closePicker}
       />
+      <ConfirmDialog {...dialogProps} />
     </SafeAreaView>
   );
 }

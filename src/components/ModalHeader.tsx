@@ -1,4 +1,4 @@
-import { View, Text, Pressable } from 'react-native';
+import { View, Text, Pressable, ActivityIndicator } from 'react-native';
 
 interface ModalHeaderProps {
   title: string;
@@ -8,6 +8,7 @@ interface ModalHeaderProps {
   saveLabel?: string;
   cancelLabel?: string;
   hideSave?: boolean;
+  isSaving?: boolean;
 }
 
 export function ModalHeader({
@@ -18,17 +19,19 @@ export function ModalHeader({
   saveLabel = 'Save',
   cancelLabel = 'Cancel',
   hideSave = false,
+  isSaving = false,
 }: ModalHeaderProps) {
   return (
     <View className="flex-row items-center justify-between px-4 py-3 border-b border-divider dark:border-divider-dark bg-card dark:bg-card-dark">
       <Pressable
-        onPress={onCancel}
-        className="min-w-[60px] py-1"
+        onPress={isSaving ? undefined : onCancel}
+        className="min-w-[60px] py-3"
         accessibilityLabel={cancelLabel}
         accessibilityRole="button"
+        disabled={isSaving}
         hitSlop={8}
       >
-        <Text className="text-base text-primary">{cancelLabel}</Text>
+        <Text className={`text-base ${isSaving ? 'text-ink-muted dark:text-ink-faint-on-dark' : 'text-primary'}`}>{cancelLabel}</Text>
       </Pressable>
 
       <Text
@@ -40,21 +43,25 @@ export function ModalHeader({
 
       {!hideSave ? (
         <Pressable
-          onPress={saveDisabled ? undefined : onSave}
-          className="min-w-[60px] py-1 items-end"
-          accessibilityLabel={saveLabel}
+          onPress={saveDisabled || isSaving ? undefined : onSave}
+          className="min-w-[60px] py-3 items-end"
+          accessibilityLabel={isSaving ? 'Saving' : saveLabel}
           accessibilityRole="button"
-          accessibilityState={{ disabled: saveDisabled }}
-          disabled={saveDisabled}
+          accessibilityState={{ disabled: saveDisabled || isSaving }}
+          disabled={saveDisabled || isSaving}
           hitSlop={8}
         >
-          <Text
-            className={`text-base font-semibold ${
-              saveDisabled ? 'text-ink-muted dark:text-ink-faint-on-dark' : 'text-primary'
-            }`}
-          >
-            {saveLabel}
-          </Text>
+          {isSaving ? (
+            <ActivityIndicator size="small" color="#4272C4" />
+          ) : (
+            <Text
+              className={`text-base font-semibold ${
+                saveDisabled ? 'text-ink-muted dark:text-ink-faint-on-dark' : 'text-primary'
+              }`}
+            >
+              {saveLabel}
+            </Text>
+          )}
         </Pressable>
       ) : (
         <View className="min-w-[60px]" />

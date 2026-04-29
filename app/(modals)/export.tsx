@@ -1,10 +1,12 @@
 import { useState, useMemo, useCallback } from 'react';
-import { View, Text, Pressable, ScrollView, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, Pressable, ScrollView, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Sharing from 'expo-sharing';
 import { ModalHeader } from '@/src/components/ModalHeader';
+import { ConfirmDialog } from '@/src/components/ConfirmDialog';
+import { useDialog } from '@/src/hooks/useDialog';
 import { DateField } from '@/src/components/DateField';
 import { useVehicleStore } from '@/src/stores/vehicleStore';
 import { exportVehicleData } from '@/src/services/csvExport';
@@ -22,6 +24,7 @@ export default function ExportModal() {
   const [toDate, setToDate] = useState('');
   const [exporting, setExporting] = useState(false);
   const [showVehiclePicker, setShowVehiclePicker] = useState(false);
+  const { showDialog, dialogProps } = useDialog();
 
   const selectedLabel = useMemo(() => {
     if (!selectedVehicleId) return 'All Vehicles';
@@ -44,7 +47,7 @@ export default function ExportModal() {
     try {
       if (format === 'pdf') {
         if (!selectedVehicleId) {
-          Alert.alert('Vehicle Required', 'Please select a vehicle for PDF export.');
+          showDialog('Vehicle Required', 'Please select a vehicle for PDF export.');
           return;
         }
         const fileUri = await generateServiceHistoryPDF(
@@ -59,7 +62,7 @@ export default function ExportModal() {
             dialogTitle: 'Export AutoMate Service History',
           });
         } else {
-          Alert.alert('Exported', `File saved to: ${fileUri}`);
+          showDialog('Exported', `File saved to: ${fileUri}`);
         }
       } else {
         const fileUri = await exportVehicleData(
@@ -74,18 +77,19 @@ export default function ExportModal() {
             dialogTitle: 'Export AutoMate Data',
           });
         } else {
-          Alert.alert('Exported', `File saved to: ${fileUri}`);
+          showDialog('Exported', `File saved to: ${fileUri}`);
         }
       }
-    } catch {
-      Alert.alert('Export Failed', 'Could not export data. Please try again.');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : '';
+      showDialog('Export Failed', msg || 'Could not generate the file. Check your storage space and try again.');
     } finally {
       setExporting(false);
     }
   }, [format, selectedVehicleId, fromDate, toDate]);
 
   return (
-    <SafeAreaView className="flex-1 bg-white dark:bg-gray-900" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-surface dark:bg-surface-dark" edges={['top']}>
       <ModalHeader
         title="Export Data"
         onCancel={() => router.back()}
@@ -93,10 +97,10 @@ export default function ExportModal() {
       />
       <ScrollView className="flex-1 px-4 pt-4" keyboardShouldPersistTaps="handled">
         {/* Format toggle */}
-        <Text className="text-xs text-gray-500 dark:text-gray-400 mb-2 font-semibold">
+        <Text className="text-xs text-ink-muted dark:text-ink-muted-on-dark mb-2 font-semibold">
           Format
         </Text>
-        <View className="flex-row bg-surface dark:bg-surface-dark rounded-xl border border-gray-200 dark:border-gray-700 p-1 mb-4">
+        <View className="flex-row bg-surface dark:bg-surface-dark rounded-card border border-divider dark:border-divider-dark p-1 mb-4">
           <Pressable
             onPress={() => handleFormatChange('csv')}
             className={`flex-1 py-2.5 rounded-lg items-center ${
@@ -108,7 +112,7 @@ export default function ExportModal() {
           >
             <Text
               className={`text-sm font-semibold ${
-                format === 'csv' ? 'text-white' : 'text-gray-600 dark:text-gray-300'
+                format === 'csv' ? 'text-white' : 'text-ink-secondary dark:text-ink-secondary-on-dark'
               }`}
             >
               CSV
@@ -125,7 +129,7 @@ export default function ExportModal() {
           >
             <Text
               className={`text-sm font-semibold ${
-                format === 'pdf' ? 'text-white' : 'text-gray-600 dark:text-gray-300'
+                format === 'pdf' ? 'text-white' : 'text-ink-secondary dark:text-ink-secondary-on-dark'
               }`}
             >
               PDF
@@ -134,40 +138,40 @@ export default function ExportModal() {
         </View>
 
         {format === 'pdf' && (
-          <Text className="text-xs text-gray-400 dark:text-gray-500 mb-4 -mt-2">
+          <Text className="text-xs text-ink-faint dark:text-ink-faint-on-dark mb-4 -mt-2">
             PDF export is per-vehicle only
           </Text>
         )}
 
         {/* Vehicle picker */}
-        <Text className="text-xs text-gray-500 dark:text-gray-400 mb-2 font-semibold">
+        <Text className="text-xs text-ink-muted dark:text-ink-muted-on-dark mb-2 font-semibold">
           Vehicle
         </Text>
         <Pressable
           onPress={() => setShowVehiclePicker(!showVehiclePicker)}
-          className="flex-row items-center bg-surface dark:bg-surface-dark rounded-xl border border-gray-200 dark:border-gray-700 px-3.5 py-3 mb-4"
+          className="flex-row items-center bg-surface dark:bg-surface-dark rounded-xl border border-divider dark:border-divider-dark px-3.5 py-3 mb-4"
           accessibilityLabel={`Selected vehicle: ${selectedLabel}`}
           accessibilityRole="button"
         >
-          <Text className="flex-1 text-base text-gray-900 dark:text-gray-100">
+          <Text className="flex-1 text-base text-ink dark:text-ink-on-dark">
             {selectedLabel}
           </Text>
           <Ionicons
             name={showVehiclePicker ? 'chevron-up' : 'chevron-down'}
             size={18}
-            color="#9CA3AF"
+            color="#A8A49D"
           />
         </Pressable>
 
         {showVehiclePicker && (
-          <View className="mb-4 bg-surface dark:bg-surface-dark rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+          <View className="mb-4 bg-surface dark:bg-surface-dark rounded-xl border border-divider dark:border-divider-dark overflow-hidden">
             {format !== 'pdf' && (
               <Pressable
                 onPress={() => {
                   setSelectedVehicleId(null);
                   setShowVehiclePicker(false);
                 }}
-                className={`px-3.5 py-3 border-b border-gray-100 dark:border-gray-800 ${
+                className={`px-3.5 py-3 border-b border-divider-subtle dark:border-divider-dark ${
                   !selectedVehicleId ? 'bg-primary-light dark:bg-primary-dark' : ''
                 }`}
                 accessibilityLabel="All Vehicles"
@@ -177,7 +181,7 @@ export default function ExportModal() {
                   className={`text-base ${
                     !selectedVehicleId
                       ? 'text-primary font-semibold'
-                      : 'text-gray-900 dark:text-gray-100'
+                      : 'text-ink dark:text-ink-on-dark'
                   }`}
                 >
                   All Vehicles
@@ -191,7 +195,7 @@ export default function ExportModal() {
                   setSelectedVehicleId(v.id);
                   setShowVehiclePicker(false);
                 }}
-                className={`px-3.5 py-3 border-b border-gray-100 dark:border-gray-800 ${
+                className={`px-3.5 py-3 border-b border-divider-subtle dark:border-divider-dark ${
                   selectedVehicleId === v.id ? 'bg-primary-light dark:bg-primary-dark' : ''
                 }`}
                 accessibilityLabel={v.nickname}
@@ -201,7 +205,7 @@ export default function ExportModal() {
                   className={`text-base ${
                     selectedVehicleId === v.id
                       ? 'text-primary font-semibold'
-                      : 'text-gray-900 dark:text-gray-100'
+                      : 'text-ink dark:text-ink-on-dark'
                   }`}
                 >
                   {v.nickname}
@@ -212,7 +216,7 @@ export default function ExportModal() {
         )}
 
         {/* Date range */}
-        <Text className="text-xs text-gray-500 dark:text-gray-400 mb-2 font-semibold">
+        <Text className="text-xs text-ink-muted dark:text-ink-muted-on-dark mb-2 font-semibold">
           Date Range (optional)
         </Text>
 
@@ -222,6 +226,7 @@ export default function ExportModal() {
               value={fromDate}
               onChange={setFromDate}
               label="From"
+              required={false}
             />
             <Pressable
               onPress={() => setFromDate('')}
@@ -235,12 +240,12 @@ export default function ExportModal() {
         ) : (
           <Pressable
             onPress={() => setFromDate(new Date().toISOString().split('T')[0])}
-            className="flex-row items-center bg-surface dark:bg-surface-dark rounded-xl border border-gray-200 dark:border-gray-700 px-3.5 py-3 mb-4"
+            className="flex-row items-center bg-surface dark:bg-surface-dark rounded-xl border border-divider dark:border-divider-dark px-3.5 py-3 mb-4"
             accessibilityLabel="Set from date"
             accessibilityRole="button"
           >
-            <Ionicons name="calendar-outline" size={18} color="#9CA3AF" />
-            <Text className="flex-1 ml-2 text-base text-gray-400">From (all time)</Text>
+            <Ionicons name="calendar-outline" size={18} color="#A8A49D" />
+            <Text className="flex-1 ml-2 text-base text-ink-muted">From (all time)</Text>
           </Pressable>
         )}
 
@@ -250,6 +255,7 @@ export default function ExportModal() {
               value={toDate}
               onChange={setToDate}
               label="To"
+              required={false}
             />
             <Pressable
               onPress={() => setToDate('')}
@@ -263,12 +269,12 @@ export default function ExportModal() {
         ) : (
           <Pressable
             onPress={() => setToDate(new Date().toISOString().split('T')[0])}
-            className="flex-row items-center bg-surface dark:bg-surface-dark rounded-xl border border-gray-200 dark:border-gray-700 px-3.5 py-3 mb-4"
+            className="flex-row items-center bg-surface dark:bg-surface-dark rounded-xl border border-divider dark:border-divider-dark px-3.5 py-3 mb-4"
             accessibilityLabel="Set to date"
             accessibilityRole="button"
           >
-            <Ionicons name="calendar-outline" size={18} color="#9CA3AF" />
-            <Text className="flex-1 ml-2 text-base text-gray-400">To (all time)</Text>
+            <Ionicons name="calendar-outline" size={18} color="#A8A49D" />
+            <Text className="flex-1 ml-2 text-base text-ink-muted">To (all time)</Text>
           </Pressable>
         )}
 
@@ -277,7 +283,7 @@ export default function ExportModal() {
           onPress={handleExport}
           disabled={exporting}
           className={`mt-6 py-4 rounded-xl items-center ${
-            exporting ? 'bg-gray-300 dark:bg-gray-700' : 'bg-primary'
+            exporting ? 'bg-divider dark:bg-divider-dark' : 'bg-primary'
           }`}
           accessibilityLabel={`Export ${format.toUpperCase()}`}
           accessibilityRole="button"
@@ -300,6 +306,7 @@ export default function ExportModal() {
 
         <View className="h-8" />
       </ScrollView>
+      <ConfirmDialog {...dialogProps} />
     </SafeAreaView>
   );
 }

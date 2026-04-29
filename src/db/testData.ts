@@ -122,9 +122,13 @@ export async function loadTestData(): Promise<{ vehicles: number; events: number
     return eid;
   }
 
-  // --- Fuel events ---
+  // --- Fuel events (build timeline, track odometers for interpolation) ---
   const startDate = new Date('2024-04-15');
   const endDate = new Date('2026-04-25');
+
+  type OdoPoint = { date: string; odometer: number };
+  const tacomaTimeline: OdoPoint[] = [];
+  const civicTimeline: OdoPoint[] = [];
 
   // Tacoma: ~18 MPG, starting at 24,500 mi
   let tacomaOdo = 24500;
@@ -136,7 +140,9 @@ export async function loadTestData(): Promise<{ vehicles: number; events: number
     const volume = Math.round((miles / mpg) * 100) / 100;
     const price = gasPrice(d);
     const cost = Math.round(volume * price * 100) / 100;
-    await insertEvent(tacomaId, 'fuel', dateStr(d), tacomaOdo, cost, {
+    const ds = dateStr(d);
+    tacomaTimeline.push({ date: ds, odometer: tacomaOdo });
+    await insertEvent(tacomaId, 'fuel', ds, tacomaOdo, cost, {
       volume, pricePerUnit: price, placeId: pick(gasStations).id,
     });
     d = addDays(d, randInt(7, 14));
@@ -152,17 +158,36 @@ export async function loadTestData(): Promise<{ vehicles: number; events: number
     const volume = Math.round((miles / mpg) * 100) / 100;
     const price = gasPrice(d);
     const cost = Math.round(volume * price * 100) / 100;
-    await insertEvent(civicId, 'fuel', dateStr(d), civicOdo, cost, {
+    const ds = dateStr(d);
+    civicTimeline.push({ date: ds, odometer: civicOdo });
+    await insertEvent(civicId, 'fuel', ds, civicOdo, cost, {
       volume, pricePerUnit: price, placeId: pick(gasStations).id,
     });
     d = addDays(d, randInt(10, 18));
   }
 
+  function interpolateOdometer(timeline: OdoPoint[], targetDate: string): number {
+    if (timeline.length === 0) return 0;
+    if (targetDate <= timeline[0].date) return timeline[0].odometer;
+    if (targetDate >= timeline[timeline.length - 1].date) return timeline[timeline.length - 1].odometer;
+    for (let i = 0; i < timeline.length - 1; i++) {
+      if (targetDate >= timeline[i].date && targetDate <= timeline[i + 1].date) {
+        const d0 = new Date(timeline[i].date + 'T00:00:00').getTime();
+        const d1 = new Date(timeline[i + 1].date + 'T00:00:00').getTime();
+        const dt = new Date(targetDate + 'T00:00:00').getTime();
+        const frac = (dt - d0) / (d1 - d0);
+        return Math.round(timeline[i].odometer + frac * (timeline[i + 1].odometer - timeline[i].odometer));
+      }
+    }
+    return timeline[timeline.length - 1].odometer;
+  }
+
   // --- Service events ---
   async function insertService(
-    vehicleId: string, date: string, odometer: number,
+    vehicleId: string, date: string, timeline: OdoPoint[],
     cost: number, placeName: string, typeNames: string[], notes?: string,
   ): Promise<void> {
+    const odometer = interpolateOdometer(timeline, date);
     const placeId = placeByName.get(placeName)?.id;
     const eid = await insertEvent(vehicleId, 'service', date, odometer, cost, { placeId, notes });
     for (const name of typeNames) {
@@ -174,30 +199,30 @@ export async function loadTestData(): Promise<{ vehicles: number; events: number
   }
 
   // Tacoma services
-  await insertService(tacomaId, '2024-08-10', 29500, 89, 'Toyota Service Center', ['Oil Change', 'Oil Filter'], 'Synthetic 0W-20');
-  await insertService(tacomaId, '2024-10-05', 32000, 45, 'Discount Tire', ['Tire Rotation', 'Tire Pressure']);
-  await insertService(tacomaId, '2024-12-15', 34500, 92, 'Jiffy Lube', ['Oil Change', 'Oil Filter']);
-  await insertService(tacomaId, '2025-02-20', 37000, 28, 'Toyota Service Center', ['Cabin Air Filter']);
-  await insertService(tacomaId, '2025-04-12', 39500, 95, 'Toyota Service Center', ['Oil Change', 'Oil Filter', 'Engine Air Filter']);
-  await insertService(tacomaId, '2025-04-25', 40000, 48, 'Discount Tire', ['Tire Rotation']);
-  await insertService(tacomaId, '2025-06-14', 42000, 385, 'Toyota Service Center', ['Brakes (Front)'], 'Front pads and rotors');
-  await insertService(tacomaId, '2025-08-20', 44500, 88, 'Jiffy Lube', ['Oil Change', 'Oil Filter']);
-  await insertService(tacomaId, '2025-10-10', 47000, 52, 'Discount Tire', ['Tire Rotation', 'Tire Pressure']);
-  await insertService(tacomaId, '2025-12-05', 49500, 98, 'Toyota Service Center', ['Oil Change', 'Oil Filter']);
-  await insertService(tacomaId, '2026-01-15', 50500, 195, 'Toyota Service Center', ['Battery'], 'Interstate battery');
-  await insertService(tacomaId, '2026-02-28', 52000, 25, 'Jiffy Lube', ['Windshield Wipers']);
-  await insertService(tacomaId, '2026-04-10', 54000, 92, 'Toyota Service Center', ['Oil Change', 'Oil Filter']);
+  await insertService(tacomaId, '2024-08-10', tacomaTimeline, 89, 'Toyota Service Center', ['Oil Change', 'Oil Filter'], 'Synthetic 0W-20');
+  await insertService(tacomaId, '2024-10-05', tacomaTimeline, 45, 'Discount Tire', ['Tire Rotation', 'Tire Pressure']);
+  await insertService(tacomaId, '2024-12-15', tacomaTimeline, 92, 'Jiffy Lube', ['Oil Change', 'Oil Filter']);
+  await insertService(tacomaId, '2025-02-20', tacomaTimeline, 28, 'Toyota Service Center', ['Cabin Air Filter']);
+  await insertService(tacomaId, '2025-04-12', tacomaTimeline, 95, 'Toyota Service Center', ['Oil Change', 'Oil Filter', 'Engine Air Filter']);
+  await insertService(tacomaId, '2025-04-25', tacomaTimeline, 48, 'Discount Tire', ['Tire Rotation']);
+  await insertService(tacomaId, '2025-06-14', tacomaTimeline, 385, 'Toyota Service Center', ['Brakes (Front)'], 'Front pads and rotors');
+  await insertService(tacomaId, '2025-08-20', tacomaTimeline, 88, 'Jiffy Lube', ['Oil Change', 'Oil Filter']);
+  await insertService(tacomaId, '2025-10-10', tacomaTimeline, 52, 'Discount Tire', ['Tire Rotation', 'Tire Pressure']);
+  await insertService(tacomaId, '2025-12-05', tacomaTimeline, 98, 'Toyota Service Center', ['Oil Change', 'Oil Filter']);
+  await insertService(tacomaId, '2026-01-15', tacomaTimeline, 195, 'Toyota Service Center', ['Battery'], 'Interstate battery');
+  await insertService(tacomaId, '2026-02-28', tacomaTimeline, 25, 'Jiffy Lube', ['Windshield Wipers']);
+  await insertService(tacomaId, '2026-04-10', tacomaTimeline, 92, 'Toyota Service Center', ['Oil Change', 'Oil Filter']);
 
   // Civic services
-  await insertService(civicId, '2024-08-22', 47000, 62, 'Honda of Springfield', ['Oil Change', 'Oil Filter'], 'Synthetic blend');
-  await insertService(civicId, '2024-10-30', 49500, 38, 'Discount Tire', ['Tire Rotation']);
-  await insertService(civicId, '2025-01-18', 52000, 68, 'Honda of Springfield', ['Oil Change', 'Oil Filter']);
-  await insertService(civicId, '2025-04-05', 54500, 620, 'Discount Tire', ['Tire Replacement', 'Tire Alignment'], 'Michelin Defender 2, all 4 tires');
-  await insertService(civicId, '2025-06-28', 57000, 65, 'Jiffy Lube', ['Oil Change', 'Oil Filter', 'Engine Air Filter']);
-  await insertService(civicId, '2025-09-12', 59000, 42, 'Discount Tire', ['Tire Rotation']);
-  await insertService(civicId, '2025-11-20', 62000, 70, 'Honda of Springfield', ['Oil Change', 'Oil Filter']);
-  await insertService(civicId, '2026-02-10', 64000, 165, 'Honda of Springfield', ['Spark Plugs'], 'NGK Iridium plugs');
-  await insertService(civicId, '2026-04-15', 66000, 72, 'Honda of Springfield', ['Oil Change', 'Oil Filter', 'Cabin Air Filter']);
+  await insertService(civicId, '2024-08-22', civicTimeline, 62, 'Honda of Springfield', ['Oil Change', 'Oil Filter'], 'Synthetic blend');
+  await insertService(civicId, '2024-10-30', civicTimeline, 38, 'Discount Tire', ['Tire Rotation']);
+  await insertService(civicId, '2025-01-18', civicTimeline, 68, 'Honda of Springfield', ['Oil Change', 'Oil Filter']);
+  await insertService(civicId, '2025-04-05', civicTimeline, 620, 'Discount Tire', ['Tire Replacement', 'Tire Alignment'], 'Michelin Defender 2, all 4 tires');
+  await insertService(civicId, '2025-06-28', civicTimeline, 65, 'Jiffy Lube', ['Oil Change', 'Oil Filter', 'Engine Air Filter']);
+  await insertService(civicId, '2025-09-12', civicTimeline, 42, 'Discount Tire', ['Tire Rotation']);
+  await insertService(civicId, '2025-11-20', civicTimeline, 70, 'Honda of Springfield', ['Oil Change', 'Oil Filter']);
+  await insertService(civicId, '2026-02-10', civicTimeline, 165, 'Honda of Springfield', ['Spark Plugs'], 'NGK Iridium plugs');
+  await insertService(civicId, '2026-04-15', civicTimeline, 72, 'Honda of Springfield', ['Oil Change', 'Oil Filter', 'Cabin Air Filter']);
 
   // --- Expense events ---
   async function insertExpense(
@@ -300,13 +325,13 @@ export async function loadTestData(): Promise<{ vehicles: number; events: number
     );
   }
 
-  // Tacoma reminders
-  await insertReminder(tacomaId, 'Oil Change', null, 5000, 6, 'months', 54000, '2026-04-10');
-  await insertReminder(tacomaId, 'Tire Rotation', null, 7500, null, null, 47000, '2025-10-10');
+  // Tacoma reminders (baseline odometers interpolated from fuel timeline)
+  await insertReminder(tacomaId, 'Oil Change', null, 5000, 6, 'months', interpolateOdometer(tacomaTimeline, '2026-04-10'), '2026-04-10');
+  await insertReminder(tacomaId, 'Tire Rotation', null, 7500, null, null, interpolateOdometer(tacomaTimeline, '2025-10-10'), '2025-10-10');
   await insertReminder(tacomaId, null, 'Registration', null, 1, 'years', null, '2025-06-12');
 
   // Civic reminders
-  await insertReminder(civicId, 'Oil Change', null, 5000, 6, 'months', 66000, '2026-04-15');
+  await insertReminder(civicId, 'Oil Change', null, 5000, 6, 'months', interpolateOdometer(civicTimeline, '2026-04-15'), '2026-04-15');
   await insertReminder(civicId, null, 'Insurance', null, 6, 'months', null, '2026-01-01');
 
   // Mark onboarding complete

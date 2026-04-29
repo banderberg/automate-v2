@@ -36,9 +36,9 @@ export default function RemindersScreen() {
     return (
       <SafeAreaView className="flex-1 bg-surface dark:bg-surface-dark" edges={['top']}>
         <EmptyState
-          icon={<Ionicons name="car-outline" size={64} color="#A8A49D" />}
-          title="Add a Vehicle to Get Started"
-          description="Track fuel, service, and expenses for your vehicle."
+          icon={<View style={{ opacity: 0.4 }}><Ionicons name="car-sport-outline" size={64} color="#A8A49D" /></View>}
+          title="Your garage is empty"
+          description="Add a vehicle and AutoMate handles the rest."
           actionLabel="Add Vehicle"
           onAction={() => router.push('/(modals)/vehicle')}
         />
@@ -59,7 +59,7 @@ export default function RemindersScreen() {
           accessibilityLabel="Add Reminder"
           accessibilityRole="button"
         >
-          <Ionicons name="add" size={24} color="#2563eb" />
+          <Ionicons name="add" size={24} color="#4272C4" />
         </Pressable>
       </View>
 
@@ -82,9 +82,13 @@ export default function RemindersScreen() {
       {reminders.length === 0 ? (
         <View className="flex-1">
           <EmptyState
-            icon={<Ionicons name="notifications-outline" size={64} color="#A8A49D" />}
-            title="No Reminders Set"
-            description="Never miss an oil change — tap + to create one."
+            icon={
+              <View style={{ width: 88, height: 88, borderRadius: 44, backgroundColor: '#F5920810', alignItems: 'center', justifyContent: 'center' }}>
+                <Ionicons name="timer-outline" size={44} color="#F59E0B" />
+              </View>
+            }
+            title="Nothing to track yet"
+            description="Set a reminder for oil changes, tire rotations, or any recurring service. AutoMate counts down so you don't have to."
             actionLabel="Add Reminder"
             onAction={() => router.push('/(modals)/reminder')}
           />

@@ -59,7 +59,7 @@ export default function ManageVehiclesModal() {
               <View className="w-2 h-2 rounded-full bg-green-500" />
             )}
           </View>
-          <Text className="text-sm text-ink-muted dark:text-ink-muted-on-dark">
+          <Text className="text-sm text-ink-muted dark:text-ink-muted-on-dark" numberOfLines={1}>
             {item.year} {item.make} {item.model}
           </Text>
         </View>

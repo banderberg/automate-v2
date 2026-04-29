@@ -1,6 +1,7 @@
-import { useRef, useCallback } from 'react';
+import { useRef, useCallback, useMemo } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useColorScheme } from 'nativewind';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import {
@@ -10,15 +11,43 @@ import {
 } from '@gorhom/bottom-sheet';
 import type { BottomSheetBackdropProps } from '@gorhom/bottom-sheet';
 import { useVehicleStore } from '../stores/vehicleStore';
+import { useEventStore } from '../stores/eventStore';
+
+type EventRoute = '/(modals)/fuel-event' | '/(modals)/service-event' | '/(modals)/expense-event';
+
+const TYPE_ROUTES: Record<string, EventRoute> = {
+  fuel: '/(modals)/fuel-event',
+  service: '/(modals)/service-event',
+  expense: '/(modals)/expense-event',
+};
 
 export function AddEventFAB() {
   const bottomSheetRef = useRef<BottomSheetModal>(null);
   const router = useRouter();
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === 'dark';
   const activeVehicle = useVehicleStore((s) => s.activeVehicle);
   const isElectric = activeVehicle?.fuelType === 'electric';
+  const events = useEventStore((s) => s.events);
 
-  const handleOpen = useCallback(() => {
+  const lastUsedType = useMemo(() => {
+    if (events.length === 0) return 'fuel';
+    return events[0].type;
+  }, [events]);
+
+  const hasEvents = events.length > 0;
+
+  const handleQuickAdd = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    if (!hasEvents) {
+      bottomSheetRef.current?.present();
+      return;
+    }
+    router.push(TYPE_ROUTES[lastUsedType] ?? TYPE_ROUTES.fuel);
+  }, [lastUsedType, hasEvents, router]);
+
+  const handleLongPress = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     bottomSheetRef.current?.present();
   }, []);
 
@@ -27,12 +56,19 @@ export function AddEventFAB() {
   }, []);
 
   const handleNavigate = useCallback(
-    (route: '/(modals)/fuel-event' | '/(modals)/service-event' | '/(modals)/expense-event') => {
+    (route: EventRoute) => {
       handleDismiss();
       router.push(route);
     },
     [handleDismiss, router]
   );
+
+  const fabIcon = useMemo((): { name: keyof typeof Ionicons.glyphMap; label: string } => {
+    if (!hasEvents) return { name: 'add', label: 'Log activity' };
+    if (lastUsedType === 'service') return { name: 'construct', label: 'Log service' };
+    if (lastUsedType === 'expense') return { name: 'receipt-outline', label: 'Log expense' };
+    return { name: isElectric ? 'flash' : 'water', label: isElectric ? 'Log charge' : 'Log fill-up' };
+  }, [hasEvents, lastUsedType, isElectric]);
 
   const renderBackdrop = useCallback(
     (props: BottomSheetBackdropProps) => (
@@ -48,35 +84,37 @@ export function AddEventFAB() {
 
   return (
     <>
-      {/* FAB button */}
+      {/* FAB button: tap for last-used type, long press for picker */}
       <Pressable
-        onPress={handleOpen}
+        onPress={handleQuickAdd}
+        onLongPress={handleLongPress}
+        delayLongPress={400}
         className="absolute bottom-6 right-5 w-14 h-14 rounded-full bg-primary items-center justify-center shadow-lg"
-        accessibilityLabel="Add event"
+        accessibilityLabel={`${fabIcon.label}. Long press for more options.`}
         accessibilityRole="button"
         style={{
-          shadowColor: '#000',
+          shadowColor: '#1C1B18',
           shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: 0.25,
+          shadowOpacity: isDark ? 0 : 0.25,
           shadowRadius: 4,
           elevation: 6,
         }}
       >
-        <Ionicons name="add" size={30} color="white" />
+        <Ionicons name={fabIcon.name} size={hasEvents ? 24 : 30} color="white" />
       </Pressable>
 
-      {/* Action sheet */}
+      {/* Action sheet (long-press menu) */}
       <BottomSheetModal
         ref={bottomSheetRef}
         enableDynamicSizing
         backdropComponent={renderBackdrop}
         enablePanDownToClose
-        handleIndicatorStyle={{ backgroundColor: '#E2E0DB' }}
-        backgroundStyle={{ backgroundColor: '#FEFDFB' }}
+        handleIndicatorStyle={{ backgroundColor: isDark ? '#2A2926' : '#E2E0DB' }}
+        backgroundStyle={{ backgroundColor: isDark ? '#1A1917' : '#FEFDFB' }}
       >
         <BottomSheetView>
-          <Text className="px-4 pt-4 pb-3 text-xs font-semibold text-ink-muted uppercase tracking-wider">
-            Add Event
+          <Text className="px-4 pt-4 pb-3 text-xs font-semibold text-ink-muted dark:text-ink-muted-on-dark uppercase tracking-wider">
+            Log Activity
           </Text>
 
           <Pressable
@@ -89,10 +127,10 @@ export function AddEventFAB() {
               <Ionicons
                 name={isElectric ? 'flash' : 'water'}
                 size={20}
-                color="#14b8a6"
+                color="#0D9488"
               />
             </View>
-            <Text className="text-base font-medium text-ink">
+            <Text className="text-base font-medium text-ink dark:text-ink-on-dark">
               {isElectric ? 'Charge' : 'Fill-Up'}
             </Text>
           </Pressable>
@@ -100,25 +138,25 @@ export function AddEventFAB() {
           <Pressable
             onPress={() => handleNavigate('/(modals)/service-event')}
             className="flex-row items-center px-4 py-4 active:bg-surface"
-            accessibilityLabel="Add Service event"
+            accessibilityLabel="Add service"
             accessibilityRole="button"
           >
             <View className="w-10 h-10 rounded-full items-center justify-center mr-4" style={{ backgroundColor: '#FFF7ED' }}>
               <Ionicons name="construct" size={20} color="#f97316" />
             </View>
-            <Text className="text-base font-medium text-ink">Service</Text>
+            <Text className="text-base font-medium text-ink dark:text-ink-on-dark">Service</Text>
           </Pressable>
 
           <Pressable
             onPress={() => handleNavigate('/(modals)/expense-event')}
             className="flex-row items-center px-4 py-4 active:bg-surface"
-            accessibilityLabel="Add Expense event"
+            accessibilityLabel="Add expense"
             accessibilityRole="button"
           >
             <View className="w-10 h-10 rounded-full items-center justify-center mr-4" style={{ backgroundColor: '#D1FAE5' }}>
-              <Ionicons name="cash" size={20} color="#10b981" />
+              <Ionicons name="receipt-outline" size={20} color="#10b981" />
             </View>
-            <Text className="text-base font-medium text-ink">Expense</Text>
+            <Text className="text-base font-medium text-ink dark:text-ink-on-dark">Expense</Text>
           </Pressable>
 
           <View className="h-8" />
