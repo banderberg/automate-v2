@@ -27,6 +27,7 @@ import { useToastStore } from '@/src/stores/toastStore';
 import { useSettingsStore } from '@/src/stores/settingsStore';
 import { useEventStore } from '@/src/stores/eventStore';
 import { useReminderStore } from '@/src/stores/reminderStore';
+import { switchVehicle, onVehicleAdded, onVehicleUnitChanged } from '@/src/stores/orchestrator';
 import { decodeVin } from '@/src/services/vinDecoder';
 import { getVolumeUnitForFuelType } from '@/src/constants/units';
 import type { Vehicle } from '@/src/types';
@@ -245,14 +246,19 @@ export default function VehicleModal() {
 
       const vehicleName = nickname.trim();
       if (isEditing && vehicleId) {
+        const unitChanged = odometerUnit !== originalOdometerUnit;
         await updateVehicle(vehicleId, { ...data, odometerUnit });
+        if (unitChanged) {
+          await onVehicleUnitChanged(vehicleId);
+        }
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         useToastStore.getState().show(`${vehicleName} updated`);
         router.back();
       } else {
         const isFirst = vehicles.length === 0;
         if (isFirst) {
-          await addVehicle(data, true);
+          const vehicle = await addVehicle(data, true);
+          await onVehicleAdded(vehicle.id, true);
           if (!settings.hasCompletedOnboarding) {
             await updateSetting('hasCompletedOnboarding', true);
           }
@@ -276,7 +282,8 @@ export default function VehicleModal() {
               {
                 text: 'Yes',
                 onPress: async () => {
-                  await addVehicle(data, true);
+                  const vehicle = await addVehicle(data, true);
+                  await onVehicleAdded(vehicle.id, true);
                   Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
                   useToastStore.getState().show(`${vehicleName} added`);
                   router.back();
@@ -337,7 +344,7 @@ export default function VehicleModal() {
             text: v.nickname,
             onPress: async () => {
               try {
-                await setActiveVehicle(v.id);
+                await switchVehicle(v.id);
                 await deleteVehicle(vehicleId);
                 router.back();
               } catch {

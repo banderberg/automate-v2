@@ -176,10 +176,11 @@ export default function ReminderModal() {
         baselineOdometer: blOdo,
       };
 
+      const vName = activeVehicle.nickname;
       if (isEditing && reminderId) {
-        await updateReminder(reminderId, data);
+        await updateReminder(reminderId, data, vName);
       } else {
-        await addReminder(data);
+        await addReminder(data, vName);
       }
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       useToastStore.getState().show(`Reminder ${isEditing ? 'updated' : 'saved'}`);

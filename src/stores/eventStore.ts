@@ -4,8 +4,6 @@ import * as eventQueries from '../db/queries/events';
 import * as eventServiceTypeQueries from '../db/queries/eventServiceTypes';
 import * as eventPhotoQueries from '../db/queries/eventPhotos';
 import { estimateOdometer } from '../services/odometerEstimator';
-import { useReminderStore } from './reminderStore';
-import { useReferenceDataStore } from './referenceDataStore';
 
 interface PendingDelete {
   event: VehicleEvent;
@@ -107,20 +105,17 @@ export const useEventStore = create<EventStore>((set, get) => ({
         }
       }
 
+      let serviceLabel: string | undefined;
+      if (data.type === 'service' && serviceTypeIds && serviceTypeIds.length > 0) {
+        const types = await eventServiceTypeQueries.getByEvent(event.id);
+        serviceLabel = types.map((t) => t.name).join(', ') || undefined;
+      }
+
       set((state) => {
         const serviceLabels = new Map(state.serviceLabels);
-        if (data.type === 'service' && serviceTypeIds && serviceTypeIds.length > 0) {
-          const { serviceTypes } = useReferenceDataStore.getState();
-          const names = serviceTypeIds
-            .map((id) => serviceTypes.find((st) => st.id === id)?.name)
-            .filter(Boolean)
-            .join(', ');
-          if (names) serviceLabels.set(event.id, names);
-        }
+        if (serviceLabel) serviceLabels.set(event.id, serviceLabel);
         return { events: insertSorted(state.events, event), serviceLabels };
       });
-
-      useReminderStore.getState().recalculateForEvent(event, serviceTypeIds);
 
       return event;
     } catch (e) {
@@ -165,6 +160,14 @@ export const useEventStore = create<EventStore>((set, get) => ({
       const updatedEvent = await eventQueries.getById(id);
       if (!updatedEvent) return;
 
+      let updatedLabel: string | undefined;
+      if (serviceTypeIds) {
+        if (serviceTypeIds.length > 0) {
+          const types = await eventServiceTypeQueries.getByEvent(id);
+          updatedLabel = types.map((t) => t.name).join(', ') || undefined;
+        }
+      }
+
       set((state) => {
         const events = state.events.map((e) => (e.id === id ? updatedEvent : e));
         events.sort((a, b) => {
@@ -172,23 +175,15 @@ export const useEventStore = create<EventStore>((set, get) => ({
           if (dateDiff !== 0) return dateDiff;
           return b.createdAt.localeCompare(a.createdAt);
         });
+        if (serviceTypeIds === undefined) return { events };
         const serviceLabels = new Map(state.serviceLabels);
-        if (serviceTypeIds) {
-          if (serviceTypeIds.length > 0) {
-            const { serviceTypes } = useReferenceDataStore.getState();
-            const names = serviceTypeIds
-              .map((stId) => serviceTypes.find((st) => st.id === stId)?.name)
-              .filter(Boolean)
-              .join(', ');
-            if (names) serviceLabels.set(id, names);
-          } else {
-            serviceLabels.delete(id);
-          }
+        if (updatedLabel) {
+          serviceLabels.set(id, updatedLabel);
+        } else {
+          serviceLabels.delete(id);
         }
         return { events, serviceLabels };
       });
-
-      useReminderStore.getState().recalculateForEvent(updatedEvent, serviceTypeIds);
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Failed to update event';
       set({ error: msg });

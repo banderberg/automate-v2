@@ -76,9 +76,20 @@ src/
     schema.ts            # Table DDL
     migrations.ts        # Versioned migration runner
     seed.ts              # Seed data
-    queries/             # Typed query functions (one file per entity)
-  stores/                # Zustand stores
-  services/              # Business logic (fuelEfficiency, costPerMile, etc.)
+    queries/
+      namedEntities.ts   # Generic CRUD factory for service_type + category tables
+      odometerConversion.ts # Bulk odometer unit conversion (DB mutations)
+      events.ts
+      eventPhotos.ts
+      eventServiceTypes.ts
+      places.ts
+      reminders.ts
+      settings.ts
+      vehicleDocuments.ts
+      vehicles.ts
+  stores/                # Zustand stores (no store imports another store)
+    orchestrator.ts      # Cross-store workflows — the only module importing multiple stores
+  services/              # Pure business logic — no store imports, no DB mutations
   hooks/                 # Custom React hooks
   components/            # Reusable UI components
   constants/             # Seed data lists, unit definitions, theme tokens

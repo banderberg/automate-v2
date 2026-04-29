@@ -10,6 +10,7 @@ import {
 } from '@gorhom/bottom-sheet';
 import type { BottomSheetBackdropProps } from '@gorhom/bottom-sheet';
 import { useVehicleStore } from '../stores/vehicleStore';
+import { switchVehicle } from '../stores/orchestrator';
 import type { Vehicle } from '../types';
 
 interface VehicleSwitcherProps {
@@ -23,7 +24,6 @@ export function VehicleSwitcher({ tintColor }: VehicleSwitcherProps) {
   const isDark = colorScheme === 'dark';
   const vehicles = useVehicleStore((s) => s.vehicles);
   const activeVehicle = useVehicleStore((s) => s.activeVehicle);
-  const setActiveVehicle = useVehicleStore((s) => s.setActiveVehicle);
 
   const handleOpen = useCallback(() => {
     bottomSheetRef.current?.present();
@@ -36,11 +36,11 @@ export function VehicleSwitcher({ tintColor }: VehicleSwitcherProps) {
   const handleSelectVehicle = useCallback(
     async (vehicle: Vehicle) => {
       if (vehicle.id !== activeVehicle?.id) {
-        await setActiveVehicle(vehicle.id);
+        await switchVehicle(vehicle.id);
       }
       handleDismiss();
     },
-    [activeVehicle?.id, setActiveVehicle, handleDismiss]
+    [activeVehicle?.id, handleDismiss]
   );
 
   const handleManageVehicles = useCallback(() => {

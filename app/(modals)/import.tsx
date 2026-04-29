@@ -10,6 +10,7 @@ import { ModalHeader } from '@/src/components/ModalHeader';
 import { ConfirmDialog } from '@/src/components/ConfirmDialog';
 import { useDialog } from '@/src/hooks/useDialog';
 import { useVehicleStore } from '@/src/stores/vehicleStore';
+import { onImportComplete } from '@/src/stores/orchestrator';
 import {
   detectFormat,
   parseFuelioCSV,
@@ -137,6 +138,8 @@ export default function ImportModal() {
     setIsImporting(true);
     try {
       const result = await importData(parsedData, selectedVehicleId);
+
+      await onImportComplete(selectedVehicleId);
 
       const parts: string[] = [];
       if (result.eventsImported > 0) {

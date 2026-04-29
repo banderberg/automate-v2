@@ -1,10 +1,7 @@
 import * as Crypto from 'expo-crypto';
 import { getDatabase } from '../db/client';
 import * as placeQueries from '../db/queries/places';
-import * as serviceTypeQueries from '../db/queries/serviceTypes';
-import * as categoryQueries from '../db/queries/categories';
-import { useEventStore } from '../stores/eventStore';
-import { useReferenceDataStore } from '../stores/referenceDataStore';
+import { serviceTypeQueries, categoryQueries } from '../db/queries/namedEntities';
 import type { Place, ServiceType, Category } from '../types';
 
 export interface ParsedEvent {
@@ -490,10 +487,6 @@ export async function importData(
       }
     }
   });
-
-  // Reload stores so the UI reflects imported data
-  await useEventStore.getState().loadForVehicle(vehicleId);
-  await useReferenceDataStore.getState().initialize();
 
   return result;
 }

@@ -1,7 +1,6 @@
 import { create } from 'zustand';
 import type { ServiceType, Category, Place } from '../types';
-import * as serviceTypeQueries from '../db/queries/serviceTypes';
-import * as categoryQueries from '../db/queries/categories';
+import { serviceTypeQueries, categoryQueries } from '../db/queries/namedEntities';
 import * as placeQueries from '../db/queries/places';
 
 interface ReferenceDataStore {
@@ -51,7 +50,13 @@ export const useReferenceDataStore = create<ReferenceDataStore>((set, get) => ({
   async addServiceType(name) {
     set({ error: null });
     try {
-      const serviceType = await serviceTypeQueries.insert(name);
+      const trimmed = name.trim();
+      if (!trimmed) throw new Error('Name cannot be empty');
+      const exists = get().serviceTypes.some(
+        (st) => st.name.toLowerCase() === trimmed.toLowerCase()
+      );
+      if (exists) throw new Error(`"${trimmed}" already exists`);
+      const serviceType = await serviceTypeQueries.insert(trimmed);
       set((state) => ({ serviceTypes: [...state.serviceTypes, serviceType] }));
       return serviceType;
     } catch (e) {
@@ -64,10 +69,16 @@ export const useReferenceDataStore = create<ReferenceDataStore>((set, get) => ({
   async updateServiceType(id, name) {
     set({ error: null });
     try {
-      await serviceTypeQueries.update(id, name);
+      const trimmed = name.trim();
+      if (!trimmed) throw new Error('Name cannot be empty');
+      const exists = get().serviceTypes.some(
+        (st) => st.id !== id && st.name.toLowerCase() === trimmed.toLowerCase()
+      );
+      if (exists) throw new Error(`"${trimmed}" already exists`);
+      await serviceTypeQueries.update(id, trimmed);
       set((state) => ({
         serviceTypes: state.serviceTypes.map((st) =>
-          st.id === id ? { ...st, name } : st
+          st.id === id ? { ...st, name: trimmed } : st
         ),
       }));
     } catch (e) {
@@ -94,7 +105,13 @@ export const useReferenceDataStore = create<ReferenceDataStore>((set, get) => ({
   async addCategory(name) {
     set({ error: null });
     try {
-      const category = await categoryQueries.insert(name);
+      const trimmed = name.trim();
+      if (!trimmed) throw new Error('Name cannot be empty');
+      const exists = get().categories.some(
+        (c) => c.name.toLowerCase() === trimmed.toLowerCase()
+      );
+      if (exists) throw new Error(`"${trimmed}" already exists`);
+      const category = await categoryQueries.insert(trimmed);
       set((state) => ({ categories: [...state.categories, category] }));
       return category;
     } catch (e) {
@@ -107,10 +124,16 @@ export const useReferenceDataStore = create<ReferenceDataStore>((set, get) => ({
   async updateCategory(id, name) {
     set({ error: null });
     try {
-      await categoryQueries.update(id, name);
+      const trimmed = name.trim();
+      if (!trimmed) throw new Error('Name cannot be empty');
+      const exists = get().categories.some(
+        (c) => c.id !== id && c.name.toLowerCase() === trimmed.toLowerCase()
+      );
+      if (exists) throw new Error(`"${trimmed}" already exists`);
+      await categoryQueries.update(id, trimmed);
       set((state) => ({
         categories: state.categories.map((c) =>
-          c.id === id ? { ...c, name } : c
+          c.id === id ? { ...c, name: trimmed } : c
         ),
       }));
     } catch (e) {
@@ -137,7 +160,13 @@ export const useReferenceDataStore = create<ReferenceDataStore>((set, get) => ({
   async addPlace(data) {
     set({ error: null });
     try {
-      const place = await placeQueries.insert(data);
+      const trimmedName = data.name.trim();
+      if (!trimmedName) throw new Error('Name cannot be empty');
+      const exists = get().places.some(
+        (p) => p.name.toLowerCase() === trimmedName.toLowerCase()
+      );
+      if (exists) throw new Error(`"${trimmedName}" already exists`);
+      const place = await placeQueries.insert({ ...data, name: trimmedName });
       set((state) => ({
         places: [...state.places, place].sort((a, b) => a.name.localeCompare(b.name)),
       }));
@@ -152,10 +181,20 @@ export const useReferenceDataStore = create<ReferenceDataStore>((set, get) => ({
   async updatePlace(id, fields) {
     set({ error: null });
     try {
-      await placeQueries.update(id, fields);
+      const updatedFields = { ...fields };
+      if (updatedFields.name !== undefined) {
+        const trimmedName = updatedFields.name.trim();
+        if (!trimmedName) throw new Error('Name cannot be empty');
+        const exists = get().places.some(
+          (p) => p.id !== id && p.name.toLowerCase() === trimmedName.toLowerCase()
+        );
+        if (exists) throw new Error(`"${trimmedName}" already exists`);
+        updatedFields.name = trimmedName;
+      }
+      await placeQueries.update(id, updatedFields);
       set((state) => ({
         places: state.places
-          .map((p) => (p.id === id ? { ...p, ...fields } : p))
+          .map((p) => (p.id === id ? { ...p, ...updatedFields } : p))
           .sort((a, b) => a.name.localeCompare(b.name)),
       }));
     } catch (e) {

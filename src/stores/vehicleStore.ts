@@ -1,9 +1,7 @@
 import { create } from 'zustand';
 import type { Vehicle } from '../types';
 import * as vehicleQueries from '../db/queries/vehicles';
-import { convertVehicleOdometers } from '../services/unitConversion';
-import { useEventStore } from './eventStore';
-import { useReminderStore } from './reminderStore';
+import { convertAllForVehicle } from '../db/queries/odometerConversion';
 
 interface VehicleStore {
   vehicles: Vehicle[];
@@ -54,11 +52,6 @@ export const useVehicleStore = create<VehicleStore>((set, get) => ({
         })),
         activeVehicle: { ...vehicle, isActive: true },
       }));
-
-      await Promise.all([
-        useEventStore.getState().loadForVehicle(id),
-        useReminderStore.getState().loadForVehicle(id),
-      ]);
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Failed to switch vehicle';
       set({ error: msg });
@@ -102,13 +95,6 @@ export const useVehicleStore = create<VehicleStore>((set, get) => ({
         };
       });
 
-      if (shouldActivate) {
-        await Promise.all([
-          useEventStore.getState().loadForVehicle(vehicle.id),
-          useReminderStore.getState().loadForVehicle(vehicle.id),
-        ]);
-      }
-
       return vehicle;
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Failed to add vehicle';
@@ -127,7 +113,7 @@ export const useVehicleStore = create<VehicleStore>((set, get) => ({
         fields.odometerUnit && fields.odometerUnit !== existing.odometerUnit;
 
       if (odometerUnitChanged) {
-        await convertVehicleOdometers(id, fields.odometerUnit!);
+        await convertAllForVehicle(id, fields.odometerUnit!);
       }
 
       await vehicleQueries.update(id, fields);
@@ -139,12 +125,6 @@ export const useVehicleStore = create<VehicleStore>((set, get) => ({
         activeVehicle: state.activeVehicle?.id === id ? updated : state.activeVehicle,
       }));
 
-      if (odometerUnitChanged && get().activeVehicle?.id === id) {
-        await Promise.all([
-          useEventStore.getState().loadForVehicle(id),
-          useReminderStore.getState().loadForVehicle(id),
-        ]);
-      }
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Failed to update vehicle';
       set({ error: msg });
@@ -171,11 +151,6 @@ export const useVehicleStore = create<VehicleStore>((set, get) => ({
         await vehicleQueries.setActive(nextActive.id);
         newActive = { ...nextActive, isActive: true };
         remaining[0] = newActive;
-
-        await Promise.all([
-          useEventStore.getState().loadForVehicle(newActive.id),
-          useReminderStore.getState().loadForVehicle(newActive.id),
-        ]);
       } else if (activeVehicle?.id === id) {
         newActive = null;
       }

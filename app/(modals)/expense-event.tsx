@@ -21,6 +21,7 @@ import { useDialog } from '@/src/hooks/useDialog';
 import { useVehicleStore } from '@/src/stores/vehicleStore';
 import { useEventStore } from '@/src/stores/eventStore';
 import { useToastStore } from '@/src/stores/toastStore';
+import { onEventSaved } from '@/src/stores/orchestrator';
 import { useReferenceDataStore } from '@/src/stores/referenceDataStore';
 import { validateOdometer } from '@/src/services/odometerValidator';
 import * as eventQueries from '@/src/db/queries/events';
@@ -160,8 +161,10 @@ export default function ExpenseEventModal() {
       const photoUris = photos.map((p) => p.uri);
       if (isEditing && eventId) {
         await updateEvent(eventId, eventData, undefined, photoUris);
+        await onEventSaved(eventData);
       } else {
-        await addEvent(eventData, undefined, photoUris);
+        const event = await addEvent(eventData, undefined, photoUris);
+        await onEventSaved(event);
       }
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       const costStr = cost ? `, $${parseFloat(cost).toFixed(2)}` : '';

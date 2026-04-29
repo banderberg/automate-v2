@@ -26,6 +26,7 @@ import { useDialog } from '@/src/hooks/useDialog';
 import { useVehicleStore } from '@/src/stores/vehicleStore';
 import { useEventStore } from '@/src/stores/eventStore';
 import { useToastStore } from '@/src/stores/toastStore';
+import { onEventSaved } from '@/src/stores/orchestrator';
 import { validateOdometer } from '@/src/services/odometerValidator';
 import * as eventQueries from '@/src/db/queries/events';
 import * as eventPhotoQueries from '@/src/db/queries/eventPhotos';
@@ -300,8 +301,10 @@ export default function FuelEventModal() {
       const photoUris = photos.map((p) => p.uri);
       if (isEditing && eventId) {
         await updateEvent(eventId, eventData, undefined, photoUris);
+        await onEventSaved(eventData);
       } else {
-        await addEvent(eventData, undefined, photoUris);
+        const event = await addEvent(eventData, undefined, photoUris);
+        await onEventSaved(event);
       }
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       const label = isElectric ? 'Charge' : 'Fill-up';
