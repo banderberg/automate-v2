@@ -152,6 +152,7 @@ export default function VehicleDocumentsScreen() {
     <SafeAreaView className="flex-1 bg-surface dark:bg-surface-dark" edges={['top']}>
       <ModalHeader
         title="Documents"
+        cancelLabel="Done"
         onCancel={nav.back}
         onSave={handleAdd}
         saveLabel="Add"

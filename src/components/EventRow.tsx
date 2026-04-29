@@ -29,8 +29,10 @@ function EventRowInner({ event, odometerUnit, place, label, onPress, currency = 
   const config = TYPE_CONFIG[event.type];
   const unitLabel = odometerUnit === 'miles' ? 'mi' : 'km';
   const dateText = formatDate(event.date);
-  const descriptor = label || place?.name;
-  const topLine = descriptor ? `${dateText} · ${descriptor}` : dateText;
+  const topLine = place?.name ? `${dateText} · ${place.name}` : dateText;
+  const odometerText = event.odometer != null
+    ? `${event.odometer.toLocaleString('en-US')} ${unitLabel}`
+    : '--';
 
   return (
     <Pressable
@@ -51,9 +53,8 @@ function EventRowInner({ event, odometerUnit, place, label, onPress, currency = 
           {topLine}
         </Text>
         <Text className="text-xs text-ink-muted dark:text-ink-muted-on-dark" numberOfLines={1} style={tabularNums}>
-          {event.odometer != null
-            ? `${event.odometer.toLocaleString('en-US')} ${unitLabel}`
-            : '--'}
+          {odometerText}
+          {label ? <Text className="font-semibold text-ink-secondary dark:text-ink-secondary-on-dark"> · {label}</Text> : null}
         </Text>
       </View>
 

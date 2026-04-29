@@ -97,6 +97,7 @@ export default function ExportModal() {
     <SafeAreaView className="flex-1 bg-surface dark:bg-surface-dark" edges={['top']}>
       <ModalHeader
         title="Export Data"
+        cancelLabel="Done"
         onCancel={() => router.back()}
         hideSave
       />

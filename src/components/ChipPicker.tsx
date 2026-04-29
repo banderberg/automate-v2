@@ -46,6 +46,7 @@ export function ChipPicker({
   const isDark = colorScheme === 'dark';
   const manageSheetRef = useRef<BottomSheetModal>(null);
   const [newItemName, setNewItemName] = useState('');
+  const newItemRef = useRef('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState('');
   const { showDialog, dialogProps } = useDialog();
@@ -65,11 +66,16 @@ export function ChipPicker({
   );
 
   const handleAdd = useCallback(async () => {
-    const trimmed = newItemName.trim();
+    const trimmed = newItemRef.current.trim();
     if (!trimmed || !onAdd) return;
-    await onAdd(trimmed);
-    setNewItemName('');
-  }, [newItemName, onAdd]);
+    try {
+      await onAdd(trimmed);
+      newItemRef.current = '';
+      setNewItemName('');
+    } catch {
+      // keep input text so user can retry
+    }
+  }, [onAdd]);
 
   const handleSaveEdit = useCallback(async () => {
     const trimmed = editingName.trim();
@@ -241,7 +247,7 @@ export function ChipPicker({
                 <BottomSheetTextInput
                   className="flex-1 text-sm text-ink dark:text-ink-on-dark bg-surface dark:bg-surface-dark rounded-lg px-3 py-2"
                   value={newItemName}
-                  onChangeText={setNewItemName}
+                  onChangeText={(text) => { newItemRef.current = text; setNewItemName(text); }}
                   placeholder="Add new..."
                   placeholderTextColor="#A8A49D"
                   onSubmitEditing={handleAdd}

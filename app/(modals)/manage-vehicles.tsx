@@ -104,6 +104,7 @@ export default function ManageVehiclesModal() {
     <SafeAreaView className="flex-1 bg-surface dark:bg-surface-dark" edges={['top']}>
       <ModalHeader
         title="Manage Vehicles"
+        cancelLabel="Done"
         onCancel={() => nav.back()}
         hideSave
       />
