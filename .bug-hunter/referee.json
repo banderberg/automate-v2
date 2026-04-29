@@ -1,0 +1,62 @@
+[
+  {
+    "bugId": "BUG-1",
+    "verdict": "REAL_BUG",
+    "trueSeverity": "Medium",
+    "confidenceScore": 90,
+    "confidenceLabel": "high",
+    "verificationMode": "INDEPENDENTLY_VERIFIED",
+    "analysisSummary": "Verified at src/db/queries/vehicles.ts:149-160. Two sequential runAsync calls modify the vehicle table without withTransactionAsync. The codebase uses withTransactionAsync in unitConversion.ts:25 for analogous multi-statement updates, confirming the pattern was known. If the process is killed between the two UPDATEs (force-close, OOM kill, crash), all vehicles have isActive=0 and the app has no active vehicle on next launch.",
+    "suggestedFix": "Wrap both UPDATE statements in db.withTransactionAsync."
+  },
+  {
+    "bugId": "BUG-2",
+    "verdict": "REAL_BUG",
+    "trueSeverity": "Medium",
+    "confidenceScore": 88,
+    "confidenceLabel": "high",
+    "verificationMode": "INDEPENDENTLY_VERIFIED",
+    "analysisSummary": "Verified at src/db/queries/eventServiceTypes.ts:50-65. DELETE + sequential INSERTs without a transaction. If any INSERT fails (FK violation on a concurrently deleted service type, or DB timeout), the event loses service type associations permanently. The data loss is silent — no error is surfaced to the user because the callers (eventStore.updateEvent) catch and re-throw but the partial write is already committed.",
+    "suggestedFix": "Wrap the DELETE and all INSERT calls in db.withTransactionAsync."
+  },
+  {
+    "bugId": "BUG-3",
+    "verdict": "REAL_BUG",
+    "trueSeverity": "Medium",
+    "confidenceScore": 93,
+    "confidenceLabel": "high",
+    "verificationMode": "INDEPENDENTLY_VERIFIED",
+    "analysisSummary": "Verified at src/stores/eventStore.ts:199-247. The 5-second deferred delete creates a clear race window. Traced the trigger: deleteEvent removes from state (line 228-230), schedules DB delete at 5000ms (line 233). loadForVehicle (line 81-93) replaces state from DB — during the window, DB still has the event, so it reappears. The timer callback (line 233-242) deletes from DB and clears pendingDelete but never re-filters the event out of state. Reproducible: delete event → switch vehicle → switch back within 5 seconds → deleted event reappears.",
+    "suggestedFix": "Either (a) delete from DB immediately and use a separate undo mechanism that re-inserts on undo, or (b) add a pendingDeleteIds set and filter those IDs out in loadForVehicle before setting state."
+  },
+  {
+    "bugId": "BUG-4",
+    "verdict": "REAL_BUG",
+    "trueSeverity": "Medium",
+    "confidenceScore": 89,
+    "confidenceLabel": "high",
+    "verificationMode": "INDEPENDENTLY_VERIFIED",
+    "analysisSummary": "Verified at src/stores/eventStore.ts:142-163. The update loop only INSERTs new photos with sequential sortOrder but never UPDATEs existing photos' sortOrder. eventPhotos.ts has no updateSortOrder function — only insert, remove, getByEvent. getByEvent returns ORDER BY sortOrder ASC, so display order is determined by original insertion order, not the array position. When the user removes a photo from the middle and adds a new one, the new photo can collide with existing sortOrder values, causing unpredictable ordering.",
+    "suggestedFix": "In the updateEvent photo handling, after removing deleted photos, DELETE all remaining photos for the event and re-INSERT them all with correct sequential sortOrder. Or add an updateSortOrder function to eventPhotos.ts."
+  },
+  {
+    "bugId": "BUG-5",
+    "verdict": "REAL_BUG",
+    "trueSeverity": "Low",
+    "confidenceScore": 85,
+    "confidenceLabel": "high",
+    "verificationMode": "INDEPENDENTLY_VERIFIED",
+    "analysisSummary": "Verified at src/components/DateField.tsx:26-28. toISODate uses date.toISOString() which converts to UTC. The picker initializes at noon local (line 40: 'T12:00:00'). For UTC+13 (Samoa) and UTC+14 (Line Islands), noon local maps to the previous UTC day. Impact limited to <0.01% of users, but for those affected, every date selection is wrong by one day. Low severity due to extremely narrow impact.",
+    "suggestedFix": "Replace toISODate with: const y = date.getFullYear(); const m = String(date.getMonth()+1).padStart(2,'0'); const d = String(date.getDate()).padStart(2,'0'); return `${y}-${m}-${d}`;"
+  },
+  {
+    "bugId": "BUG-6",
+    "verdict": "REAL_BUG",
+    "trueSeverity": "Low",
+    "confidenceScore": 82,
+    "confidenceLabel": "high",
+    "verificationMode": "INDEPENDENTLY_VERIFIED",
+    "analysisSummary": "Verified at src/stores/settingsStore.ts:36-42. updateSetting is the only store mutation without try/catch and error state. Compare with vehicleStore (lines 44-67), eventStore (lines 95-131), reminderStore (lines 118-143), and documentStore (lines 65-98) — all have try/catch + set({error}). Callers in settings.tsx (lines 330, 340, 350) invoke from onSelect without try/catch. On failure: unhandled promise rejection, setting appears unchanged, user gets no feedback. Low severity because settings DB writes rarely fail.",
+    "suggestedFix": "Add try/catch with error state to updateSetting, matching the pattern used in all other stores."
+  }
+]

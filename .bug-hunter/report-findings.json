@@ -1,0 +1,81 @@
+{
+  "version": "3.0.0",
+  "scan_id": "scan-2026-04-29-185800",
+  "scan_date": "2026-04-29T18:58:00.000Z",
+  "mode": "extended",
+  "target": "/mnt/data/projects/automate-v2",
+  "files_scanned": 42,
+  "threat_model_loaded": false,
+  "confirmed": [
+    {
+      "id": "BUG-1",
+      "severity": "Medium",
+      "category": "error-handling",
+      "stride": "N/A",
+      "cwe": "N/A",
+      "file": "src/db/queries/vehicles.ts",
+      "lines": "149-160",
+      "claim": "setActive runs two UPDATEs without a transaction, risking no-active-vehicle state on crash"
+    },
+    {
+      "id": "BUG-2",
+      "severity": "Medium",
+      "category": "error-handling",
+      "stride": "N/A",
+      "cwe": "N/A",
+      "file": "src/db/queries/eventServiceTypes.ts",
+      "lines": "50-65",
+      "claim": "setForEvent DELETE+INSERT loop lacks transaction, risking lost service type associations"
+    },
+    {
+      "id": "BUG-3",
+      "severity": "Medium",
+      "category": "logic",
+      "stride": "N/A",
+      "cwe": "N/A",
+      "file": "src/stores/eventStore.ts",
+      "lines": "199-247",
+      "claim": "Deferred delete race condition: deleted event reappears if loadForVehicle runs within 5-second window"
+    },
+    {
+      "id": "BUG-4",
+      "severity": "Medium",
+      "category": "logic",
+      "stride": "N/A",
+      "cwe": "N/A",
+      "file": "src/stores/eventStore.ts",
+      "lines": "142-163",
+      "claim": "Photo sortOrder never updated for existing photos during event update, causing incorrect display order"
+    },
+    {
+      "id": "BUG-5",
+      "severity": "Low",
+      "category": "logic",
+      "stride": "N/A",
+      "cwe": "N/A",
+      "file": "src/components/DateField.tsx",
+      "lines": "26-28",
+      "claim": "toISODate uses UTC conversion that shifts date by -1 day for UTC+13/+14 timezone users"
+    },
+    {
+      "id": "BUG-6",
+      "severity": "Low",
+      "category": "error-handling",
+      "stride": "N/A",
+      "cwe": "N/A",
+      "file": "src/stores/settingsStore.ts",
+      "lines": "36-42",
+      "claim": "updateSetting has no error handling — DB failures cause unhandled promise rejections"
+    }
+  ],
+  "dismissed": [],
+  "dependencies": [],
+  "summary": {
+    "total_reported": 6,
+    "confirmed": 6,
+    "dismissed": 0,
+    "by_severity": { "CRITICAL": 0, "HIGH": 0, "MEDIUM": 4, "LOW": 2 },
+    "by_stride": { "N/A": 6 },
+    "by_category": { "security": 0, "logic": 3, "error-handling": 3 }
+  }
+}

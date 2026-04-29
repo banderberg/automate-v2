@@ -1,0 +1,38 @@
+[
+  {
+    "bugId": "BUG-1",
+    "response": "ACCEPT",
+    "analysisSummary": "Confirmed. Two separate runAsync calls without withTransactionAsync. expo-sqlite does not auto-wrap consecutive calls in a transaction. The crash window between the two UPDATEs is real — a force-kill, low-memory kill, or process interruption would leave all vehicles with isActive=0. The codebase itself uses withTransactionAsync elsewhere (unitConversion.ts:25) proving the pattern is available and intentionally used for multi-statement operations.",
+    "counterEvidence": "src/services/unitConversion.ts:25 uses db.withTransactionAsync for multi-statement updates, proving the pattern was known but omitted here."
+  },
+  {
+    "bugId": "BUG-2",
+    "response": "ACCEPT",
+    "analysisSummary": "Confirmed. Same non-transactional pattern as BUG-1. DELETE removes all links, then loop INSERTs them back one by one. If any INSERT fails (e.g., foreign key violation on a deleted serviceTypeId, or DB lock timeout), the event loses those service type links permanently. The existing withTransactionAsync usage in unitConversion.ts confirms the team uses transactions for other multi-statement operations.",
+    "counterEvidence": "No protection mechanism found. The CASCADE constraints only trigger on parent row deletes, not on INSERT failures within this function."
+  },
+  {
+    "bugId": "BUG-3",
+    "response": "ACCEPT",
+    "analysisSummary": "Confirmed. The race window is 5 full seconds. During this window, loadForVehicle (called by setActiveVehicle, deleteVehicle, restoreBackup, loadTestData, and any vehicle switch) will re-query the DB where the event still exists and overwrite Zustand state. When the deferred timer fires, it only deletes from DB and clears pendingDelete — it does NOT re-filter the event out of Zustand state. The event remains as a ghost in the UI.",
+    "counterEvidence": "The timer callback at line 233-242 only does: remove from DB + set pendingDelete=null. No set() call to filter the event back out of state. So the ghost persists until the next loadForVehicle call."
+  },
+  {
+    "bugId": "BUG-4",
+    "response": "ACCEPT",
+    "analysisSummary": "Confirmed. The updateEvent photo handling logic at lines 156-162 only INSERTs new photos with sequential sortOrder. It never UPDATEs the sortOrder of existing photos. When photos are loaded from DB (getByEvent uses ORDER BY sortOrder ASC), the display order is determined by the original insertion sortOrder, not the array position the user sees in the UI. Any reordering or interleaving of new photos produces incorrect display order on reload.",
+    "counterEvidence": "No updateSortOrder function exists in eventPhotos.ts. The only write operations are insert and remove. There is no mechanism to change an existing photo's sortOrder."
+  },
+  {
+    "bugId": "BUG-5",
+    "response": "ACCEPT",
+    "analysisSummary": "Confirmed, though impact is limited to UTC+13/+14 timezones (Samoa, Tonga, Line Islands). The DateTimePicker initial value is set to noon local (line 40: 'T12:00:00'). For UTC+13, noon local = 2024-01-14T23:00:00Z, so toISOString().split('T')[0] yields the previous day. The fix is straightforward: use getFullYear/getMonth/getDate instead of toISOString().",
+    "counterEvidence": "Accepted with note: the noon initialization mitigates the bug for timezones UTC-11 through UTC+12, covering >99.9% of users. Only UTC+13 and UTC+14 (combined population ~350,000) are affected."
+  },
+  {
+    "bugId": "BUG-6",
+    "response": "ACCEPT",
+    "analysisSummary": "Confirmed. settingsStore.updateSetting (lines 36-42) is the only store mutation without try/catch. All other stores (vehicleStore, eventStore, reminderStore, documentStore) wrap DB calls in try/catch and set an error state. The callers in settings.tsx invoke updateSetting from synchronous onSelect callbacks without await or try/catch, producing unhandled promise rejections. On React Native, these are silently dropped in production — the user sees no feedback when the setting fails to save.",
+    "counterEvidence": "Compare with vehicleStore.setActiveVehicle (line 44-67) which wraps the same pattern in try/catch and sets error state. The inconsistency confirms this is an oversight, not a design choice."
+  }
+]
