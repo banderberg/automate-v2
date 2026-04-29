@@ -6,6 +6,7 @@ A car expenses tracking app built with Expo (React Native) and TypeScript.
 
 - `docs/PRD.md` — Full Product Requirements Document. This is the single source of truth for product decisions: screens, fields, data models, business logic, acceptance criteria.
 - `docs/PHASES.md` — Phased implementation plan with detailed prompts for each build phase.
+- `DESIGN.md` — Live design system (warm neutral palette, typography, component patterns). Color tokens here match `tailwind.config.js`.
 
 ## Build Phases
 
@@ -66,8 +67,12 @@ app/
     expense-event.tsx
     reminder.tsx
     manage-vehicles.tsx
+    vehicle-documents.tsx
+    document.tsx
     export.tsx
+    import.tsx
   _layout.tsx            # Root layout
+  +not-found.tsx
   onboarding.tsx
 
 src/
@@ -76,16 +81,78 @@ src/
     schema.ts            # Table DDL
     migrations.ts        # Versioned migration runner
     seed.ts              # Seed data
-    queries/             # Typed query functions (one file per entity)
-  stores/                # Zustand stores
-  services/              # Business logic (fuelEfficiency, costPerMile, etc.)
-  hooks/                 # Custom React hooks
-  components/            # Reusable UI components
-  constants/             # Seed data lists, unit definitions, theme tokens
+    testData.ts          # Development test data
+    queries/
+      categories.ts
+      events.ts
+      eventPhotos.ts
+      eventServiceTypes.ts
+      places.ts
+      reminders.ts
+      serviceTypes.ts
+      settings.ts
+      vehicleDocuments.ts
+      vehicles.ts
+  stores/
+    documentStore.ts
+    eventStore.ts
+    referenceDataStore.ts
+    reminderStore.ts
+    settingsStore.ts
+    toastStore.ts
+    vehicleStore.ts
+  services/
+    backup.ts
+    costPerMile.ts
+    csvExport.ts
+    dataImport.ts
+    fuelEfficiency.ts
+    notifications.ts
+    odometerEstimator.ts
+    odometerValidator.ts
+    pdfExport.ts
+    reminderScheduler.ts
+    unitConversion.ts
+    vinDecoder.ts
+    __tests__/           # Unit tests for services
+  hooks/
+    useActiveVehicle.ts
+    useDashboardMetrics.ts
+    useDialog.ts
+    useGuardedNavigate.ts
+  components/
+    AddEventFAB.tsx
+    ChipPicker.tsx
+    ConfirmDialog.tsx
+    DateField.tsx
+    EmptyState.tsx
+    ErrorToast.tsx
+    EventPhotos.tsx
+    EventRow.tsx
+    MetricInfo.tsx
+    ModalHeader.tsx
+    OdometerField.tsx
+    PlaceAutocomplete.tsx
+    ReminderCard.tsx
+    SegmentedControl.tsx
+    Skeleton.tsx
+    UndoSnackbar.tsx
+    VehicleSwitcher.tsx
+  constants/
+    seedData.ts
+    units.ts
   types/
     index.ts             # All TypeScript interfaces
 
 docs/
-  PRD.md
-  PHASES.md
+  PRD.md                 # Product Requirements Document (source of truth)
+  PHASES.md              # Phased implementation plan
+  ISSUES.md              # Known issues tracker
+  A11Y-PUNCH-LIST.md    # Accessibility audit items
+  COMPETITIVE-ANALYSIS.md
+  POST-MVP-PLAN.md       # Post-MVP feature roadmap
+  PHASE-11-VEHICLE-DOCUMENTS.md
+  PLAY-STORE-GUIDE.md
+  PLAY-STORE-LISTING.md
+  PRIVACY-POLICY.md
 ```
