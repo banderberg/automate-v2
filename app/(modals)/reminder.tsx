@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   View,
   Text,
@@ -51,6 +51,12 @@ export default function ReminderModal() {
   const deleteReminder = useReminderStore((s) => s.deleteReminder);
   const serviceTypes = useReferenceDataStore((s) => s.serviceTypes);
   const categories = useReferenceDataStore((s) => s.categories);
+  const addServiceType = useReferenceDataStore((s) => s.addServiceType);
+  const updateServiceType = useReferenceDataStore((s) => s.updateServiceType);
+  const deleteServiceType = useReferenceDataStore((s) => s.deleteServiceType);
+  const addCategory = useReferenceDataStore((s) => s.addCategory);
+  const updateCategory = useReferenceDataStore((s) => s.updateCategory);
+  const deleteCategory = useReferenceDataStore((s) => s.deleteCategory);
 
   const [kind, setKind] = useState<ReminderKind>('maintenance');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -64,6 +70,18 @@ export default function ReminderModal() {
   const [intervalError, setIntervalError] = useState('');
   const [selectionError, setSelectionError] = useState('');
   const [saving, setSaving] = useState(false);
+  const isDirty = useRef(false);
+  const markDirty = useCallback(() => { isDirty.current = true; }, []);
+  const distanceIntervalRef = useRef<TextInput>(null);
+  const timeIntervalRef = useRef<TextInput>(null);
+
+  useEffect(() => {
+    if (distanceEnabled) setTimeout(() => distanceIntervalRef.current?.focus(), 100);
+  }, [distanceEnabled]);
+
+  useEffect(() => {
+    if (timeEnabled) setTimeout(() => timeIntervalRef.current?.focus(), 100);
+  }, [timeEnabled]);
   const { showDialog, dialogProps } = useDialog();
 
   const odometerUnit = activeVehicle?.odometerUnit ?? 'miles';
@@ -191,12 +209,12 @@ export default function ReminderModal() {
 
   const handleSelectionChange = useCallback((ids: string[]) => {
     setSelectedIds(ids);
+    markDirty();
     if (ids.length > 0) setSelectionError('');
   }, []);
 
   const handleCancel = useCallback(() => {
-    const hasInput = selectedIds.length > 0 || distanceInterval || timeInterval || baselineOdometer;
-    if (isEditing || hasInput) {
+    if (isDirty.current) {
       showDialog('Discard Changes?', 'You have unsaved changes.', [
         { text: 'Keep Editing', style: 'cancel' },
         { text: 'Discard', style: 'destructive', onPress: () => router.back() },
@@ -204,7 +222,7 @@ export default function ReminderModal() {
     } else {
       router.back();
     }
-  }, [isEditing, selectedIds, distanceInterval, timeInterval, baselineOdometer, router]);
+  }, [router]);
 
   const chipItems = kind === 'maintenance' ? serviceTypes : categories;
 
@@ -236,6 +254,7 @@ export default function ReminderModal() {
               onValueChange={(v) => {
                 setKind(v);
                 setSelectedIds([]);
+                markDirty();
               }}
               disabled={isEditing}
               accessibilityLabel="Reminder type"
@@ -250,6 +269,9 @@ export default function ReminderModal() {
             label={kind === 'maintenance' ? 'Service Type *' : 'Category *'}
             error={selectionError}
             accentColor={kind === 'maintenance' ? '#F97316' : '#10B981'}
+            onAdd={async (name) => { kind === 'maintenance' ? await addServiceType(name) : await addCategory(name); }}
+            onUpdate={async (id, name) => { kind === 'maintenance' ? await updateServiceType(id, name) : await updateCategory(id, name); }}
+            onDelete={async (id) => { kind === 'maintenance' ? await deleteServiceType(id) : await deleteCategory(id); }}
           />
 
           {selectedIds.length === 0 && (
@@ -275,6 +297,7 @@ export default function ReminderModal() {
                   onValueChange={(v) => {
                     setDistanceEnabled(v);
                     setIntervalError('');
+                    markDirty();
                   }}
                   trackColor={{ false: isDark ? '#2A2926' : '#E2E0DB', true: isDark ? '#2E5A9E' : '#A7C4E4' }}
                   thumbColor={distanceEnabled ? '#4272C4' : isDark ? '#1A1917' : '#FEFDFB'}
@@ -286,9 +309,10 @@ export default function ReminderModal() {
                   <Text className="text-sm text-ink-secondary dark:text-ink-secondary-on-dark">Every</Text>
                   <View className="flex-row items-center bg-surface dark:bg-surface-dark rounded-xl border border-divider dark:border-divider-dark px-3 py-2">
                     <TextInput
+                      ref={distanceIntervalRef}
                       className="text-base text-ink dark:text-ink-on-dark min-w-[60px] text-center"
                       value={distanceInterval}
-                      onChangeText={setDistanceInterval}
+                      onChangeText={(t) => { setDistanceInterval(t); markDirty(); }}
                       keyboardType="number-pad"
                       placeholder="5000"
                       placeholderTextColor="#A8A49D"
@@ -309,6 +333,7 @@ export default function ReminderModal() {
                   onValueChange={(v) => {
                     setTimeEnabled(v);
                     setIntervalError('');
+                    markDirty();
                   }}
                   trackColor={{ false: isDark ? '#2A2926' : '#E2E0DB', true: isDark ? '#2E5A9E' : '#A7C4E4' }}
                   thumbColor={timeEnabled ? '#4272C4' : isDark ? '#1A1917' : '#FEFDFB'}
@@ -320,9 +345,10 @@ export default function ReminderModal() {
                   <Text className="text-sm text-ink-secondary dark:text-ink-secondary-on-dark">Every</Text>
                   <View className="flex-row items-center bg-surface dark:bg-surface-dark rounded-xl border border-divider dark:border-divider-dark px-3 py-2">
                     <TextInput
+                      ref={timeIntervalRef}
                       className="text-base text-ink dark:text-ink-on-dark min-w-[40px] text-center"
                       value={timeInterval}
-                      onChangeText={setTimeInterval}
+                      onChangeText={(t) => { setTimeInterval(t); markDirty(); }}
                       keyboardType="number-pad"
                       placeholder="6"
                       placeholderTextColor="#A8A49D"
@@ -333,7 +359,7 @@ export default function ReminderModal() {
                     {TIME_UNITS.map((u) => (
                       <Pressable
                         key={u.value}
-                        onPress={() => setTimeUnit(u.value)}
+                        onPress={() => { setTimeUnit(u.value); markDirty(); }}
                         className={`px-3 py-2.5 rounded-full ${
                           timeUnit === u.value
                             ? 'bg-primary'
@@ -388,7 +414,7 @@ export default function ReminderModal() {
                   {timeEnabled && (
                     <DateField
                       value={baselineDate}
-                      onChange={setBaselineDate}
+                      onChange={(v) => { setBaselineDate(v); markDirty(); }}
                       label="Start tracking from"
                     />
                   )}
@@ -401,7 +427,7 @@ export default function ReminderModal() {
                         <TextInput
                           className="flex-1 text-base text-ink dark:text-ink-on-dark"
                           value={baselineOdometer}
-                          onChangeText={setBaselineOdometer}
+                          onChangeText={(t) => { setBaselineOdometer(t); markDirty(); }}
                           keyboardType="number-pad"
                           placeholder="Current odometer"
                           placeholderTextColor="#A8A49D"

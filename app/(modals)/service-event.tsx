@@ -39,7 +39,8 @@ export default function ServiceEventModal() {
   const deleteEvent = useEventStore((s) => s.deleteEvent);
   const getSmartDefaults = useEventStore((s) => s.getSmartDefaults);
   const events = useEventStore((s) => s.events);
-  const serviceTypes = useReferenceDataStore((s) => s.serviceTypes);
+  const rawServiceTypes = useReferenceDataStore((s) => s.serviceTypes);
+  const serviceLabels = useEventStore((s) => s.serviceLabels);
   const addServiceType = useReferenceDataStore((s) => s.addServiceType);
   const updateServiceType = useReferenceDataStore((s) => s.updateServiceType);
   const deleteServiceType = useReferenceDataStore((s) => s.deleteServiceType);
@@ -63,6 +64,19 @@ export default function ServiceEventModal() {
 
   const odometerUnit = activeVehicle?.odometerUnit ?? 'miles';
   const title = isEditing ? 'Edit Service' : 'Add Service';
+
+  const serviceTypes = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const label of serviceLabels.values()) {
+      for (const name of label.split(', ')) {
+        counts.set(name, (counts.get(name) ?? 0) + 1);
+      }
+    }
+    return [...rawServiceTypes].sort((a, b) => {
+      const diff = (counts.get(b.name) ?? 0) - (counts.get(a.name) ?? 0);
+      return diff !== 0 ? diff : a.name.localeCompare(b.name);
+    });
+  }, [rawServiceTypes, serviceLabels]);
 
   useEffect(() => {
     if (!activeVehicle) return;

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { View, Text, Pressable, FlatList } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useGuardedNavigate } from '@/src/hooks/useGuardedNavigate';
 import { Ionicons } from '@expo/vector-icons';
 import { VehicleSwitcher } from '@/src/components/VehicleSwitcher';
 import { EmptyState } from '@/src/components/EmptyState';
@@ -13,7 +13,7 @@ import { useActiveVehicle } from '@/src/hooks/useActiveVehicle';
 import * as notificationService from '@/src/services/notifications';
 
 export default function RemindersScreen() {
-  const router = useRouter();
+  const nav = useGuardedNavigate();
   const vehicleCount = useVehicleStore((s) => s.vehicles.length);
   const activeVehicle = useVehicleStore((s) => s.activeVehicle);
   const { reminders } = useActiveVehicle();
@@ -30,9 +30,9 @@ export default function RemindersScreen() {
 
   const handleReminderPress = useCallback(
     (id: string) => {
-      router.push(`/(modals)/reminder?reminderId=${id}`);
+      nav.push(`/(modals)/reminder?reminderId=${id}`);
     },
-    [router]
+    [nav]
   );
 
   if (vehicleCount === 0) {
@@ -59,7 +59,7 @@ export default function RemindersScreen() {
           <VehicleSwitcher />
         </View>
         <Pressable
-          onPress={() => router.push('/(modals)/reminder')}
+          onPress={() => nav.push('/(modals)/reminder')}
           className="px-4 items-center justify-center bg-surface dark:bg-surface-dark border-b border-divider dark:border-divider-dark"
           accessibilityLabel="Add Reminder"
           accessibilityRole="button"
@@ -97,7 +97,7 @@ export default function RemindersScreen() {
             title="Nothing to track yet"
             description="Set a reminder for oil changes, tire rotations, or any recurring service. AutoMate counts down so you don't have to."
             actionLabel="Add Reminder"
-            onAction={() => router.push('/(modals)/reminder')}
+            onAction={() => nav.push('/(modals)/reminder')}
           />
         </View>
       ) : (

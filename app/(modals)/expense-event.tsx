@@ -36,7 +36,7 @@ export default function ExpenseEventModal() {
   const updateEvent = useEventStore((s) => s.updateEvent);
   const deleteEvent = useEventStore((s) => s.deleteEvent);
   const events = useEventStore((s) => s.events);
-  const categories = useReferenceDataStore((s) => s.categories);
+  const rawCategories = useReferenceDataStore((s) => s.categories);
   const addCategory = useReferenceDataStore((s) => s.addCategory);
   const updateCategory = useReferenceDataStore((s) => s.updateCategory);
   const deleteCategory = useReferenceDataStore((s) => s.deleteCategory);
@@ -58,6 +58,17 @@ export default function ExpenseEventModal() {
 
   const odometerUnit = activeVehicle?.odometerUnit ?? 'miles';
   const title = isEditing ? 'Edit Expense' : 'Add Expense';
+
+  const categories = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const e of events) {
+      if (e.categoryId) counts.set(e.categoryId, (counts.get(e.categoryId) ?? 0) + 1);
+    }
+    return [...rawCategories].sort((a, b) => {
+      const diff = (counts.get(b.id) ?? 0) - (counts.get(a.id) ?? 0);
+      return diff !== 0 ? diff : a.name.localeCompare(b.name);
+    });
+  }, [rawCategories, events]);
 
   useEffect(() => {
     if (!activeVehicle) return;

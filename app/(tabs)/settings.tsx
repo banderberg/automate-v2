@@ -3,7 +3,7 @@ import { View, Text, Pressable, ScrollView, Modal, FlatList } from 'react-native
 import { ConfirmDialog } from '@/src/components/ConfirmDialog';
 import { useDialog } from '@/src/hooks/useDialog';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useGuardedNavigate } from '@/src/hooks/useGuardedNavigate';
 import { Ionicons } from '@expo/vector-icons';
 import * as Sharing from 'expo-sharing';
 import * as DocumentPicker from 'expo-document-picker';
@@ -14,6 +14,8 @@ import { useEventStore } from '@/src/stores/eventStore';
 import { useReminderStore } from '@/src/stores/reminderStore';
 import { createBackup, getBackupInfo, restoreBackup } from '@/src/services/backup';
 import { loadTestData } from '@/src/db/testData';
+import { useReferenceDataStore } from '@/src/stores/referenceDataStore';
+import { getDatabase } from '@/src/db/client';
 
 const CURRENCIES = [
   { value: 'USD', label: 'USD ($)' },
@@ -145,7 +147,7 @@ function PickerModal({ visible, title, options, selectedValue, onSelect, onClose
 }
 
 export default function SettingsScreen() {
-  const router = useRouter();
+  const nav = useGuardedNavigate();
   const { settings, updateSetting } = useSettingsStore();
   const vehicleCount = useVehicleStore((s) => s.vehicles.length);
 
@@ -257,6 +259,38 @@ export default function SettingsScreen() {
               showDialog('Failed', message);
             } finally {
               setIsLoadingTestData(false);
+            }
+          },
+        },
+      ],
+    );
+  }, []);
+
+  const handleResetAllData = useCallback(() => {
+    showDialog(
+      'Reset All Data?',
+      'This will permanently delete all vehicles, events, and reminders. You will be returned to the onboarding screen. This cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Reset Everything',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const db = getDatabase();
+              await db.execAsync('DELETE FROM event_service_type;');
+              await db.execAsync('DELETE FROM event_photo;');
+              await db.execAsync('DELETE FROM reminder;');
+              await db.execAsync('DELETE FROM event;');
+              await db.execAsync('DELETE FROM vehicle;');
+              await db.execAsync('DELETE FROM place;');
+              useEventStore.getState().clearEvents();
+              useReminderStore.getState().clearReminders();
+              await useVehicleStore.getState().initialize();
+              nav.replace('/onboarding');
+            } catch (e) {
+              const message = e instanceof Error ? e.message : 'An unexpected error occurred.';
+              showDialog('Reset Failed', message);
             }
           },
         },
@@ -386,7 +420,7 @@ export default function SettingsScreen() {
           <RowItem
             label="Manage Vehicles"
             value={`${vehicleCount} vehicle${vehicleCount !== 1 ? 's' : ''}`}
-            onPress={() => router.push('/(modals)/manage-vehicles')}
+            onPress={() => nav.push('/(modals)/manage-vehicles')}
             accessibilityLabel="Manage Vehicles"
           />
         </View>
@@ -408,12 +442,12 @@ export default function SettingsScreen() {
           />
           <RowItem
             label="Import Data"
-            onPress={() => router.push('/(modals)/import')}
+            onPress={() => nav.push('/(modals)/import')}
             accessibilityLabel="Import Data"
           />
           <RowItem
             label="Export Data"
-            onPress={() => router.push('/(modals)/export')}
+            onPress={() => nav.push('/(modals)/export')}
             accessibilityLabel="Export Data"
           />
         </View>
@@ -457,6 +491,12 @@ export default function SettingsScreen() {
                 label={isLoadingTestData ? 'Loading test data...' : 'Load Test Data'}
                 onPress={isLoadingTestData ? undefined : handleLoadTestData}
                 accessibilityLabel="Load test data with 2 years of sample events"
+              />
+              <RowItem
+                label="Reset All Data"
+                subtitle="Delete everything and return to onboarding"
+                onPress={handleResetAllData}
+                accessibilityLabel="Reset all data"
               />
             </View>
           </>

@@ -1,9 +1,9 @@
 import { useRef, useCallback, useMemo } from 'react';
 import { View, Text, Pressable } from 'react-native';
-import { useRouter } from 'expo-router';
 import { useColorScheme } from 'nativewind';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
+import { useGuardedNavigate } from '../hooks/useGuardedNavigate';
 import {
   BottomSheetModal,
   BottomSheetView,
@@ -23,7 +23,7 @@ const TYPE_ROUTES: Record<string, EventRoute> = {
 
 export function AddEventFAB() {
   const bottomSheetRef = useRef<BottomSheetModal>(null);
-  const router = useRouter();
+  const nav = useGuardedNavigate();
   const { colorScheme } = useColorScheme();
   const isDark = colorScheme === 'dark';
   const activeVehicle = useVehicleStore((s) => s.activeVehicle);
@@ -43,8 +43,8 @@ export function AddEventFAB() {
       bottomSheetRef.current?.present();
       return;
     }
-    router.push(TYPE_ROUTES[lastUsedType] ?? TYPE_ROUTES.fuel);
-  }, [lastUsedType, hasEvents, router]);
+    nav.push(TYPE_ROUTES[lastUsedType] ?? TYPE_ROUTES.fuel);
+  }, [lastUsedType, hasEvents, nav]);
 
   const handleLongPress = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -58,9 +58,9 @@ export function AddEventFAB() {
   const handleNavigate = useCallback(
     (route: EventRoute) => {
       handleDismiss();
-      router.push(route);
+      nav.push(route);
     },
-    [handleDismiss, router]
+    [handleDismiss, nav]
   );
 
   const fabIcon = useMemo((): { name: keyof typeof Ionicons.glyphMap; label: string } => {

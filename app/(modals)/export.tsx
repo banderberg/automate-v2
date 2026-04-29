@@ -9,6 +9,7 @@ import { ConfirmDialog } from '@/src/components/ConfirmDialog';
 import { useDialog } from '@/src/hooks/useDialog';
 import { DateField } from '@/src/components/DateField';
 import { useVehicleStore } from '@/src/stores/vehicleStore';
+import { useToastStore } from '@/src/stores/toastStore';
 import { exportVehicleData } from '@/src/services/csvExport';
 import { generateServiceHistoryPDF } from '@/src/services/pdfExport';
 
@@ -61,6 +62,8 @@ export default function ExportModal() {
             mimeType: 'application/pdf',
             dialogTitle: 'Export AutoMate Service History',
           });
+          useToastStore.getState().show('Export complete');
+          router.back();
         } else {
           showDialog('Exported', `File saved to: ${fileUri}`);
         }
@@ -76,6 +79,8 @@ export default function ExportModal() {
             mimeType: 'text/csv',
             dialogTitle: 'Export AutoMate Data',
           });
+          useToastStore.getState().show('Export complete');
+          router.back();
         } else {
           showDialog('Exported', `File saved to: ${fileUri}`);
         }

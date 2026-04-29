@@ -1,7 +1,7 @@
 import { useState, useCallback, useMemo } from 'react';
 import { View, Text, Pressable, ScrollView, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useGuardedNavigate } from '@/src/hooks/useGuardedNavigate';
 import { useColorScheme } from 'nativewind';
 import { Ionicons } from '@expo/vector-icons';
 import * as DocumentPicker from 'expo-document-picker';
@@ -44,7 +44,7 @@ function formatCost(cost: number): string {
 }
 
 export default function ImportModal() {
-  const router = useRouter();
+  const nav = useGuardedNavigate();
   const { colorScheme } = useColorScheme();
   const isDark = colorScheme === 'dark';
   const vehicles = useVehicleStore((s) => s.vehicles);
@@ -141,13 +141,13 @@ export default function ImportModal() {
         showDialog(
           'Import Complete with Warnings',
           `${summary}\n\n${result.errors.length} error${result.errors.length !== 1 ? 's' : ''}: ${result.errors.slice(0, 3).join('; ')}`,
-          [{ text: 'OK', onPress: () => router.back() }]
+          [{ text: 'OK', onPress: () => nav.back() }]
         );
       } else {
         showDialog(
           'Import Complete',
           summary,
-          [{ text: 'OK', onPress: () => router.back() }]
+          [{ text: 'OK', onPress: () => nav.back() }]
         );
       }
     } catch (e) {
@@ -156,13 +156,13 @@ export default function ImportModal() {
     } finally {
       setIsImporting(false);
     }
-  }, [parsedData, selectedVehicleId, router]);
+  }, [parsedData, selectedVehicleId, nav]);
 
   return (
     <SafeAreaView className="flex-1 bg-surface dark:bg-surface-dark" edges={['top']}>
       <ModalHeader
         title="Import Data"
-        onCancel={() => router.back()}
+        onCancel={() => nav.back()}
         hideSave
       />
 
@@ -343,7 +343,7 @@ export default function ImportModal() {
                 <Pressable
                   onPress={() => {
                     setShowVehiclePicker(false);
-                    router.push('/(modals)/vehicle');
+                    nav.push('/(modals)/vehicle');
                   }}
                   className="flex-row items-center px-4 py-3.5"
                   accessibilityLabel="Add new vehicle"

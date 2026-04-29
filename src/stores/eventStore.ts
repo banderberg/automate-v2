@@ -39,6 +39,7 @@ interface EventStore {
     vehicleId: string
   ): Promise<Partial<VehicleEvent>>;
 
+  clearEvents(): void;
   fuelEvents(): VehicleEvent[];
   serviceEvents(): VehicleEvent[];
   expenseEvents(): VehicleEvent[];
@@ -71,6 +72,10 @@ export const useEventStore = create<EventStore>((set, get) => ({
 
   expenseEvents() {
     return get().events.filter((e) => e.type === 'expense');
+  },
+
+  clearEvents() {
+    set({ events: [], serviceLabels: new Map(), error: null, pendingDelete: null });
   },
 
   async loadForVehicle(vehicleId) {

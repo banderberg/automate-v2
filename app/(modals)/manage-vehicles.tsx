@@ -1,14 +1,14 @@
 import { useCallback } from 'react';
 import { View, Text, Pressable, FlatList, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useGuardedNavigate } from '@/src/hooks/useGuardedNavigate';
 import { Ionicons } from '@expo/vector-icons';
 import { ModalHeader } from '@/src/components/ModalHeader';
 import { useVehicleStore } from '@/src/stores/vehicleStore';
 import type { Vehicle } from '@/src/types';
 
 export default function ManageVehiclesModal() {
-  const router = useRouter();
+  const nav = useGuardedNavigate();
   const vehicles = useVehicleStore((s) => s.vehicles);
   const reorderVehicles = useVehicleStore((s) => s.reorderVehicles);
 
@@ -27,7 +27,7 @@ export default function ManageVehiclesModal() {
     ({ item, index }: { item: Vehicle; index: number }) => (
       <Pressable
         onPress={() =>
-          router.push(`/(modals)/vehicle?vehicleId=${item.id}`)
+          nav.push(`/(modals)/vehicle?vehicleId=${item.id}`)
         }
         className="flex-row items-center px-4 py-3 bg-card dark:bg-card-dark border-b border-divider-subtle dark:border-divider-dark active:bg-surface dark:active:bg-surface-dark"
         accessibilityLabel={`${item.nickname}, ${item.year} ${item.make} ${item.model}${item.isActive ? ', active' : ''}`}
@@ -97,14 +97,14 @@ export default function ManageVehiclesModal() {
         </View>
       </Pressable>
     ),
-    [vehicles.length, moveVehicle, router]
+    [vehicles.length, moveVehicle, nav]
   );
 
   return (
     <SafeAreaView className="flex-1 bg-surface dark:bg-surface-dark" edges={['top']}>
       <ModalHeader
         title="Manage Vehicles"
-        onCancel={() => router.back()}
+        onCancel={() => nav.back()}
         hideSave
       />
       <FlatList
@@ -113,7 +113,7 @@ export default function ManageVehiclesModal() {
         renderItem={renderVehicle}
         ListFooterComponent={
           <Pressable
-            onPress={() => router.push('/(modals)/vehicle')}
+            onPress={() => nav.push('/(modals)/vehicle')}
             className="flex-row items-center justify-center py-4 mt-4 mx-4 rounded-xl bg-primary"
             accessibilityLabel="Add Vehicle"
             accessibilityRole="button"

@@ -1,7 +1,7 @@
 import { useState, useCallback, useMemo, useRef } from 'react';
 import { View, Text, Pressable, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useGuardedNavigate } from '@/src/hooks/useGuardedNavigate';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { FlashList } from '@shopify/flash-list';
@@ -132,7 +132,7 @@ function SwipeableEventRow({
 }
 
 export default function HistoryScreen() {
-  const router = useRouter();
+  const nav = useGuardedNavigate();
   const vehicleCount = useVehicleStore((s) => s.vehicles.length);
   const { activeVehicle, events } = useActiveVehicle();
   const deleteEvent = useEventStore((s) => s.deleteEvent);
@@ -201,9 +201,9 @@ export default function HistoryScreen() {
         service: `/(modals)/service-event?eventId=${event.id}`,
         expense: `/(modals)/expense-event?eventId=${event.id}`,
       } as const;
-      router.push(routes[event.type]);
+      nav.push(routes[event.type]);
     },
-    [router]
+    [nav]
   );
 
   const handleDelete = useCallback(

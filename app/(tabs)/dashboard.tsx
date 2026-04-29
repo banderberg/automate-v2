@@ -2,7 +2,7 @@ import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import { View, Text, Pressable, ScrollView, useWindowDimensions } from 'react-native';
 import { useColorScheme } from 'nativewind';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useGuardedNavigate } from '@/src/hooks/useGuardedNavigate';
 import { Ionicons } from '@expo/vector-icons';
 import { LineChart, PieChart } from 'react-native-gifted-charts';
 import { VehicleSwitcher } from '@/src/components/VehicleSwitcher';
@@ -45,7 +45,7 @@ function splitCurrency(amount: number): { dollars: string; cents: string } {
 }
 
 export default function DashboardScreen() {
-  const router = useRouter();
+  const nav = useGuardedNavigate();
   const { width } = useWindowDimensions();
   const { colorScheme } = useColorScheme();
   const isDark = colorScheme === 'dark';
@@ -127,9 +127,9 @@ export default function DashboardScreen() {
         service: `/(modals)/service-event?eventId=${eventId}`,
         expense: `/(modals)/expense-event?eventId=${eventId}`,
       } as const;
-      router.push(routes[type]);
+      nav.push(routes[type]);
     },
-    [router]
+    [nav]
   );
 
   const { dollars, cents } = splitCurrency(metrics.totalSpent);
@@ -148,7 +148,7 @@ export default function DashboardScreen() {
           title="Add your first vehicle"
           description="AutoMate tracks what you spend, so you always know where the money goes."
           actionLabel="Get Started"
-          onAction={() => router.push('/(modals)/vehicle')}
+          onAction={() => nav.push('/(modals)/vehicle')}
         />
       </SafeAreaView>
     );
@@ -486,7 +486,7 @@ export default function DashboardScreen() {
                 Recent
               </Text>
               <Pressable
-                onPress={() => router.push('/(tabs)/history')}
+                onPress={() => nav.push('/(tabs)/history')}
                 className="py-2"
                 accessibilityLabel="See all history"
                 accessibilityRole="button"

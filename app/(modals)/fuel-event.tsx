@@ -86,6 +86,9 @@ export default function FuelEventModal() {
   const [photos, setPhotos] = useState<LocalPhoto[]>([]);
 
   const isDirty = useRef(false);
+  const discountRef = useRef<TextInput>(null);
+  const priceRef = useRef<TextInput>(null);
+  const totalRef = useRef<TextInput>(null);
   const { showDialog, dialogProps } = useDialog();
 
   const [odometerTag, setOdometerTag] = useState<string | null>(null);
@@ -150,7 +153,7 @@ export default function FuelEventModal() {
           setDiscountPerUnit(String(defaults.discountPerUnit));
           setShowDiscount(true);
         }
-        if (defaults.placeId) setPlaceId(defaults.placeId);
+        // placeId intentionally not pre-filled — stations vary too much
         setBoundsLoaded(true);
       })();
     }
@@ -221,9 +224,11 @@ export default function FuelEventModal() {
     if (entryMode === 'price') {
       if (computedTotal) setTotalCost(computedTotal);
       setEntryMode('total');
+      setTimeout(() => totalRef.current?.focus(), 100);
     } else {
       if (computedPrice) setPricePerUnit(computedPrice);
       setEntryMode('price');
+      setTimeout(() => priceRef.current?.focus(), 100);
     }
     setPriceTag(null);
   }, [entryMode, computedTotal, computedPrice]);
@@ -235,6 +240,12 @@ export default function FuelEventModal() {
       setShowDiscount(false);
     } else {
       setShowDiscount(true);
+    }
+  }, [showDiscount]);
+
+  useEffect(() => {
+    if (showDiscount) {
+      setTimeout(() => discountRef.current?.focus(), 100);
     }
   }, [showDiscount]);
 
@@ -399,6 +410,7 @@ export default function FuelEventModal() {
                   <View className="flex-row items-center bg-surface dark:bg-surface-dark rounded-xl border border-divider dark:border-divider-dark px-3.5 py-3">
                     <Text className="text-sm text-ink-muted dark:text-ink-muted-on-dark mr-1">$</Text>
                     <TextInput
+                      ref={priceRef}
                       className="flex-1 text-base text-ink dark:text-ink-on-dark"
                       value={pricePerUnit}
                       onChangeText={handlePriceChange}
@@ -438,6 +450,7 @@ export default function FuelEventModal() {
                   <View className="flex-row items-center bg-surface dark:bg-surface-dark rounded-xl border border-divider dark:border-divider-dark px-3.5 py-3">
                     <Text className="text-sm text-ink-muted dark:text-ink-muted-on-dark mr-1">$</Text>
                     <TextInput
+                      ref={totalRef}
                       className="flex-1 text-base text-ink dark:text-ink-on-dark"
                       value={totalCost}
                       onChangeText={(t) => { setTotalCost(t); markDirty(); }}
@@ -486,6 +499,7 @@ export default function FuelEventModal() {
                 <View className="flex-row items-center bg-surface dark:bg-surface-dark rounded-xl border border-divider dark:border-divider-dark px-3.5 py-3">
                   <Text className="text-sm text-ink-muted dark:text-ink-muted-on-dark mr-1">$</Text>
                   <TextInput
+                    ref={discountRef}
                     className="flex-1 text-base text-ink dark:text-ink-on-dark"
                     value={discountPerUnit}
                     onChangeText={(t) => { setDiscountPerUnit(t); markDirty(); }}

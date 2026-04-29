@@ -1,6 +1,6 @@
 import { useRef, useCallback } from 'react';
 import { View, Text, Pressable, Image } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useGuardedNavigate } from '../hooks/useGuardedNavigate';
 import { useColorScheme } from 'nativewind';
 import { Ionicons } from '@expo/vector-icons';
 import {
@@ -18,7 +18,7 @@ interface VehicleSwitcherProps {
 
 export function VehicleSwitcher({ tintColor }: VehicleSwitcherProps) {
   const bottomSheetRef = useRef<BottomSheetModal>(null);
-  const router = useRouter();
+  const nav = useGuardedNavigate();
   const { colorScheme } = useColorScheme();
   const isDark = colorScheme === 'dark';
   const vehicles = useVehicleStore((s) => s.vehicles);
@@ -45,8 +45,8 @@ export function VehicleSwitcher({ tintColor }: VehicleSwitcherProps) {
 
   const handleManageVehicles = useCallback(() => {
     handleDismiss();
-    router.push('/(modals)/manage-vehicles');
-  }, [handleDismiss, router]);
+    nav.push('/(modals)/manage-vehicles');
+  }, [handleDismiss, nav]);
 
   const renderBackdrop = useCallback(
     (props: BottomSheetBackdropProps) => (
@@ -165,7 +165,7 @@ export function VehicleSwitcher({ tintColor }: VehicleSwitcherProps) {
           <Pressable
             onPress={() => {
               handleDismiss();
-              router.push('/(modals)/vehicle');
+              nav.push('/(modals)/vehicle');
             }}
             className="flex-row items-center px-4 py-3 active:bg-surface dark:active:bg-surface-dark"
             accessibilityLabel="Add Vehicle"
