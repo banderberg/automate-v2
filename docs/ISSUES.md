@@ -207,3 +207,55 @@ router.back();
 ```
 
 Note: `Sharing.shareAsync()` resolves when the share sheet is dismissed regardless of whether the user actually saved or cancelled. If distinguishing between save/cancel matters, the toast message could be softer (e.g. "Export ready") — but closing the modal either way is still better than the current dead-end.
+
+---
+
+## 7. Reminder modal's ChipPicker doesn't allow adding new service types or categories
+
+**Severity:** Medium (feature gap / inconsistency)
+
+**Steps to reproduce:**
+1. Open "Add Reminder"
+2. Look at the service type or category chips
+3. No "Manage" link, no "+ Custom" dashed chip
+
+**Expected:** Same ability to add/edit/delete service types and categories as in the service-event and expense-event modals.
+**Actual:** The `ChipPicker` in the reminder modal is read-only — user can only select from existing items.
+
+**Root cause:**
+In `app/(modals)/reminder.tsx:245-253`, the `ChipPicker` is rendered without `onAdd`, `onUpdate`, or `onDelete` callbacks. The component supports these — both `service-event.tsx` (lines 239-241) and `expense-event.tsx` (lines 226-228) pass all three. The reminder modal simply omits them.
+
+```tsx
+// reminder.tsx — no CRUD callbacks
+<ChipPicker
+  items={chipItems}
+  selectedIds={selectedIds}
+  onSelectionChange={handleSelectionChange}
+  multiSelect={false}
+  label={kind === 'maintenance' ? 'Service Type *' : 'Category *'}
+  error={selectionError}
+  accentColor={kind === 'maintenance' ? '#F97316' : '#10B981'}
+/>
+```
+
+**Proposed fix:**
+Import `addServiceType`, `updateServiceType`, `deleteServiceType`, `addCategory`, `updateCategory`, `deleteCategory` from `useReferenceDataStore` and pass them as `onAdd`/`onUpdate`/`onDelete` to the `ChipPicker`, matching the pattern used in the event modals.
+
+---
+
+## 8. Service type and expense category chips should be sorted by usage frequency
+
+**Severity:** Low (UX improvement)
+
+**Problem:**
+On the service-event and expense-event modals, the chips are displayed in `sortOrder` from the database — which is insertion order. For quick selection, the most frequently used types/categories should appear first so users don't have to scan the full list every time. Less-used items should fall to the end.
+
+**Root cause:**
+In `src/db/queries/serviceTypes.ts` and `src/db/queries/categories.ts`, `getAll()` sorts by `sortOrder ASC`. This is a static insertion-time ordering that doesn't reflect actual usage patterns.
+
+**Proposed fix:**
+Sort chips by usage frequency (descending), with alphabetical as a tiebreaker for items with equal or zero usage. Two approaches:
+
+1. **Query-time join:** Modify `getAll()` to LEFT JOIN against the events table, count occurrences, and `ORDER BY count DESC, name ASC`. This is always up-to-date but slightly heavier.
+
+2. **Store-level sort:** After loading both chips and events, sort in the store or a `useMemo` in the modal by counting how many events reference each type/category. Simpler to implement without touching the query layer.

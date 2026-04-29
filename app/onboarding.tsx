@@ -15,8 +15,8 @@ import * as Haptics from 'expo-haptics';
 import * as DocumentPicker from 'expo-document-picker';
 import { useVehicleStore } from '@/src/stores/vehicleStore';
 import { useSettingsStore } from '@/src/stores/settingsStore';
-import { SegmentedControl } from '@/src/components/SegmentedControl';
 import { ConfirmDialog } from '@/src/components/ConfirmDialog';
+import { SegmentedControl } from '@/src/components/SegmentedControl';
 import { useDialog } from '@/src/hooks/useDialog';
 import { getBackupInfo, restoreBackup } from '@/src/services/backup';
 import { getVolumeUnitForFuelType } from '@/src/constants/units';
@@ -243,7 +243,7 @@ export default function OnboardingScreen() {
               </View>
             </View>
 
-            {/* Fuel Type */}
+            {/* Fuel type */}
             <View className="mb-4">
               <Text className="text-xs text-ink-muted dark:text-ink-muted-on-dark mb-2 font-semibold">
                 Fuel Type
@@ -260,10 +260,10 @@ export default function OnboardingScreen() {
               />
             </View>
 
-            {/* Odometer Unit */}
+            {/* Odometer unit */}
             <View className="mb-4">
               <Text className="text-xs text-ink-muted dark:text-ink-muted-on-dark mb-2 font-semibold">
-                Odometer
+                Odometer Unit
               </Text>
               <SegmentedControl
                 options={[

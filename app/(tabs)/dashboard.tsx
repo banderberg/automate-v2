@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
-import { View, Text, Pressable, ScrollView, useWindowDimensions, ActivityIndicator } from 'react-native';
+import { View, Text, Pressable, ScrollView, useWindowDimensions } from 'react-native';
 import { useColorScheme } from 'nativewind';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -10,6 +10,7 @@ import { AddEventFAB } from '@/src/components/AddEventFAB';
 import { EmptyState } from '@/src/components/EmptyState';
 import { EventRow } from '@/src/components/EventRow';
 import { MetricInfo } from '@/src/components/MetricInfo';
+import { DashboardSkeleton } from '@/src/components/Skeleton';
 import { useVehicleStore } from '@/src/stores/vehicleStore';
 import { useEventStore } from '@/src/stores/eventStore';
 import { useReferenceDataStore } from '@/src/stores/referenceDataStore';
@@ -21,7 +22,7 @@ const PERIODS = [
   { value: '1M', label: '1M' },
   { value: '3M', label: '3M' },
   { value: '6M', label: '6M' },
-  { value: 'YTD', label: 'Year' },
+  { value: 'YTD', label: 'YTD' },
   { value: '1Y', label: '1Y' },
   { value: 'All', label: 'All' },
 ] as const;
@@ -139,10 +140,14 @@ export default function DashboardScreen() {
     return (
       <SafeAreaView className="flex-1 bg-surface dark:bg-surface-dark" edges={['top']}>
         <EmptyState
-          icon={<View style={{ opacity: 0.4 }}><Ionicons name="car-sport-outline" size={64} color="#A8A49D" /></View>}
-          title="Your garage is empty"
-          description="Add a vehicle and AutoMate handles the rest."
-          actionLabel="Add Vehicle"
+          icon={
+            <View style={{ width: 88, height: 88, borderRadius: 44, backgroundColor: '#4272C410', alignItems: 'center', justifyContent: 'center' }}>
+              <Ionicons name="car-sport-outline" size={44} color="#4272C4" />
+            </View>
+          }
+          title="Add your first vehicle"
+          description="AutoMate tracks what you spend, so you always know where the money goes."
+          actionLabel="Get Started"
           onAction={() => router.push('/(modals)/vehicle')}
         />
       </SafeAreaView>
@@ -174,12 +179,12 @@ export default function DashboardScreen() {
   return (
     <SafeAreaView className="flex-1 bg-surface dark:bg-surface-dark" edges={['top']}>
       <VehicleSwitcher />
-      {isLoading && (
-        <View className="absolute inset-0 z-10 items-center pt-40" pointerEvents="none">
-          <ActivityIndicator size="small" color={isDark ? '#78756F' : '#A8A49D'} />
-        </View>
-      )}
-      <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 80 }} style={{ opacity: isLoading ? 0.4 : 1 }}>
+      {isLoading ? (
+        <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 80 }}>
+          <DashboardSkeleton />
+        </ScrollView>
+      ) : (
+      <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 80 }}>
 
         {/* ── First-event celebration banner ── */}
         {showCelebration && (
@@ -519,6 +524,7 @@ export default function DashboardScreen() {
           </View>
         )}
       </ScrollView>
+      )}
 
       <AddEventFAB />
     </SafeAreaView>

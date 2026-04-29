@@ -453,10 +453,15 @@ export default function VehicleModal() {
               )}
             </View>
             {vinStatus === 'success' && (
-              <Text className="text-xs text-green-600 mt-1">Auto-filled from VIN</Text>
+              <View className="flex-row items-center mt-1.5 gap-1">
+                <Ionicons name="checkmark-circle" size={14} color="#10B981" />
+                <Text className="text-xs" style={{ color: '#10B981' }}>
+                  Filled {[year && year, make, model].filter(Boolean).join(', ')} from VIN
+                </Text>
+              </View>
             )}
             {vinStatus === 'error' && (
-              <Text className="text-xs text-warning mt-1">Couldn't look up VIN. Enter details manually.</Text>
+              <Text className="text-xs mt-1" style={{ color: '#F59E0B' }}>Couldn't look up VIN. Enter details manually.</Text>
             )}
           </View>
 

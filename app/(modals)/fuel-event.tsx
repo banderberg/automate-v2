@@ -546,7 +546,7 @@ export default function FuelEventModal() {
               <Switch
                 value={isPartialFill}
                 onValueChange={(v) => { setIsPartialFill(v); markDirty(); }}
-                trackColor={{ false: isDark ? '#2A2926' : '#E2E0DB', true: '#8FB3E0' }}
+                trackColor={{ false: isDark ? '#2A2926' : '#E2E0DB', true: isDark ? '#2E5A9E' : '#A7C4E4' }}
                 thumbColor={isPartialFill ? '#4272C4' : isDark ? '#1A1917' : '#FEFDFB'}
                 accessibilityLabel="This is a partial fill"
               />

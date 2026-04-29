@@ -276,7 +276,7 @@ export default function ReminderModal() {
                     setDistanceEnabled(v);
                     setIntervalError('');
                   }}
-                  trackColor={{ false: isDark ? '#2A2926' : '#E2E0DB', true: '#8FB3E0' }}
+                  trackColor={{ false: isDark ? '#2A2926' : '#E2E0DB', true: isDark ? '#2E5A9E' : '#A7C4E4' }}
                   thumbColor={distanceEnabled ? '#4272C4' : isDark ? '#1A1917' : '#FEFDFB'}
                   accessibilityLabel="Enable distance-based repeat"
                 />
@@ -310,7 +310,7 @@ export default function ReminderModal() {
                     setTimeEnabled(v);
                     setIntervalError('');
                   }}
-                  trackColor={{ false: isDark ? '#2A2926' : '#E2E0DB', true: '#8FB3E0' }}
+                  trackColor={{ false: isDark ? '#2A2926' : '#E2E0DB', true: isDark ? '#2E5A9E' : '#A7C4E4' }}
                   thumbColor={timeEnabled ? '#4272C4' : isDark ? '#1A1917' : '#FEFDFB'}
                   accessibilityLabel="Enable time-based repeat"
                 />

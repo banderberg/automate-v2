@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo, useRef } from 'react';
-import { View, Text, Pressable, ActivityIndicator, TextInput } from 'react-native';
+import { View, Text, Pressable, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -11,6 +11,7 @@ import { AddEventFAB } from '@/src/components/AddEventFAB';
 import { EmptyState } from '@/src/components/EmptyState';
 import { EventRow } from '@/src/components/EventRow';
 import { UndoSnackbar } from '@/src/components/UndoSnackbar';
+import { HistorySkeleton } from '@/src/components/Skeleton';
 import { ConfirmDialog } from '@/src/components/ConfirmDialog';
 import { useDialog } from '@/src/hooks/useDialog';
 import { useVehicleStore } from '@/src/stores/vehicleStore';
@@ -243,11 +244,13 @@ export default function HistoryScreen() {
     return (
       <SafeAreaView className="flex-1 bg-surface dark:bg-surface-dark" edges={['top']}>
         <EmptyState
-          icon={<View style={{ opacity: 0.4 }}><Ionicons name="car-sport-outline" size={64} color="#A8A49D" /></View>}
-          title="Your garage is empty"
-          description="Add a vehicle and AutoMate handles the rest."
-          actionLabel="Add Vehicle"
-          onAction={() => router.push('/(modals)/vehicle')}
+          icon={
+            <View style={{ width: 88, height: 88, borderRadius: 44, backgroundColor: '#0D948810', alignItems: 'center', justifyContent: 'center' }}>
+              <Ionicons name="receipt-outline" size={44} color="#0D9488" />
+            </View>
+          }
+          title="No vehicle yet"
+          description="Add a vehicle from the Dashboard tab to start logging events here."
         />
       </SafeAreaView>
     );
@@ -311,13 +314,9 @@ export default function HistoryScreen() {
         })}
       </View>
 
-      {isLoading && (
-        <View className="absolute inset-0 z-10 items-center pt-40" pointerEvents="none">
-          <ActivityIndicator size="small" color="#A8A49D" />
-        </View>
-      )}
-
-      {filteredEvents.length === 0 ? (
+      {isLoading ? (
+        <HistorySkeleton />
+      ) : filteredEvents.length === 0 ? (
         <View className="flex-1">
           {searchQuery.trim() || !activeFilters.has('all') ? (
             <EmptyState

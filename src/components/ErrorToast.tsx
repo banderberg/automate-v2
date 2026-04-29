@@ -116,7 +116,7 @@ export function ErrorToast() {
         accessibilityRole="alert"
       >
         <Ionicons name={icon} size={18} color="white" style={{ marginTop: 1 }} />
-        <Text className="text-sm text-white ml-2 font-medium" style={{ flexShrink: 1 }}>{message}</Text>
+        <Text className="text-sm text-white ml-2 font-medium" numberOfLines={4} style={{ flexShrink: 1 }}>{message}</Text>
       </Pressable>
     </Animated.View>
   );

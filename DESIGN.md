@@ -177,7 +177,7 @@ No background, no border. `text-primary font-semibold` or `text-primary font-med
 
 ### Switch
 
-Track: `false: '#E2E0DB', true: '#93C5FD'`. Thumb: `isOn ? '#3B82F6' : '#FEFDFB'`.
+Track: `false: isDark ? '#2A2926' : '#E2E0DB', true: isDark ? '#2E5A9E' : '#A7C4E4'`. Thumb: `isOn ? '#4272C4' : isDark ? '#1A1917' : '#FEFDFB'`.
 
 ### FAB
 

@@ -6,7 +6,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { VehicleSwitcher } from '@/src/components/VehicleSwitcher';
 import { EmptyState } from '@/src/components/EmptyState';
 import { ReminderCard } from '@/src/components/ReminderCard';
+import { RemindersSkeleton } from '@/src/components/Skeleton';
 import { useVehicleStore } from '@/src/stores/vehicleStore';
+import { useReminderStore } from '@/src/stores/reminderStore';
 import { useActiveVehicle } from '@/src/hooks/useActiveVehicle';
 import * as notificationService from '@/src/services/notifications';
 
@@ -15,6 +17,7 @@ export default function RemindersScreen() {
   const vehicleCount = useVehicleStore((s) => s.vehicles.length);
   const activeVehicle = useVehicleStore((s) => s.activeVehicle);
   const { reminders } = useActiveVehicle();
+  const isLoading = useReminderStore((s) => s.isLoading);
   const [notifDenied, setNotifDenied] = useState(false);
 
   useEffect(() => {
@@ -36,11 +39,13 @@ export default function RemindersScreen() {
     return (
       <SafeAreaView className="flex-1 bg-surface dark:bg-surface-dark" edges={['top']}>
         <EmptyState
-          icon={<View style={{ opacity: 0.4 }}><Ionicons name="car-sport-outline" size={64} color="#A8A49D" /></View>}
-          title="Your garage is empty"
-          description="Add a vehicle and AutoMate handles the rest."
-          actionLabel="Add Vehicle"
-          onAction={() => router.push('/(modals)/vehicle')}
+          icon={
+            <View style={{ width: 88, height: 88, borderRadius: 44, backgroundColor: '#F59E0B10', alignItems: 'center', justifyContent: 'center' }}>
+              <Ionicons name="timer-outline" size={44} color="#F59E0B" />
+            </View>
+          }
+          title="No vehicle yet"
+          description="Add a vehicle from the Dashboard tab, then set reminders for oil changes, inspections, and more."
         />
       </SafeAreaView>
     );
@@ -79,11 +84,13 @@ export default function RemindersScreen() {
         </Pressable>
       )}
 
-      {reminders.length === 0 ? (
+      {isLoading ? (
+        <RemindersSkeleton />
+      ) : reminders.length === 0 ? (
         <View className="flex-1">
           <EmptyState
             icon={
-              <View style={{ width: 88, height: 88, borderRadius: 44, backgroundColor: '#F5920810', alignItems: 'center', justifyContent: 'center' }}>
+              <View style={{ width: 88, height: 88, borderRadius: 44, backgroundColor: '#F59E0B10', alignItems: 'center', justifyContent: 'center' }}>
                 <Ionicons name="timer-outline" size={44} color="#F59E0B" />
               </View>
             }
