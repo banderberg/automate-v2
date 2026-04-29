@@ -52,14 +52,16 @@ export async function setForEvent(
   serviceTypeIds: string[]
 ): Promise<void> {
   const db = getDatabase();
-  await db.runAsync(
-    'DELETE FROM event_service_type WHERE eventId = ?',
-    [eventId]
-  );
-  for (const serviceTypeId of serviceTypeIds) {
+  await db.withTransactionAsync(async () => {
     await db.runAsync(
-      'INSERT INTO event_service_type (eventId, serviceTypeId) VALUES (?, ?)',
-      [eventId, serviceTypeId]
+      'DELETE FROM event_service_type WHERE eventId = ?',
+      [eventId]
     );
-  }
+    for (const serviceTypeId of serviceTypeIds) {
+      await db.runAsync(
+        'INSERT INTO event_service_type (eventId, serviceTypeId) VALUES (?, ?)',
+        [eventId, serviceTypeId]
+      );
+    }
+  });
 }

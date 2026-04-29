@@ -5,6 +5,7 @@ import * as settingsQueries from '../db/queries/settings';
 interface SettingsStore {
   settings: AppSettings;
   isLoading: boolean;
+  error: string | null;
 
   initialize(): Promise<void>;
   updateSetting<K extends keyof AppSettings>(key: K, value: AppSettings[K]): Promise<void>;
@@ -21,23 +22,30 @@ const DEFAULT_SETTINGS: AppSettings = {
 export const useSettingsStore = create<SettingsStore>((set) => ({
   settings: DEFAULT_SETTINGS,
   isLoading: false,
+  error: null,
 
   async initialize() {
-    set({ isLoading: true });
+    set({ isLoading: true, error: null });
     try {
       const settings = await settingsQueries.get();
       set({ settings, isLoading: false });
     } catch (e) {
-      console.error('Failed to load settings:', e);
-      set({ isLoading: false });
+      const msg = e instanceof Error ? e.message : 'Failed to load settings';
+      set({ error: msg, isLoading: false });
     }
   },
 
   async updateSetting(key, value) {
-    const stringValue = typeof value === 'boolean' ? String(value) : String(value);
-    await settingsQueries.set(key, stringValue);
-    set((state) => ({
-      settings: { ...state.settings, [key]: value },
-    }));
+    set({ error: null });
+    try {
+      const stringValue = typeof value === 'boolean' ? String(value) : String(value);
+      await settingsQueries.set(key, stringValue);
+      set((state) => ({
+        settings: { ...state.settings, [key]: value },
+      }));
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Failed to update setting';
+      set({ error: msg });
+    }
   },
 }));

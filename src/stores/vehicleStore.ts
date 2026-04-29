@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import type { Vehicle } from '../types';
 import * as vehicleQueries from '../db/queries/vehicles';
+import * as vehicleDocumentQueries from '../db/queries/vehicleDocuments';
 import { convertAllForVehicle } from '../db/queries/odometerConversion';
 
 interface VehicleStore {
@@ -141,6 +142,7 @@ export const useVehicleStore = create<VehicleStore>((set, get) => ({
         throw new Error('Cannot delete the only vehicle. Add another vehicle first.');
       }
 
+      await vehicleDocumentQueries.removeAllForVehicle(id);
       await vehicleQueries.remove(id);
 
       const remaining = vehicles.filter((v) => v.id !== id);

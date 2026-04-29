@@ -1,6 +1,7 @@
 import { useVehicleStore } from './vehicleStore';
 import { useEventStore } from './eventStore';
 import { useReminderStore } from './reminderStore';
+import { useDocumentStore } from './documentStore';
 import { useReferenceDataStore } from './referenceDataStore';
 import { useSettingsStore } from './settingsStore';
 import type { VehicleEvent } from '../types';
@@ -10,6 +11,7 @@ export async function switchVehicle(id: string): Promise<void> {
   await Promise.all([
     useEventStore.getState().loadForVehicle(id),
     useReminderStore.getState().loadForVehicle(id),
+    useDocumentStore.getState().loadForVehicle(id),
   ]);
 }
 
@@ -25,6 +27,7 @@ export async function onVehicleAdded(vehicleId: string, wasActivated: boolean): 
     await Promise.all([
       useEventStore.getState().loadForVehicle(vehicleId),
       useReminderStore.getState().loadForVehicle(vehicleId),
+      useDocumentStore.getState().loadForVehicle(vehicleId),
     ]);
   }
 }
@@ -34,7 +37,10 @@ export async function onVehicleDeleted(newActiveId: string | null): Promise<void
     await Promise.all([
       useEventStore.getState().loadForVehicle(newActiveId),
       useReminderStore.getState().loadForVehicle(newActiveId),
+      useDocumentStore.getState().loadForVehicle(newActiveId),
     ]);
+  } else {
+    useDocumentStore.getState().clearDocuments();
   }
 }
 
@@ -55,6 +61,7 @@ export async function reloadAllStores(): Promise<void> {
     await Promise.all([
       useEventStore.getState().loadForVehicle(activeVehicle.id),
       useReminderStore.getState().loadForVehicle(activeVehicle.id),
+      useDocumentStore.getState().loadForVehicle(activeVehicle.id),
     ]);
   }
 }

@@ -16,6 +16,7 @@ import { reloadAllStores } from '@/src/stores/orchestrator';
 import { createBackup, getBackupInfo, restoreBackup } from '@/src/services/backup';
 import { loadTestData } from '@/src/db/testData';
 import { useReferenceDataStore } from '@/src/stores/referenceDataStore';
+import { Directory, Paths } from 'expo-file-system';
 import { getDatabase } from '@/src/db/client';
 
 const CURRENCIES = [
@@ -198,9 +199,12 @@ export default function SettingsScreen() {
 
       setIsRestoring(false);
 
+      const docNote = info.documentCount > 0
+        ? `\n\nDocument and photo files are not included in backups and must be re-added after restore.`
+        : '';
       showDialog(
         'Restore Backup?',
-        `This backup contains ${info.vehicleCount} vehicle${info.vehicleCount !== 1 ? 's' : ''}, ${info.eventCount} event${info.eventCount !== 1 ? 's' : ''}, and ${info.reminderCount} reminder${info.reminderCount !== 1 ? 's' : ''}.\n\nRestoring will replace ALL current data. This cannot be undone.`,
+        `This backup contains ${info.vehicleCount} vehicle${info.vehicleCount !== 1 ? 's' : ''}, ${info.eventCount} event${info.eventCount !== 1 ? 's' : ''}, ${info.reminderCount} reminder${info.reminderCount !== 1 ? 's' : ''}, and ${info.documentCount} document${info.documentCount !== 1 ? 's' : ''}.\n\nRestoring will replace ALL current data. This cannot be undone.${docNote}`,
         [
           { text: 'Cancel', style: 'cancel' },
           {
@@ -272,12 +276,19 @@ export default function SettingsScreen() {
           onPress: async () => {
             try {
               const db = getDatabase();
+              await db.execAsync('DELETE FROM vehicle_document;');
               await db.execAsync('DELETE FROM event_service_type;');
               await db.execAsync('DELETE FROM event_photo;');
               await db.execAsync('DELETE FROM reminder;');
               await db.execAsync('DELETE FROM event;');
               await db.execAsync('DELETE FROM vehicle;');
               await db.execAsync('DELETE FROM place;');
+              try {
+                const docDir = new Directory(Paths.document, 'vehicle-documents');
+                if (docDir.exists) docDir.delete();
+              } catch {
+                // Best effort cleanup
+              }
               useEventStore.getState().clearEvents();
               useReminderStore.getState().clearReminders();
               await useVehicleStore.getState().initialize();

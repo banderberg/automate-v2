@@ -40,6 +40,28 @@ const migrations: Migration[] = [
       );
     },
   },
+  {
+    version: 3,
+    up: async (db: SQLiteDatabase) => {
+      await db.execAsync(`
+        CREATE TABLE IF NOT EXISTS vehicle_document (
+          id TEXT PRIMARY KEY,
+          vehicleId TEXT NOT NULL REFERENCES vehicle(id) ON DELETE CASCADE,
+          name TEXT NOT NULL,
+          type TEXT NOT NULL DEFAULT 'other',
+          filePath TEXT NOT NULL,
+          expirationDate TEXT,
+          notificationId TEXT,
+          notes TEXT,
+          createdAt TEXT NOT NULL,
+          updatedAt TEXT NOT NULL
+        );
+      `);
+      await db.execAsync(
+        'CREATE INDEX IF NOT EXISTS idx_vehicle_document_vehicle ON vehicle_document(vehicleId);'
+      );
+    },
+  },
 ];
 
 export async function runMigrations(db: SQLiteDatabase): Promise<void> {

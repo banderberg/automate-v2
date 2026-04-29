@@ -179,6 +179,7 @@ export default function ImportModal() {
     <SafeAreaView className="flex-1 bg-surface dark:bg-surface-dark" edges={['top']}>
       <ModalHeader
         title="Import Data"
+        cancelLabel="Done"
         onCancel={() => { clearCache(); nav.back(); }}
         hideSave
       />

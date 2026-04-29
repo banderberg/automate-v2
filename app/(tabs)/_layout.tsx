@@ -35,7 +35,7 @@ export default function TabLayout() {
         options={{
           title: 'History',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="receipt" size={size} color={color} />
+            <Ionicons name="time" size={size} color={color} />
           ),
           tabBarAccessibilityLabel: 'History tab',
         }}

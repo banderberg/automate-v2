@@ -31,6 +31,8 @@ No pure grays. No `#000`. No `#fff`. Every neutral is tinted warm.
 |-------|-------|-------|
 | `primary` | `#4272C4` | Buttons, links, active tab, FAB, save actions |
 | `primary-light` | `#DBE6F5` | Primary tint backgrounds (add vehicle circle) |
+| `primary-dark` | `#1E3554` | Primary tint backgrounds (dark mode) |
+| `primary-tint` | `#6A9FD8` | Lighter primary for dark mode active states |
 | `fuel` | `#1A9A8F` | Fuel events, efficiency chart line |
 | `fuel-light` | `#D0F5EE` | Fuel event icon background |
 | `service` | `#E8772B` | Service events |
@@ -44,12 +46,20 @@ No pure grays. No `#000`. No `#fff`. Every neutral is tinted warm.
 | `success` | `#10B981` | Upcoming reminders, confirmations |
 | `success-light` | `#D1FAE5` | Upcoming badge background |
 
+### Event Type Color Application
+
+Every event type uses three visual differentiators (never color alone):
+- **Color:** The accent color above (fuel = teal, service = orange, expense = green)
+- **Icon:** Fuel pump / wrench / dollar-sign inside the colored circle
+- **Label:** The type name appears as text near the icon in list views
+
 ### Application Rules
 
 - NativeWind classes: `bg-surface dark:bg-surface-dark`, `text-ink dark:text-ink-on-dark`.
 - Inline styles for chart libraries and precise color control.
 - Dark mode: no shadows. Depth through surface color differentiation only.
 - Event-type tint backgrounds are pastel, never saturated.
+- Focused input borders: 2px `primary` (light) / `#60A5FA` (dark).
 
 ---
 
@@ -118,6 +128,19 @@ Settings rows and form fields use 1px borders (`border-divider dark:border-divid
 
 4px base unit. Varied spacing creates visual hierarchy through space alone.
 
+### Spacing Scale
+
+| Token | Value | Usage |
+|-------|-------|-------|
+| `xs` | 4 | Tight gaps (icon-to-text in chips) |
+| `sm` | 8 | Inner padding in compact components |
+| `md` | 12 | Default gap between elements in a group |
+| `lg` | 16 | Card padding, section gaps |
+| `xl` | 24 | Gap between sections on a screen |
+| `2xl` | 32 | Top/bottom screen padding |
+
+### Contextual Spacing
+
 | Relationship | Spacing |
 |-------------|---------|
 | Tight coupling (label to value) | 2-4px |
@@ -125,6 +148,7 @@ Settings rows and form fields use 1px borders (`border-divider dark:border-divid
 | Between form fields | 16px (`mb-4`) |
 | Between items in a list | 12-16px |
 | Between sections | 24-32px (`mb-6` to `mb-8`) |
+| Between cards | 12px |
 | Hero to secondary metrics | 16px (`mt-4`) |
 | Secondary metrics to first card | 32px (`mb-8`) |
 
@@ -134,7 +158,7 @@ The hero metric area gets the most breathing room. Charts and cards are tighter.
 
 - Horizontal: 16px (`px-4`) standard.
 - Top inset: handled by SafeAreaView `edges={['top']}`.
-- Bottom scroll padding: 40-80px to clear FAB and tab bar.
+- Bottom scroll padding: `paddingBottom: 100` to clear FAB and tab bar.
 
 ---
 
@@ -148,9 +172,11 @@ Bare text row, no container. Six equal-width columns. Selection indicated by wei
 
 Wrapping grid (`flex-row flex-wrap`) for form chips (ChipPicker). Horizontal row (`flex-row gap-2`) for filter chips. Pill shape: `rounded-full`. Selected: accent color background, white text. Unselected: surface background, muted text, subtle border. Touch target: `px-4 py-2` (form) or `px-4 py-1.5` (filter).
 
+Event type filter chips use the event's accent color when selected (fuel = teal, service = orange, expense = green) instead of primary.
+
 ### Segmented Control
 
-Container: `bg-surface rounded-xl border border-divider p-1`. Each segment: `flex-1 py-2 rounded-lg`. Selected: `bg-primary` with white text. Unselected: transparent with `ink-secondary` text.
+Container: `bg-surface rounded-xl border border-divider p-1`. Each segment: `flex-1 py-2 rounded-lg`. Selected: `bg-primary` with white text, border radius 10px (inset). Unselected: transparent with `ink-secondary` text. Transition: 150ms ease.
 
 ### Primary Button
 
@@ -167,13 +193,20 @@ No background, no border. `text-primary font-semibold` or `text-primary font-med
 ### Form Fields
 
 - Background: `bg-card dark:bg-card-dark`
-- Border: 1px `border-divider dark:border-divider-dark`
+- Border: 1px `border-divider dark:border-divider-dark`, 2px focused border on focus
 - Border radius: 12px (`rounded-xl`)
 - Padding: `px-3.5 py-3`
 - Label above: `text-xs ink-muted font-semibold`, `mb-1.5`
 - Placeholder: `#706C67`
 - Suffix units (gal, mi): `text-sm text-ink-muted` right-aligned inside field
 - Prefix ($): `text-sm text-ink-muted mr-1` left-aligned inside field
+- Helper text: below field, `text-xs ink-muted`
+- Error text: below field, `text-xs destructive`
+
+**Read-only / Computed Field (e.g., Total Cost):**
+- Background: `primary-light` (light) / `primary-dark` (dark)
+- Value: weight 600, `primary` color
+- No border
 
 ### Switch
 
@@ -187,13 +220,26 @@ Track: `false: isDark ? '#2A2926' : '#E2E0DB', true: isDark ? '#2E5A9E' : '#A7C4
 
 ## 6. Charts
 
-- **Line chart** (fuel efficiency): 2.5px stroke, teal `#1A9A8F`, curved. Area fill at 10% opacity gradient. Data points: 4px radius, teal fill. Partial fills: hollow dashed circle with card-colored center.
-- **Donut chart** (spending): `innerRadius: 38, radius: 58`. Center: total in weight 800, 16px. Inner circle color matches card background.
-- **Tooltip**: `#1C1B18` background, 8px radius, white text 12px weight 600, `tabular-nums`.
-- **Axis text**: `ink-muted`, 9-10px.
-- **Grid lines**: low-opacity `rulesColor`. X-axis: `divider` color.
-- **Animation**: 500ms, `isAnimated`.
-- **Pointer**: 1px teal strip at 50% opacity, 6px teal pointer dot.
+### Line Chart (Fuel Efficiency)
+
+- Stroke: 2.5px, teal `#1A9A8F`, smooth curve (bezier).
+- Area fill: gradient from teal at 10% opacity to transparent.
+- Data points: 4px radius, teal fill. Partial fills: hollow dashed circle with card-colored center.
+- Active/selected data point: 10px circle with vertical dashed line to x-axis and floating tooltip.
+- X-axis: date labels, `ink-muted`, 9-10px, 4-5 evenly spaced.
+- Y-axis: value labels, `ink-muted`, 9-10px, left side, 3-4 evenly spaced.
+- Grid lines: horizontal only, low-opacity `rulesColor`. X-axis: `divider` color.
+- Height: 160px. No chart border or outer frame.
+- Animation: 500ms ease-out. On period change: 200ms crossfade (no redraw).
+- Pointer: 1px teal strip at 50% opacity, 6px teal pointer dot.
+
+### Donut Chart (Spending)
+
+- `innerRadius: 38, radius: 58`. Segments: fuel, service, expense colors.
+- Gap between segments: 2px.
+- Center: total in weight 800, 16px. Inner circle color matches card background.
+- Selected segment: expands slightly (outer radius + 4px), legend item becomes bold.
+- Tooltip: `#1C1B18` background, 8px radius, white text 12px weight 600, `tabular-nums`.
 
 ---
 
@@ -201,19 +247,27 @@ Track: `false: isDark ? '#2A2926' : '#E2E0DB', true: isDark ? '#2E5A9E' : '#A7C4
 
 ### VehicleSwitcher
 
-Full-width bar below safe area. Vehicle photo (32px circle, `bg-divider` placeholder with car icon) + nickname (`text-base font-bold`) + year/make/model (`text-xs text-ink-muted`) + chevron-down (18px). Background: screen surface. Bottom border: `border-divider`. Opens bottom sheet with vehicle list.
+Full-width bar below safe area. Vehicle photo (32px circle, `bg-divider` placeholder with car icon) + nickname (`text-base font-bold`) + year/make/model (`text-xs text-ink-muted`) + chevron-down (18px). Background: screen surface. Bottom border: `border-divider`. Opens bottom sheet with vehicle list. In the bottom sheet vehicle list, photos are 40px and nicknames use `font-semibold`.
 
 ### EventRow
 
-Left: 36px circle (`w-9 h-9 rounded-full`) with event-type pastel background and colored icon (18px). Center: date + place (`text-sm text-ink`), odometer (`text-xs text-ink-muted`). Right: cost (`text-sm font-semibold text-ink`). Active: `active:bg-surface`. Row dividers inset to text column (`marginLeft: 56`).
+Left: 36px circle (`w-9 h-9 rounded-full`) with event-type pastel background and colored icon (18px). Center: date + place (`text-sm text-ink`), odometer (`text-xs text-ink-muted`). Right: cost (`text-sm font-semibold text-ink`). Active: `active:bg-surface`. Row height: min 64px. Row dividers inset to text column (`marginLeft: 56`). No card wrapping per row — rows sit inside a month group card.
+
+### MonthGroupHeader (History)
+
+Sticky header for each month section. Left: month + year (`font-semibold ink`). Right: month total (`ink-muted`). Background: screen surface (clean when sticky). Bottom border: `border-divider-subtle`. Padding: `px-4 py-2.5`.
+
+### MetricCard (Dashboard)
+
+Three cards in a horizontal row, equal width. Label on top (`text-xs ink-muted`), value below (large, bold). For Avg MPG: trend arrow (green ↑ or red ↓) right of value.
 
 ### EmptyState
 
-Centered flex container. 64px icon at 40% opacity. Title: `text-lg font-bold`. Description: `text-sm text-ink-secondary`. Optional CTA: `bg-primary px-6 py-3 rounded-xl`, `mt-6`.
+Centered flex container. 64px icon at 40% opacity. Title: `text-lg font-bold`, 12px below icon. Description: `text-sm text-ink-secondary`, max 280px wide, 8px below title. Optional CTA: `bg-primary px-6 py-3 rounded-xl`, `mt-6`.
 
 ### ModalHeader
 
-Three-column flex row. Cancel (`text-primary`, left, `min-w-[60px]`), title (`text-base font-semibold`, centered, flex-1), Save (`text-primary font-semibold`, right, disabled: `text-ink-muted`). Background: `bg-card`. Bottom: `border-divider`.
+Height: 56px. Three-column flex row. Cancel (`text-primary`, left, `min-w-[60px]`), title (`text-base font-semibold`, centered, flex-1), Save (`text-primary font-semibold`, right, disabled: `text-ink-muted`). Background: `bg-card`. Bottom: `border-divider`.
 
 ### ReminderCard
 
@@ -223,9 +277,18 @@ Three-column flex row. Cancel (`text-primary`, left, `min-w-[60px]`), title (`te
 
 Vertical list beside donut. Each row: 10px color square (`borderRadius: 3`) + label (`text-sm ink-secondary`) + amount (`text-sm font-semibold ink`, `tabular-nums`) + percentage (`text-xs ink-muted`, `minWidth: 28`). Row gap: 14px.
 
+### Toast / Snackbar
+
+- Position: bottom, 16px above tab bar, centered horizontally.
+- Background: inverted (dark in light mode, light in dark mode).
+- Text: inverse color, `text-sm`. Action button (e.g., "Undo"): `primary` color, `font-semibold`.
+- Border radius: 12px. Padding: `px-3 py-2.5`. Shadow: `0 4px 12px rgba(0,0,0,0.15)`.
+- Dismisses on undo press. No auto-dismiss timer.
+- Enter: slide up 20px + fade in, 200ms. Exit: fade out, 150ms.
+
 ### Bottom Sheet
 
-`@gorhom/bottom-sheet` with dynamic sizing. Handle: `#E2E0DB`. Background: `#FEFDFB`. Backdrop: press-to-close. Section headers: `text-xs font-semibold text-ink-muted uppercase tracking-wider`. Bottom padding: `h-6` or `h-8`.
+`@gorhom/bottom-sheet` with dynamic sizing. Handle: 36px wide, 4px tall, `#E2E0DB`, centered, 8px from top. Background: `#FEFDFB`. Border radius (top): 24px. Backdrop: black at 40% opacity, press-to-close. Content padding: 16px horizontal, 12px below handle. Section headers: `text-xs font-semibold text-ink-muted uppercase tracking-wider`. Bottom padding: `h-6` or `h-8`.
 
 ### AddEvent Menu
 
@@ -233,19 +296,32 @@ Three rows in bottom sheet. 40px event-type circles (pastel bg + colored icon 20
 
 ---
 
-## 8. Motion
+## 8. Tab Bar
 
-- Screen transitions: platform defaults via expo-router native stack
-- Chart draw: 500ms ease-out
-- FAB: haptic impact (light), opens bottom sheet with spring
-- Bottom sheet: gorhom default spring
-- Button press: opacity 0.85, implicit timing
-- Delete swipe: gesture-handler Swipeable, overshoot disabled
+- Background: screen surface with top border `border-divider`.
+- Height: platform default (49px iOS, 56px Android) + safe area.
+- Icons: 24px, `ink-muted` when inactive, `primary` when active.
+- Labels: 10px weight 600, same color logic.
+- Active indicator: none (color change is sufficient).
+- The FAB sits above the tab bar, not overlapping it.
+
+---
+
+## 9. Motion
+
+- **Reduced motion:** Check `AccessibilityInfo.isReduceMotionEnabled()`. If true, disable all non-essential animations (chart drawing, FAB scale, sheet spring). Keep only functional transitions (screen push/pop).
+- Screen transitions: platform defaults via expo-router native stack.
+- Chart draw: 500ms ease-out from left to right. Period change: 200ms crossfade.
+- FAB: scale to 0.92, 100ms, haptic impact (light), opens bottom sheet with spring.
+- Bottom sheet: gorhom default spring (damping: 0.85).
+- Button press: opacity 0.85, implicit timing.
+- Delete swipe: red background reveals proportionally, "Delete" fades in at 40% threshold. Overshoot disabled.
+- Chip selection: background color transition, 150ms ease.
 - No decorative motion. Motion conveys state changes only.
 
 ---
 
-## 9. Icons
+## 10. Icons
 
 Ionicons (`@expo/vector-icons`) throughout. Sizing:
 - Tab bar: navigator default
@@ -256,17 +332,17 @@ Ionicons (`@expo/vector-icons`) throughout. Sizing:
 
 ---
 
-## 10. Dark Mode
+## 11. Dark Mode
 
 Same layout, different palette. Key differences:
 - No shadows. Depth from surface layering (`surface-dark` < `card-dark` < `divider-dark`).
-- Tab bar active tint: `#60a5fa` (lighter blue) for contrast on dark surfaces.
+- Tab bar active tint: `#6A9FD8` (`primary-tint`) for contrast on dark surfaces.
 - Bottom sheets use hardcoded light background (`#FEFDFB`). Known limitation.
 - Event-type pastel backgrounds are designed for light mode; acceptable on dark but could be refined.
 
 ---
 
-## 11. How to Apply
+## 12. How to Apply
 
 1. Use Tailwind tokens from `tailwind.config.js` via NativeWind classes for standard surfaces and text.
 2. For chart colors, shadows, and values not in Tailwind, use inline `style={}` with hex values from this document.

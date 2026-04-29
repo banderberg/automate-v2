@@ -96,3 +96,20 @@ export async function removeAllForEvent(eventId: string): Promise<void> {
   // Delete DB rows
   await db.runAsync('DELETE FROM event_photo WHERE eventId = ?', [eventId]);
 }
+
+export async function replaceAllForEvent(
+  eventId: string,
+  filePathsInOrder: string[]
+): Promise<void> {
+  const db = getDatabase();
+  await db.runAsync('DELETE FROM event_photo WHERE eventId = ?', [eventId]);
+  const now = new Date().toISOString();
+  for (let i = 0; i < filePathsInOrder.length; i++) {
+    const id = Crypto.randomUUID();
+    await db.runAsync(
+      `INSERT INTO event_photo (id, eventId, filePath, sortOrder, createdAt)
+       VALUES (?, ?, ?, ?, ?)`,
+      [id, eventId, filePathsInOrder[i], i, now]
+    );
+  }
+}

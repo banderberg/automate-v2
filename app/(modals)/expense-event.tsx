@@ -53,6 +53,7 @@ export default function ExpenseEventModal() {
   const [odometerError, setOdometerError] = useState('');
   const [categoryError, setCategoryError] = useState('');
   const [bounds, setBounds] = useState<{ floor: number | null; ceiling: number | null }>({ floor: null, ceiling: null });
+  const [boundsLoaded, setBoundsLoaded] = useState(false);
   const [saving, setSaving] = useState(false);
   const isDirty = useRef(false);
   const { showDialog, dialogProps } = useDialog();
@@ -83,6 +84,7 @@ export default function ExpenseEventModal() {
         setCost(String(existing.cost));
         setNotes(existing.notes ?? '');
       }
+      setBoundsLoaded(true);
       (async () => {
         const existingPhotos = await eventPhotoQueries.getByEvent(eventId);
         setPhotos(
@@ -95,16 +97,17 @@ export default function ExpenseEventModal() {
       })();
     } else {
       setDate(new Date().toISOString().split('T')[0]);
+      setBoundsLoaded(true);
     }
   }, []);
 
   useEffect(() => {
-    if (!activeVehicle || !date) return;
+    if (!activeVehicle || !date || !boundsLoaded) return;
     (async () => {
-      const b = await eventQueries.getOdometerBounds(activeVehicle.id, date);
+      const b = await eventQueries.getOdometerBounds(activeVehicle.id, date, eventId);
       setBounds(b);
     })();
-  }, [activeVehicle?.id, date]);
+  }, [activeVehicle?.id, date, boundsLoaded]);
 
   useEffect(() => {
     const val = parseInt(odometer, 10);

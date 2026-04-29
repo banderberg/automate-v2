@@ -6,6 +6,7 @@ export interface BackupInfo {
   vehicleCount: number;
   eventCount: number;
   reminderCount: number;
+  documentCount: number;
 }
 
 export async function createBackup(): Promise<string> {
@@ -64,10 +65,21 @@ export async function getBackupInfo(fileUri: string): Promise<BackupInfo> {
         'SELECT COUNT(*) as count FROM reminder'
       );
 
+      let docCount = 0;
+      try {
+        const docRow = await inspectDb.getFirstAsync<{ count: number }>(
+          'SELECT COUNT(*) as count FROM vehicle_document'
+        );
+        docCount = docRow?.count ?? 0;
+      } catch {
+        // Table may not exist in older backups
+      }
+
       return {
         vehicleCount: vehicleRow?.count ?? 0,
         eventCount: eventRow?.count ?? 0,
         reminderCount: reminderRow?.count ?? 0,
+        documentCount: docCount,
       };
     } finally {
       await inspectDb.closeAsync();

@@ -149,14 +149,16 @@ export async function remove(id: string): Promise<void> {
 export async function setActive(id: string): Promise<void> {
   const db = getDatabase();
   const now = new Date().toISOString();
-  await db.runAsync(
-    'UPDATE vehicle SET isActive = 0, updatedAt = ? WHERE isActive = 1',
-    [now]
-  );
-  await db.runAsync(
-    'UPDATE vehicle SET isActive = 1, updatedAt = ? WHERE id = ?',
-    [now, id]
-  );
+  await db.withTransactionAsync(async () => {
+    await db.runAsync(
+      'UPDATE vehicle SET isActive = 0, updatedAt = ? WHERE isActive = 1',
+      [now]
+    );
+    await db.runAsync(
+      'UPDATE vehicle SET isActive = 1, updatedAt = ? WHERE id = ?',
+      [now, id]
+    );
+  });
 }
 
 export async function updateSortOrder(

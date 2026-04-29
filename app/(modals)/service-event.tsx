@@ -59,6 +59,7 @@ export default function ServiceEventModal() {
   const [serviceTypeError, setServiceTypeError] = useState('');
   const [estimatedOdometer, setEstimatedOdometer] = useState<number | null>(null);
   const [bounds, setBounds] = useState<{ floor: number | null; ceiling: number | null }>({ floor: null, ceiling: null });
+  const [boundsLoaded, setBoundsLoaded] = useState(false);
   const [saving, setSaving] = useState(false);
   const isDirty = useRef(false);
   const { showDialog, dialogProps } = useDialog();
@@ -91,6 +92,7 @@ export default function ServiceEventModal() {
         setPlaceId(existing.placeId);
         setNotes(existing.notes ?? '');
       }
+      setBoundsLoaded(true);
       (async () => {
         const types = await eventServiceTypeQueries.getByEvent(eventId);
         setSelectedServiceTypeIds(types.map((t) => t.id));
@@ -108,17 +110,18 @@ export default function ServiceEventModal() {
         const defaults = await getSmartDefaults('service', activeVehicle.id);
         if (defaults.date) setDate(defaults.date);
         if (defaults.odometer != null) setEstimatedOdometer(defaults.odometer);
+        setBoundsLoaded(true);
       })();
     }
   }, []);
 
   useEffect(() => {
-    if (!activeVehicle || !date) return;
+    if (!activeVehicle || !date || !boundsLoaded) return;
     (async () => {
-      const b = await eventQueries.getOdometerBounds(activeVehicle.id, date);
+      const b = await eventQueries.getOdometerBounds(activeVehicle.id, date, eventId);
       setBounds(b);
     })();
-  }, [activeVehicle?.id, date]);
+  }, [activeVehicle?.id, date, boundsLoaded]);
 
   useEffect(() => {
     const val = parseInt(odometer, 10);

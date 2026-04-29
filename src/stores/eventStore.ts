@@ -83,7 +83,11 @@ export const useEventStore = create<EventStore>((set, get) => ({
         eventQueries.getByVehicle(vehicleId),
         eventServiceTypeQueries.getLabelsByVehicle(vehicleId),
       ]);
-      set({ events, serviceLabels, isLoading: false });
+      const { pendingDelete } = get();
+      const filtered = pendingDelete
+        ? events.filter((e) => e.id !== pendingDelete.event.id)
+        : events;
+      set({ events: filtered, serviceLabels, isLoading: false });
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Failed to load events';
       set({ error: msg, isLoading: false });
@@ -135,26 +139,16 @@ export const useEventStore = create<EventStore>((set, get) => ({
       }
 
       if (photoUris !== undefined) {
-        // Get existing photos to diff
         const existingPhotos = await eventPhotoQueries.getByEvent(id);
-        const existingUris = new Set(existingPhotos.map((p) => p.filePath));
         const newUris = new Set(photoUris);
 
-        // Remove photos that are no longer in the list
         for (const photo of existingPhotos) {
           if (!newUris.has(photo.filePath)) {
             await eventPhotoQueries.remove(photo.id);
           }
         }
 
-        // Add new photos (those not already in the DB)
-        let sortOrder = 0;
-        for (const uri of photoUris) {
-          if (!existingUris.has(uri)) {
-            await eventPhotoQueries.insert(id, uri, sortOrder);
-          }
-          sortOrder++;
-        }
+        await eventPhotoQueries.replaceAllForEvent(id, photoUris);
       }
 
       const updatedEvent = await eventQueries.getById(id);
