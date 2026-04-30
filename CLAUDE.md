@@ -88,6 +88,7 @@ src/
       events.ts
       eventPhotos.ts
       eventServiceTypes.ts
+      insightImpressions.ts # CRUD for insight_impressions table
       places.ts
       reminders.ts
       settings.ts
@@ -96,8 +97,14 @@ src/
   stores/                # Zustand stores (no store imports another store)
     orchestrator.ts      # Cross-store workflows — the only module importing multiple stores
   services/              # Pure business logic — no store imports, no DB mutations
+    insightEngine.ts     # Pure insight scoring engine — 8 insight types
   hooks/                 # Custom React hooks
+    useInsights.ts       # Insight suppression and impression management
   components/            # Reusable UI components
+    InsightCard.tsx       # Swipe-to-dismiss insight card
+    InsightCards.tsx      # Container for 0–3 insight cards
+    ProjectedCost.tsx    # Projected annual cost progress bar
+    SpendingBarChart.tsx  # Stacked monthly/weekly spending bar chart
   constants/             # Seed data lists, unit definitions, theme tokens
   types/
     index.ts             # All TypeScript interfaces
