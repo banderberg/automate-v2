@@ -17,6 +17,14 @@ import { useReferenceDataStore } from '@/src/stores/referenceDataStore';
 import { useActiveVehicle } from '@/src/hooks/useActiveVehicle';
 import { useDashboardMetrics } from '@/src/hooks/useDashboardMetrics';
 import { getOdometerLabel, getEfficiencyLabel } from '@/src/constants/units';
+import { ProjectedCost } from '@/src/components/ProjectedCost';
+import { InsightCards } from '@/src/components/InsightCards';
+import { SpendingBarChart } from '@/src/components/SpendingBarChart';
+import { useInsights } from '@/src/hooks/useInsights';
+import { getServiceEventsByType } from '@/src/db/queries/eventServiceTypes';
+import { getFuelEventsByFuelType } from '@/src/db/queries/events';
+import type { InsightEngineInput } from '@/src/services/insightEngine';
+import { computeFuelEfficiency } from '@/src/services/fuelEfficiency';
 
 const PERIODS = [
   { value: '1M', label: '1M' },
@@ -60,6 +68,61 @@ export default function DashboardScreen() {
   const [showCelebration, setShowCelebration] = useState(false);
   const prevEventCountRef = useRef(eventCount);
   const metrics = useDashboardMetrics(period);
+
+  const [insightInput, setInsightInput] = useState<InsightEngineInput | null>(null);
+
+  useEffect(() => {
+    if (!activeVehicle || eventCount === 0) {
+      setInsightInput(null);
+      return;
+    }
+    let cancelled = false;
+
+    async function loadInsightData() {
+      const events = useEventStore.getState().events;
+      const [serviceEventsByType, crossFills] = await Promise.all([
+        getServiceEventsByType(activeVehicle!.id),
+        getFuelEventsByFuelType(activeVehicle!.fuelType),
+      ]);
+
+      const fuelEvents = events
+        .filter(e => e.type === 'fuel' && e.odometer != null)
+        .sort((a, b) => a.odometer! - b.odometer!);
+      const effResult = computeFuelEfficiency(fuelEvents);
+
+      const fullSegments = effResult.segments.filter(s => !s.isPartial && s.efficiency > 0);
+      const recent3 = fullSegments.slice(-3);
+      const recentRollingAverage = recent3.length === 3
+        ? recent3.reduce((s, seg) => s + seg.efficiency, 0) / 3
+        : null;
+
+      if (cancelled) return;
+
+      setInsightInput({
+        events,
+        vehicle: activeVehicle!,
+        periodMetrics: {
+          totalSpent: metrics.totalSpent,
+          previousPeriodTotal: metrics.previousPeriodTotal,
+          costPerMile: metrics.costPerMile,
+          previousCostPerMile: metrics.previousCostPerMile,
+          periodLabel: metrics.periodLabel,
+        },
+        serviceEventsByType,
+        places,
+        crossVehicleFuelFills: crossFills,
+        efficiencyData: {
+          average: effResult.average,
+          recentRollingAverage,
+        },
+      });
+    }
+
+    loadInsightData();
+    return () => { cancelled = true; };
+  }, [activeVehicle?.id, eventCount, metrics.totalSpent, period]);
+
+  const { insights, dismiss } = useInsights(insightInput, activeVehicle?.id ?? null);
 
   useEffect(() => {
     if (prevEventCountRef.current === 0 && eventCount > 0) {
@@ -282,6 +345,18 @@ export default function DashboardScreen() {
               .{cents}
             </Text>
           </View>
+          {metrics.totalSpentDelta && (
+            <Text
+              style={{
+                fontSize: 12,
+                fontWeight: '500',
+                color: metrics.totalSpentDelta.direction === 'up' ? '#EF4444' : '#10B981',
+                marginTop: 4,
+              }}
+            >
+              {metrics.totalSpentDelta.direction === 'up' ? '↑' : '↓'} {Math.round(Math.abs(metrics.totalSpentDelta.percentage) * 100)}% vs prev {metrics.periodLabel}
+            </Text>
+          )}
         </View>
 
         {/* ── Secondary metrics ── */}
@@ -314,6 +389,11 @@ export default function DashboardScreen() {
             >
               {metrics.costPerMile != null ? `$${metrics.costPerMile.toFixed(2)}` : '--'}
             </Text>
+            {metrics.costPerMileDelta && (
+              <Text style={{ fontSize: 11, color: metrics.costPerMileDelta.direction === 'up' ? '#EF4444' : '#10B981', marginTop: 2 }}>
+                {metrics.costPerMileDelta.direction === 'up' ? '↑' : '↓'} ${Math.abs(metrics.costPerMileDelta.value).toFixed(2)}
+              </Text>
+            )}
           </View>
 
           <View style={{ width: 1, backgroundColor: isDark ? '#2A2926' : '#E2E0DB', marginHorizontal: 20 }} />
@@ -356,8 +436,25 @@ export default function DashboardScreen() {
                 />
               )}
             </View>
+            {metrics.efficiencyDelta && (
+              <Text style={{ fontSize: 11, color: metrics.efficiencyDelta.direction === 'up' ? '#10B981' : '#EF4444', marginTop: 2 }}>
+                {metrics.efficiencyDelta.value > 0 ? '+' : ''}{metrics.efficiencyDelta.value.toFixed(1)}
+              </Text>
+            )}
           </View>
         </View>
+
+        {metrics.projectedAnnualCost != null && metrics.ytdSpent != null && (
+          <View className="px-4 mb-6">
+            <ProjectedCost
+              projectedAnnual={metrics.projectedAnnualCost}
+              ytdSpent={metrics.ytdSpent}
+              isDark={isDark}
+            />
+          </View>
+        )}
+
+        <InsightCards insights={insights} isDark={isDark} onDismiss={dismiss} />
 
         {/* ── Fuel efficiency chart ── */}
         {lineChartData.length >= 2 ? (
@@ -441,6 +538,17 @@ export default function DashboardScreen() {
             <Text style={{ fontSize: 12, color: isDark ? '#8A8680' : '#706C67', textAlign: 'center', paddingVertical: 12 }}>
               Log 2 or more fill-ups to see your trend
             </Text>
+          </View>
+        )}
+
+        {metrics.monthlySpending.length >= 2 && (
+          <View className="mx-4 mb-6">
+            <SpendingBarChart
+              data={metrics.monthlySpending}
+              isDark={isDark}
+              chartWidth={chartWidth}
+              period={period}
+            />
           </View>
         )}
 
