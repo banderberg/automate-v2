@@ -1,5 +1,5 @@
 import type { SQLiteDatabase } from 'expo-sqlite';
-import { ALL_CREATE_TABLES, CREATE_INDEXES } from './schema';
+import { ALL_CREATE_TABLES, CREATE_INDEXES, CREATE_INSIGHT_IMPRESSIONS_TABLE, CREATE_INSIGHT_IMPRESSIONS_INDEX } from './schema';
 import { seedDatabase } from './seed';
 
 interface Migration {
@@ -60,6 +60,13 @@ const migrations: Migration[] = [
       await db.execAsync(
         'CREATE INDEX IF NOT EXISTS idx_vehicle_document_vehicle ON vehicle_document(vehicleId);'
       );
+    },
+  },
+  {
+    version: 4,
+    up: async (db: SQLiteDatabase) => {
+      await db.execAsync(CREATE_INSIGHT_IMPRESSIONS_TABLE);
+      await db.execAsync(CREATE_INSIGHT_IMPRESSIONS_INDEX);
     },
   },
 ];

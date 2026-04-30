@@ -119,6 +119,21 @@ export const CREATE_SETTINGS_TABLE = `
   );
 `;
 
+export const CREATE_INSIGHT_IMPRESSIONS_TABLE = `
+  CREATE TABLE IF NOT EXISTS insight_impressions (
+    id TEXT PRIMARY KEY,
+    vehicle_id TEXT NOT NULL REFERENCES vehicle(id) ON DELETE CASCADE,
+    insight_type TEXT NOT NULL,
+    data_hash TEXT NOT NULL,
+    shown_at TEXT NOT NULL,
+    dismissed_at TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+`;
+
+export const CREATE_INSIGHT_IMPRESSIONS_INDEX =
+  'CREATE INDEX IF NOT EXISTS idx_insight_impressions_vehicle_type ON insight_impressions(vehicle_id, insight_type);';
+
 export const CREATE_INDEXES = [
   'CREATE INDEX IF NOT EXISTS idx_event_vehicle_date ON event(vehicleId, date);',
   'CREATE INDEX IF NOT EXISTS idx_event_vehicle_odometer ON event(vehicleId, odometer);',
