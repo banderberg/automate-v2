@@ -242,3 +242,17 @@ export async function getEventsWithOdometer(
   );
   return rows.map(mapRow);
 }
+
+export async function getFuelEventsByFuelType(
+  fuelType: string
+): Promise<VehicleEvent[]> {
+  const db = getDatabase();
+  const rows = await db.getAllAsync<EventRow>(
+    `SELECT e.* FROM event e
+     JOIN vehicle v ON v.id = e.vehicleId
+     WHERE e.type = 'fuel' AND v.fuelType = ?
+     ORDER BY e.date DESC`,
+    [fuelType]
+  );
+  return rows.map(mapRow);
+}
