@@ -12,7 +12,6 @@ import {
   LayoutAnimation,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useColorScheme } from 'nativewind';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -22,16 +21,12 @@ import { OdometerField } from '@/src/components/OdometerField';
 import { PlaceAutocomplete } from '@/src/components/PlaceAutocomplete';
 import { EventPhotos } from '@/src/components/EventPhotos';
 import { ConfirmDialog } from '@/src/components/ConfirmDialog';
-import { useDialog } from '@/src/hooks/useDialog';
-import { useVehicleStore } from '@/src/stores/vehicleStore';
+import { useEventForm } from '@/src/hooks/useEventForm';
 import { useEventStore } from '@/src/stores/eventStore';
 import { useToastStore } from '@/src/stores/toastStore';
 import { onEventSaved } from '@/src/stores/orchestrator';
-import { validateOdometer } from '@/src/services/odometerValidator';
-import * as eventQueries from '@/src/db/queries/events';
-import * as eventPhotoQueries from '@/src/db/queries/eventPhotos';
 import { getVolumeLabel } from '@/src/constants/units';
-import type { VehicleEvent, LocalPhoto } from '@/src/types';
+import type { VehicleEvent } from '@/src/types';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -63,18 +58,18 @@ function calcCardShadow(isDark: boolean) {
 }
 
 export default function FuelEventModal() {
-  const router = useRouter();
-  const { eventId } = useLocalSearchParams<{ eventId?: string }>();
-  const isEditing = !!eventId;
-  const activeVehicle = useVehicleStore((s) => s.activeVehicle);
+  const {
+    router, eventId, isEditing, activeVehicle, existingEvent,
+    date, setDate, odometer, setOdometer, notes, setNotes, photos, setPhotos,
+    odometerError, saving, setSaving, setBoundsLoaded,
+    markDirty, handleOdometerBlur, handleCancel, handleDelete,
+    showDialog, dialogProps,
+  } = useEventForm({ type: 'fuel', deleteLabel: 'Fill-Up' });
+
   const addEvent = useEventStore((s) => s.addEvent);
   const updateEvent = useEventStore((s) => s.updateEvent);
-  const deleteEvent = useEventStore((s) => s.deleteEvent);
   const getSmartDefaults = useEventStore((s) => s.getSmartDefaults);
-  const events = useEventStore((s) => s.events);
 
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
-  const [odometer, setOdometer] = useState('');
   const [volume, setVolume] = useState('');
   const [pricePerUnit, setPricePerUnit] = useState('');
   const [totalCost, setTotalCost] = useState('');
@@ -83,22 +78,13 @@ export default function FuelEventModal() {
   const [showDiscount, setShowDiscount] = useState(false);
   const [isPartialFill, setIsPartialFill] = useState(false);
   const [placeId, setPlaceId] = useState<string | undefined>();
-  const [notes, setNotes] = useState('');
-  const [photos, setPhotos] = useState<LocalPhoto[]>([]);
 
-  const isDirty = useRef(false);
   const discountRef = useRef<TextInput>(null);
   const priceRef = useRef<TextInput>(null);
   const totalRef = useRef<TextInput>(null);
-  const { showDialog, dialogProps } = useDialog();
 
   const [odometerTag, setOdometerTag] = useState<string | null>(null);
   const [priceTag, setPriceTag] = useState<string | null>(null);
-
-  const [odometerError, setOdometerError] = useState('');
-  const [bounds, setBounds] = useState<{ floor: number | null; ceiling: number | null }>({ floor: null, ceiling: null });
-  const [boundsLoaded, setBoundsLoaded] = useState(false);
-  const [saving, setSaving] = useState(false);
 
   const volumeUnit = activeVehicle?.volumeUnit ?? 'gallons';
   const odometerUnit = activeVehicle?.odometerUnit ?? 'miles';
@@ -113,31 +99,14 @@ export default function FuelEventModal() {
   useEffect(() => {
     if (!activeVehicle) return;
 
-    if (isEditing && eventId) {
-      const existing = events.find((e) => e.id === eventId);
-      if (existing) {
-        setDate(existing.date);
-        setOdometer(existing.odometer != null ? String(existing.odometer) : '');
-        setVolume(existing.volume != null ? String(existing.volume) : '');
-        setPricePerUnit(existing.pricePerUnit != null ? String(existing.pricePerUnit) : '');
-        setDiscountPerUnit(existing.discountPerUnit != null ? String(existing.discountPerUnit) : '');
-        setIsPartialFill(!!existing.isPartialFill);
-        if (existing.cost != null) setTotalCost(String(existing.cost));
-        setPlaceId(existing.placeId);
-        setNotes(existing.notes ?? '');
-        if (existing.discountPerUnit) setShowDiscount(true);
-        setBoundsLoaded(true);
-      }
-      (async () => {
-        const existingPhotos = await eventPhotoQueries.getByEvent(eventId);
-        setPhotos(
-          existingPhotos.map((p) => ({
-            id: p.id,
-            uri: p.filePath,
-            isNew: false,
-          }))
-        );
-      })();
+    if (isEditing && existingEvent) {
+      setVolume(existingEvent.volume != null ? String(existingEvent.volume) : '');
+      setPricePerUnit(existingEvent.pricePerUnit != null ? String(existingEvent.pricePerUnit) : '');
+      setDiscountPerUnit(existingEvent.discountPerUnit != null ? String(existingEvent.discountPerUnit) : '');
+      setIsPartialFill(!!existingEvent.isPartialFill);
+      if (existingEvent.cost != null) setTotalCost(String(existingEvent.cost));
+      setPlaceId(existingEvent.placeId);
+      if (existingEvent.discountPerUnit) setShowDiscount(true);
     } else {
       (async () => {
         const defaults = await getSmartDefaults('fuel', activeVehicle.id);
@@ -154,21 +123,10 @@ export default function FuelEventModal() {
           setDiscountPerUnit(String(defaults.discountPerUnit));
           setShowDiscount(true);
         }
-        // placeId intentionally not pre-filled — stations vary too much
         setBoundsLoaded(true);
       })();
     }
   }, []);
-
-  useEffect(() => {
-    if (!activeVehicle || !date || !boundsLoaded) return;
-    (async () => {
-      const b = await eventQueries.getOdometerBounds(activeVehicle.id, date, eventId);
-      setBounds(b);
-    })();
-  }, [activeVehicle?.id, date, boundsLoaded]);
-
-  // --- Derived computation (replaces three-way sync) ---
 
   const computedTotal = useMemo(() => {
     if (entryMode !== 'price') return null;
@@ -204,21 +162,17 @@ export default function FuelEventModal() {
     return !isNaN(price) && price > 0 ? price : null;
   }, [entryMode, computedPrice, pricePerUnit]);
 
-  // --- Handlers ---
-
-  const markDirty = useCallback(() => { isDirty.current = true; }, []);
-
   const handleOdometerChange = useCallback((text: string) => {
     setOdometer(text);
     setOdometerTag(null);
-    isDirty.current = true;
-  }, []);
+    markDirty();
+  }, [setOdometer, markDirty]);
 
   const handlePriceChange = useCallback((text: string) => {
     setPricePerUnit(text);
     setPriceTag(null);
-    isDirty.current = true;
-  }, []);
+    markDirty();
+  }, [markDirty]);
 
   const handleModeSwitch = useCallback(() => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -249,23 +203,6 @@ export default function FuelEventModal() {
       setTimeout(() => discountRef.current?.focus(), 100);
     }
   }, [showDiscount]);
-
-  useEffect(() => {
-    const val = parseInt(odometer, 10);
-    if (isNaN(val) || !val) return;
-    const result = validateOdometer(val, bounds);
-    setOdometerError(result.valid ? '' : result.message ?? 'Invalid odometer');
-  }, [bounds]);
-
-  const handleOdometerBlur = useCallback(() => {
-    const val = parseInt(odometer, 10);
-    if (isNaN(val) || !val) {
-      setOdometerError('');
-      return;
-    }
-    const result = validateOdometer(val, bounds);
-    setOdometerError(result.valid ? '' : result.message ?? 'Invalid odometer');
-  }, [odometer, bounds]);
 
   const canSave = useMemo(() => {
     if (saving) return false;
@@ -318,32 +255,6 @@ export default function FuelEventModal() {
       setSaving(false);
     }
   }, [canSave, activeVehicle, date, odometer, volume, resolvedCost, resolvedPricePerUnit, discountPerUnit, isPartialFill, placeId, notes, isEditing, eventId, photos]);
-
-  const handleCancel = useCallback(() => {
-    if (isDirty.current) {
-      showDialog('Discard Changes?', 'You have unsaved changes.', [
-        { text: 'Keep Editing', style: 'cancel' },
-        { text: 'Discard', style: 'destructive', onPress: () => router.back() },
-      ]);
-    } else {
-      router.back();
-    }
-  }, [router]);
-
-  const handleDelete = useCallback(() => {
-    if (!eventId) return;
-    showDialog('Delete Fill-Up', 'This cannot be undone.', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete',
-        style: 'destructive',
-        onPress: async () => {
-          await deleteEvent(eventId);
-          router.back();
-        },
-      },
-    ]);
-  }, [eventId, deleteEvent, router]);
 
   const ghostColor = isDark ? '#54524D' : '#A8A49D';
 

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -9,7 +9,6 @@ import {
   Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter, useLocalSearchParams } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { ModalHeader } from '@/src/components/ModalHeader';
 import { DateField } from '@/src/components/DateField';
@@ -18,51 +17,36 @@ import { ChipPicker } from '@/src/components/ChipPicker';
 import { PlaceAutocomplete } from '@/src/components/PlaceAutocomplete';
 import { EventPhotos } from '@/src/components/EventPhotos';
 import { ConfirmDialog } from '@/src/components/ConfirmDialog';
-import { useDialog } from '@/src/hooks/useDialog';
-import { useVehicleStore } from '@/src/stores/vehicleStore';
+import { useEventForm } from '@/src/hooks/useEventForm';
 import { useEventStore } from '@/src/stores/eventStore';
 import { useToastStore } from '@/src/stores/toastStore';
 import { onEventSaved } from '@/src/stores/orchestrator';
 import { useReferenceDataStore } from '@/src/stores/referenceDataStore';
-import { validateOdometer } from '@/src/services/odometerValidator';
-import * as eventQueries from '@/src/db/queries/events';
 import * as eventServiceTypeQueries from '@/src/db/queries/eventServiceTypes';
-import * as eventPhotoQueries from '@/src/db/queries/eventPhotos';
-import type { VehicleEvent, LocalPhoto } from '@/src/types';
+import type { VehicleEvent } from '@/src/types';
 
 export default function ServiceEventModal() {
-  const router = useRouter();
-  const { eventId } = useLocalSearchParams<{ eventId?: string }>();
-  const isEditing = !!eventId;
-  const activeVehicle = useVehicleStore((s) => s.activeVehicle);
+  const {
+    router, eventId, isEditing, activeVehicle, existingEvent,
+    date, setDate, odometer, setOdometer, cost, setCost, notes, setNotes, photos, setPhotos,
+    odometerError, saving, setSaving, setBoundsLoaded,
+    markDirty, handleOdometerBlur, handleCancel, handleDelete,
+    showDialog, dialogProps,
+  } = useEventForm({ type: 'service', deleteLabel: 'Service' });
+
   const addEvent = useEventStore((s) => s.addEvent);
   const updateEvent = useEventStore((s) => s.updateEvent);
-  const deleteEvent = useEventStore((s) => s.deleteEvent);
   const getSmartDefaults = useEventStore((s) => s.getSmartDefaults);
-  const events = useEventStore((s) => s.events);
   const rawServiceTypes = useReferenceDataStore((s) => s.serviceTypes);
   const serviceLabels = useEventStore((s) => s.serviceLabels);
   const addServiceType = useReferenceDataStore((s) => s.addServiceType);
   const updateServiceType = useReferenceDataStore((s) => s.updateServiceType);
   const deleteServiceType = useReferenceDataStore((s) => s.deleteServiceType);
 
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
-  const [odometer, setOdometer] = useState('');
   const [selectedServiceTypeIds, setSelectedServiceTypeIds] = useState<string[]>([]);
-  const [cost, setCost] = useState('');
   const [placeId, setPlaceId] = useState<string | undefined>();
-  const [notes, setNotes] = useState('');
-
-  const [photos, setPhotos] = useState<LocalPhoto[]>([]);
-
-  const [odometerError, setOdometerError] = useState('');
   const [serviceTypeError, setServiceTypeError] = useState('');
   const [estimatedOdometer, setEstimatedOdometer] = useState<number | null>(null);
-  const [bounds, setBounds] = useState<{ floor: number | null; ceiling: number | null }>({ floor: null, ceiling: null });
-  const [boundsLoaded, setBoundsLoaded] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const isDirty = useRef(false);
-  const { showDialog, dialogProps } = useDialog();
 
   const odometerUnit = activeVehicle?.odometerUnit ?? 'miles';
   const title = isEditing ? 'Edit Service' : 'Add Service';
@@ -84,26 +68,10 @@ export default function ServiceEventModal() {
     if (!activeVehicle) return;
 
     if (isEditing && eventId) {
-      const existing = events.find((e) => e.id === eventId);
-      if (existing) {
-        setDate(existing.date);
-        setOdometer(existing.odometer != null ? String(existing.odometer) : '');
-        setCost(String(existing.cost));
-        setPlaceId(existing.placeId);
-        setNotes(existing.notes ?? '');
-      }
-      setBoundsLoaded(true);
+      if (existingEvent) setPlaceId(existingEvent.placeId);
       (async () => {
         const types = await eventServiceTypeQueries.getByEvent(eventId);
         setSelectedServiceTypeIds(types.map((t) => t.id));
-        const existingPhotos = await eventPhotoQueries.getByEvent(eventId);
-        setPhotos(
-          existingPhotos.map((p) => ({
-            id: p.id,
-            uri: p.filePath,
-            isNew: false,
-          }))
-        );
       })();
     } else {
       (async () => {
@@ -115,36 +83,11 @@ export default function ServiceEventModal() {
     }
   }, []);
 
-  useEffect(() => {
-    if (!activeVehicle || !date || !boundsLoaded) return;
-    (async () => {
-      const b = await eventQueries.getOdometerBounds(activeVehicle.id, date, eventId);
-      setBounds(b);
-    })();
-  }, [activeVehicle?.id, date, boundsLoaded]);
-
-  useEffect(() => {
-    const val = parseInt(odometer, 10);
-    if (isNaN(val) || !val) return;
-    const result = validateOdometer(val, bounds);
-    setOdometerError(result.valid ? '' : result.message ?? 'Invalid odometer');
-  }, [bounds]);
-
-  const handleOdometerBlur = useCallback(() => {
-    const val = parseInt(odometer, 10);
-    if (isNaN(val) || !val) {
-      setOdometerError('');
-      return;
-    }
-    const result = validateOdometer(val, bounds);
-    setOdometerError(result.valid ? '' : result.message ?? 'Invalid odometer');
-  }, [odometer, bounds]);
-
   const handleServiceTypesChange = useCallback((ids: string[]) => {
-    isDirty.current = true;
+    markDirty();
     setSelectedServiceTypeIds(ids);
     if (ids.length > 0) setServiceTypeError('');
-  }, []);
+  }, [markDirty]);
 
   const canSave = useMemo(() => {
     if (saving) return false;
@@ -194,33 +137,7 @@ export default function ServiceEventModal() {
     } finally {
       setSaving(false);
     }
-  }, [canSave, activeVehicle, date, odometer, cost, placeId, notes, selectedServiceTypeIds, isEditing, eventId]);
-
-  const handleCancel = useCallback(() => {
-    if (isDirty.current) {
-      showDialog('Discard Changes?', 'You have unsaved changes.', [
-        { text: 'Keep Editing', style: 'cancel' },
-        { text: 'Discard', style: 'destructive', onPress: () => router.back() },
-      ]);
-    } else {
-      router.back();
-    }
-  }, [router]);
-
-  const handleDelete = useCallback(() => {
-    if (!eventId) return;
-    showDialog('Delete Service', 'This cannot be undone.', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete',
-        style: 'destructive',
-        onPress: async () => {
-          await deleteEvent(eventId);
-          router.back();
-        },
-      },
-    ]);
-  }, [eventId, deleteEvent, router]);
+  }, [canSave, activeVehicle, date, odometer, cost, placeId, notes, selectedServiceTypeIds, isEditing, eventId, photos]);
 
   return (
     <SafeAreaView className="flex-1 bg-surface dark:bg-surface-dark" edges={['top']}>
@@ -236,11 +153,11 @@ export default function ServiceEventModal() {
         className="flex-1"
       >
         <ScrollView className="flex-1 px-4 pt-4" contentContainerStyle={{ paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
-          <DateField value={date} onChange={(d) => { isDirty.current = true; setDate(d); }} />
+          <DateField value={date} onChange={(d) => { markDirty(); setDate(d); }} />
 
           <OdometerField
             value={odometer}
-            onChange={(v) => { isDirty.current = true; setOdometer(v); }}
+            onChange={(v) => { markDirty(); setOdometer(v); }}
             onBlur={handleOdometerBlur}
             unit={odometerUnit}
             estimatedOdometer={estimatedOdometer}
@@ -270,7 +187,7 @@ export default function ServiceEventModal() {
               <TextInput
                 className="flex-1 text-base text-ink dark:text-ink-on-dark"
                 value={cost}
-                onChangeText={(t) => { isDirty.current = true; setCost(t); }}
+                onChangeText={(t) => { markDirty(); setCost(t); }}
                 keyboardType="decimal-pad"
                 placeholder="0.00"
                 placeholderTextColor="#A8A49D"
@@ -281,7 +198,7 @@ export default function ServiceEventModal() {
 
           <PlaceAutocomplete
             value={placeId}
-            onChange={(id) => { isDirty.current = true; setPlaceId(id); }}
+            onChange={(id) => { markDirty(); setPlaceId(id); }}
             placeType="service_shop"
           />
 
@@ -293,7 +210,7 @@ export default function ServiceEventModal() {
             <TextInput
               className="bg-card dark:bg-card-dark rounded-xl border border-divider dark:border-divider-dark px-3.5 py-3 text-base text-ink dark:text-ink-on-dark"
               value={notes}
-              onChangeText={(t) => { isDirty.current = true; setNotes(t.slice(0, 500)); }}
+              onChangeText={(t) => { markDirty(); setNotes(t.slice(0, 500)); }}
               multiline
               numberOfLines={3}
               textAlignVertical="top"
@@ -307,7 +224,7 @@ export default function ServiceEventModal() {
           <EventPhotos
             eventId={isEditing && eventId ? eventId : null}
             photos={photos}
-            onPhotosChange={(p) => { isDirty.current = true; setPhotos(p); }}
+            onPhotosChange={(p) => { markDirty(); setPhotos(p); }}
           />
 
           {isEditing && (

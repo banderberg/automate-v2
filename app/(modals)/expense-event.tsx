@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -9,7 +9,6 @@ import {
   Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter, useLocalSearchParams } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { ModalHeader } from '@/src/components/ModalHeader';
 import { DateField } from '@/src/components/DateField';
@@ -17,46 +16,31 @@ import { OdometerField } from '@/src/components/OdometerField';
 import { ChipPicker } from '@/src/components/ChipPicker';
 import { EventPhotos } from '@/src/components/EventPhotos';
 import { ConfirmDialog } from '@/src/components/ConfirmDialog';
-import { useDialog } from '@/src/hooks/useDialog';
-import { useVehicleStore } from '@/src/stores/vehicleStore';
+import { useEventForm } from '@/src/hooks/useEventForm';
 import { useEventStore } from '@/src/stores/eventStore';
 import { useToastStore } from '@/src/stores/toastStore';
 import { onEventSaved } from '@/src/stores/orchestrator';
 import { useReferenceDataStore } from '@/src/stores/referenceDataStore';
-import { validateOdometer } from '@/src/services/odometerValidator';
-import * as eventQueries from '@/src/db/queries/events';
-import * as eventPhotoQueries from '@/src/db/queries/eventPhotos';
-import type { VehicleEvent, LocalPhoto } from '@/src/types';
+import type { VehicleEvent } from '@/src/types';
 
 export default function ExpenseEventModal() {
-  const router = useRouter();
-  const { eventId } = useLocalSearchParams<{ eventId?: string }>();
-  const isEditing = !!eventId;
-  const activeVehicle = useVehicleStore((s) => s.activeVehicle);
+  const {
+    router, eventId, isEditing, activeVehicle, events, existingEvent,
+    date, setDate, odometer, setOdometer, cost, setCost, notes, setNotes, photos, setPhotos,
+    odometerError, saving, setSaving, setBoundsLoaded,
+    markDirty, handleOdometerBlur, handleCancel, handleDelete,
+    showDialog, dialogProps,
+  } = useEventForm({ type: 'expense', deleteLabel: 'Expense' });
+
   const addEvent = useEventStore((s) => s.addEvent);
   const updateEvent = useEventStore((s) => s.updateEvent);
-  const deleteEvent = useEventStore((s) => s.deleteEvent);
-  const events = useEventStore((s) => s.events);
   const rawCategories = useReferenceDataStore((s) => s.categories);
   const addCategory = useReferenceDataStore((s) => s.addCategory);
   const updateCategory = useReferenceDataStore((s) => s.updateCategory);
   const deleteCategory = useReferenceDataStore((s) => s.deleteCategory);
 
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
-  const [odometer, setOdometer] = useState('');
   const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([]);
-  const [cost, setCost] = useState('');
-  const [notes, setNotes] = useState('');
-
-  const [photos, setPhotos] = useState<LocalPhoto[]>([]);
-
-  const [odometerError, setOdometerError] = useState('');
   const [categoryError, setCategoryError] = useState('');
-  const [bounds, setBounds] = useState<{ floor: number | null; ceiling: number | null }>({ floor: null, ceiling: null });
-  const [boundsLoaded, setBoundsLoaded] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const isDirty = useRef(false);
-  const { showDialog, dialogProps } = useDialog();
 
   const odometerUnit = activeVehicle?.odometerUnit ?? 'miles';
   const title = isEditing ? 'Edit Expense' : 'Add Expense';
@@ -75,62 +59,19 @@ export default function ExpenseEventModal() {
   useEffect(() => {
     if (!activeVehicle) return;
 
-    if (isEditing && eventId) {
-      const existing = events.find((e) => e.id === eventId);
-      if (existing) {
-        setDate(existing.date);
-        setOdometer(existing.odometer != null ? String(existing.odometer) : '');
-        if (existing.categoryId) setSelectedCategoryIds([existing.categoryId]);
-        setCost(String(existing.cost));
-        setNotes(existing.notes ?? '');
-      }
-      setBoundsLoaded(true);
-      (async () => {
-        const existingPhotos = await eventPhotoQueries.getByEvent(eventId);
-        setPhotos(
-          existingPhotos.map((p) => ({
-            id: p.id,
-            uri: p.filePath,
-            isNew: false,
-          }))
-        );
-      })();
+    if (isEditing && existingEvent) {
+      if (existingEvent.categoryId) setSelectedCategoryIds([existingEvent.categoryId]);
     } else {
       setDate(new Date().toISOString().split('T')[0]);
       setBoundsLoaded(true);
     }
   }, []);
 
-  useEffect(() => {
-    if (!activeVehicle || !date || !boundsLoaded) return;
-    (async () => {
-      const b = await eventQueries.getOdometerBounds(activeVehicle.id, date, eventId);
-      setBounds(b);
-    })();
-  }, [activeVehicle?.id, date, boundsLoaded]);
-
-  useEffect(() => {
-    const val = parseInt(odometer, 10);
-    if (isNaN(val) || !val) return;
-    const result = validateOdometer(val, bounds);
-    setOdometerError(result.valid ? '' : result.message ?? 'Invalid odometer');
-  }, [bounds]);
-
-  const handleOdometerBlur = useCallback(() => {
-    const val = parseInt(odometer, 10);
-    if (isNaN(val) || !val) {
-      setOdometerError('');
-      return;
-    }
-    const result = validateOdometer(val, bounds);
-    setOdometerError(result.valid ? '' : result.message ?? 'Invalid odometer');
-  }, [odometer, bounds]);
-
   const handleCategoryChange = useCallback((ids: string[]) => {
-    isDirty.current = true;
+    markDirty();
     setSelectedCategoryIds(ids);
     if (ids.length > 0) setCategoryError('');
-  }, []);
+  }, [markDirty]);
 
   const canSave = useMemo(() => {
     if (saving) return false;
@@ -179,33 +120,7 @@ export default function ExpenseEventModal() {
     } finally {
       setSaving(false);
     }
-  }, [canSave, activeVehicle, date, odometer, cost, selectedCategoryIds, notes, isEditing, eventId]);
-
-  const handleCancel = useCallback(() => {
-    if (isDirty.current) {
-      showDialog('Discard Changes?', 'You have unsaved changes.', [
-        { text: 'Keep Editing', style: 'cancel' },
-        { text: 'Discard', style: 'destructive', onPress: () => router.back() },
-      ]);
-    } else {
-      router.back();
-    }
-  }, [router]);
-
-  const handleDelete = useCallback(() => {
-    if (!eventId) return;
-    showDialog('Delete Expense', 'This cannot be undone.', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete',
-        style: 'destructive',
-        onPress: async () => {
-          await deleteEvent(eventId);
-          router.back();
-        },
-      },
-    ]);
-  }, [eventId, deleteEvent, router]);
+  }, [canSave, activeVehicle, date, odometer, cost, selectedCategoryIds, notes, isEditing, eventId, photos]);
 
   return (
     <SafeAreaView className="flex-1 bg-surface dark:bg-surface-dark" edges={['top']}>
@@ -221,11 +136,11 @@ export default function ExpenseEventModal() {
         className="flex-1"
       >
         <ScrollView className="flex-1 px-4 pt-4" contentContainerStyle={{ paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
-          <DateField value={date} onChange={(d) => { isDirty.current = true; setDate(d); }} />
+          <DateField value={date} onChange={(d) => { markDirty(); setDate(d); }} />
 
           <OdometerField
             value={odometer}
-            onChange={(v) => { isDirty.current = true; setOdometer(v); }}
+            onChange={(v) => { markDirty(); setOdometer(v); }}
             onBlur={handleOdometerBlur}
             unit={odometerUnit}
             error={odometerError}
@@ -254,7 +169,7 @@ export default function ExpenseEventModal() {
               <TextInput
                 className="flex-1 text-base text-ink dark:text-ink-on-dark"
                 value={cost}
-                onChangeText={(t) => { isDirty.current = true; setCost(t); }}
+                onChangeText={(t) => { markDirty(); setCost(t); }}
                 keyboardType="decimal-pad"
                 placeholder="0.00"
                 placeholderTextColor="#A8A49D"
@@ -271,7 +186,7 @@ export default function ExpenseEventModal() {
             <TextInput
               className="bg-card dark:bg-card-dark rounded-xl border border-divider dark:border-divider-dark px-3.5 py-3 text-base text-ink dark:text-ink-on-dark"
               value={notes}
-              onChangeText={(t) => { isDirty.current = true; setNotes(t.slice(0, 500)); }}
+              onChangeText={(t) => { markDirty(); setNotes(t.slice(0, 500)); }}
               multiline
               numberOfLines={3}
               textAlignVertical="top"
@@ -285,7 +200,7 @@ export default function ExpenseEventModal() {
           <EventPhotos
             eventId={isEditing && eventId ? eventId : null}
             photos={photos}
-            onPhotosChange={(p) => { isDirty.current = true; setPhotos(p); }}
+            onPhotosChange={(p) => { markDirty(); setPhotos(p); }}
           />
 
           {isEditing && (
