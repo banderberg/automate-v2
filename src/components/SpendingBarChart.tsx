@@ -82,7 +82,7 @@ export function SpendingBarChart({ data, isDark, chartWidth, period }: SpendingB
           barBorderTopRightRadius={4}
           isAnimated
           animationDuration={400}
-          scrollRef={needsScroll ? scrollRef : undefined}
+          scrollRef={scrollRef}
           scrollToEnd={needsScroll}
         />
       </View>
