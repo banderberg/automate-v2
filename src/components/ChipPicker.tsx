@@ -49,6 +49,7 @@ export function ChipPicker({
   const newItemRef = useRef('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState('');
+  const [addError, setAddError] = useState('');
   const { showDialog, dialogProps } = useDialog();
 
   const handleToggle = useCallback(
@@ -68,12 +69,13 @@ export function ChipPicker({
   const handleAdd = useCallback(async () => {
     const trimmed = newItemRef.current.trim();
     if (!trimmed || !onAdd) return;
+    setAddError('');
     try {
       await onAdd(trimmed);
       newItemRef.current = '';
       setNewItemName('');
-    } catch {
-      // keep input text so user can retry
+    } catch (e) {
+      setAddError(e instanceof Error ? e.message : 'Failed to add');
     }
   }, [onAdd]);
 
@@ -243,25 +245,30 @@ export function ChipPicker({
             ))}
 
             {onAdd && (
-              <View className="flex-row items-center px-4 pt-3 mt-2 border-t border-divider dark:border-divider-dark">
-                <BottomSheetTextInput
-                  className="flex-1 text-sm text-ink dark:text-ink-on-dark bg-surface dark:bg-surface-dark rounded-lg px-3 py-2"
-                  value={newItemName}
-                  onChangeText={(text) => { newItemRef.current = text; setNewItemName(text); }}
-                  placeholder="Add new..."
-                  placeholderTextColor="#A8A49D"
-                  onSubmitEditing={handleAdd}
-                  returnKeyType="done"
-                />
-                <Pressable
-                  onPress={handleAdd}
-                  className="ml-2 bg-primary px-3 py-2 rounded-lg"
-                  accessibilityLabel="Add"
-                  accessibilityRole="button"
-                >
-                  <Text className="text-white text-sm font-semibold">Add</Text>
-                </Pressable>
-              </View>
+              <>
+                <View className="flex-row items-center px-4 pt-3 mt-2 border-t border-divider dark:border-divider-dark">
+                  <BottomSheetTextInput
+                    className="flex-1 text-sm text-ink dark:text-ink-on-dark bg-surface dark:bg-surface-dark rounded-lg px-3 py-2"
+                    value={newItemName}
+                    onChangeText={(text) => { newItemRef.current = text; setNewItemName(text); }}
+                    placeholder="Add new..."
+                    placeholderTextColor="#A8A49D"
+                    onSubmitEditing={handleAdd}
+                    returnKeyType="done"
+                  />
+                  <Pressable
+                    onPress={handleAdd}
+                    className="ml-2 bg-primary px-3 py-2 rounded-lg"
+                    accessibilityLabel="Add"
+                    accessibilityRole="button"
+                  >
+                    <Text className="text-white text-sm font-semibold">Add</Text>
+                  </Pressable>
+                </View>
+                {addError ? (
+                  <Text className="text-xs text-destructive mt-1.5 px-4">{addError}</Text>
+                ) : null}
+              </>
             )}
           </BottomSheetView>
         </BottomSheetModal>

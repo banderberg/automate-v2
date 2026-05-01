@@ -74,22 +74,6 @@ export default function ReminderModal() {
   const markDirty = useCallback(() => { isDirty.current = true; }, []);
   const distanceIntervalRef = useRef<TextInput>(null);
   const timeIntervalRef = useRef<TextInput>(null);
-  const userToggledDistance = useRef(false);
-  const userToggledTime = useRef(false);
-
-  useEffect(() => {
-    if (distanceEnabled && userToggledDistance.current) {
-      userToggledDistance.current = false;
-      setTimeout(() => distanceIntervalRef.current?.focus(), 100);
-    }
-  }, [distanceEnabled]);
-
-  useEffect(() => {
-    if (timeEnabled && userToggledTime.current) {
-      userToggledTime.current = false;
-      setTimeout(() => timeIntervalRef.current?.focus(), 100);
-    }
-  }, [timeEnabled]);
   const { showDialog, dialogProps } = useDialog();
 
   const odometerUnit = activeVehicle?.odometerUnit ?? 'miles';
@@ -304,7 +288,6 @@ export default function ReminderModal() {
                 <Switch
                   value={distanceEnabled}
                   onValueChange={(v) => {
-                    userToggledDistance.current = true;
                     setDistanceEnabled(v);
                     setIntervalError('');
                     markDirty();
@@ -341,7 +324,6 @@ export default function ReminderModal() {
                 <Switch
                   value={timeEnabled}
                   onValueChange={(v) => {
-                    userToggledTime.current = true;
                     setTimeEnabled(v);
                     setIntervalError('');
                     markDirty();

@@ -34,11 +34,13 @@ export function VehicleSwitcher({ tintColor }: VehicleSwitcherProps) {
   }, []);
 
   const handleSelectVehicle = useCallback(
-    async (vehicle: Vehicle) => {
+    (vehicle: Vehicle) => {
       if (vehicle.id !== activeVehicle?.id) {
-        await switchVehicle(vehicle.id);
+        handleDismiss();
+        switchVehicle(vehicle.id);
+      } else {
+        handleDismiss();
       }
-      handleDismiss();
     },
     [activeVehicle?.id, handleDismiss]
   );
@@ -89,7 +91,7 @@ export function VehicleSwitcher({ tintColor }: VehicleSwitcherProps) {
           </Text>
         )}
       </View>
-      {multiVehicle && <Ionicons name="chevron-down" size={18} color={iconColor} />}
+      {multiVehicle && <Ionicons name="swap-vertical" size={16} color={iconColor} />}
     </View>
   );
 

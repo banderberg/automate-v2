@@ -67,6 +67,7 @@ export default function DashboardScreen() {
   const [period, setPeriod] = useState<string>('3M');
   const [showCelebration, setShowCelebration] = useState(false);
   const prevEventCountRef = useRef(eventCount);
+  const prevVehicleIdRef = useRef(activeVehicle?.id);
   const metrics = useDashboardMetrics(period);
 
   const [insightInput, setInsightInput] = useState<InsightEngineInput | null>(null);
@@ -125,13 +126,18 @@ export default function DashboardScreen() {
   const { insights, dismiss } = useInsights(insightInput, activeVehicle?.id ?? null);
 
   useEffect(() => {
+    if (activeVehicle?.id !== prevVehicleIdRef.current) {
+      prevVehicleIdRef.current = activeVehicle?.id;
+      prevEventCountRef.current = eventCount;
+      return;
+    }
     if (prevEventCountRef.current === 0 && eventCount > 0) {
       setShowCelebration(true);
       const timer = setTimeout(() => setShowCelebration(false), 4000);
       return () => clearTimeout(timer);
     }
     prevEventCountRef.current = eventCount;
-  }, [eventCount]);
+  }, [eventCount, activeVehicle?.id]);
 
   const odometerUnit = activeVehicle?.odometerUnit ?? 'miles';
   const volumeUnit = activeVehicle?.volumeUnit ?? 'gallons';
@@ -167,14 +173,13 @@ export default function DashboardScreen() {
   }, [metrics.chartData, isDark]);
 
   const donutData = useMemo(() => {
-    const items = [];
-    if (metrics.spendingBreakdown.fuel > 0)
-      items.push({ value: metrics.spendingBreakdown.fuel, color: '#1A9A8F', text: '' });
-    if (metrics.spendingBreakdown.service > 0)
-      items.push({ value: metrics.spendingBreakdown.service, color: '#E8772B', text: '' });
-    if (metrics.spendingBreakdown.expense > 0)
-      items.push({ value: metrics.spendingBreakdown.expense, color: '#2EAD76', text: '' });
-    return items;
+    const { fuel, service, expense, total } = metrics.spendingBreakdown;
+    if (total === 0) return [];
+    return [
+      { value: fuel || 0.001, color: fuel > 0 ? '#1A9A8F' : '#E2E0DB', text: '' },
+      { value: service || 0.001, color: service > 0 ? '#E8772B' : '#E2E0DB', text: '' },
+      { value: expense || 0.001, color: expense > 0 ? '#2EAD76' : '#E2E0DB', text: '' },
+    ];
   }, [metrics.spendingBreakdown]);
 
   const placeMap = useMemo(() => {
@@ -499,7 +504,8 @@ export default function DashboardScreen() {
                 rulesType="solid"
                 dataPointsColor="#1A9A8F"
                 dataPointsRadius={4}
-                spacing={lineChartData.length > 1 ? Math.max(44, chartWidth / lineChartData.length) : 100}
+                spacing={lineChartData.length > 1 ? Math.max(28, chartWidth / lineChartData.length) : 100}
+                scrollToEnd
                 initialSpacing={16}
                 endSpacing={16}
                 isAnimated
