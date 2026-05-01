@@ -91,7 +91,7 @@ export function VehicleSwitcher({ tintColor }: VehicleSwitcherProps) {
           </Text>
         )}
       </View>
-      {multiVehicle && <Ionicons name="chevron-down" size={18} color={iconColor} />}
+      {multiVehicle && <Ionicons name="swap-vertical" size={16} color={iconColor} />}
     </View>
   );
 
