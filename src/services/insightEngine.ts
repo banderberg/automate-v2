@@ -223,6 +223,26 @@ function checkMaintenanceDue(input: InsightEngineInput, units: UnitLabels, insig
 }
 
 function checkCheaperStation(input: InsightEngineInput, units: UnitLabels, insights: Insight[]): void {
+  const sixMonthsAgo = new Date();
+  sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+  const cutoff = sixMonthsAgo.toISOString().slice(0, 10);
+
+  // Regular station: active vehicle, recent fills only
+  const recentFills = input.events
+    .filter(e => e.type === 'fuel' && e.placeId && e.pricePerUnit != null && e.date >= cutoff);
+
+  const visitCounts = new Map<string, number>();
+  for (const fill of recentFills) {
+    visitCounts.set(fill.placeId!, (visitCounts.get(fill.placeId!) ?? 0) + 1);
+  }
+
+  const regularEntry = Array.from(visitCounts.entries())
+    .filter(([, count]) => count >= 2)
+    .sort((a, b) => b[1] - a[1])[0];
+  if (!regularEntry) return;
+  const regularPlaceId = regularEntry[0];
+
+  // Price data: cross-vehicle fills for broader price sampling
   const fills = input.crossVehicleFuelFills.filter(e => e.placeId && e.pricePerUnit != null);
 
   const stationData = new Map<string, { totalPrice: number; count: number; totalVolume: number }>();
@@ -234,31 +254,23 @@ function checkCheaperStation(input: InsightEngineInput, units: UnitLabels, insig
     stationData.set(fill.placeId!, data);
   }
 
-  const qualified = Array.from(stationData.entries())
-    .filter(([, d]) => d.count >= 2)
-    .map(([placeId, d]) => ({
-      placeId,
-      avgPrice: d.totalPrice / d.count,
-      count: d.count,
-      avgVolume: d.totalVolume / d.count,
-    }));
+  const regularData = stationData.get(regularPlaceId);
+  if (!regularData || regularData.count < 2) return;
+  const regularAvgPrice = regularData.totalPrice / regularData.count;
+  const regularAvgVolume = regularData.totalVolume / regularData.count;
 
-  if (qualified.length < 2) return;
-
-  qualified.sort((a, b) => b.count - a.count || b.avgPrice - a.avgPrice);
-  const regular = qualified[0];
-
-  const cheapest = qualified
-    .filter(s => s.placeId !== regular.placeId)
+  const cheapest = Array.from(stationData.entries())
+    .filter(([id, d]) => id !== regularPlaceId && d.count >= 2)
+    .map(([placeId, d]) => ({ placeId, avgPrice: d.totalPrice / d.count }))
     .sort((a, b) => a.avgPrice - b.avgPrice)[0];
 
   if (!cheapest) return;
 
-  const priceDiff = regular.avgPrice - cheapest.avgPrice;
+  const priceDiff = regularAvgPrice - cheapest.avgPrice;
   if (priceDiff < 0.10) return;
 
-  const savingsPerFill = Math.round(priceDiff * regular.avgVolume);
-  const regularPlace = input.places.find(p => p.id === regular.placeId);
+  const savingsPerFill = Math.round(priceDiff * regularAvgVolume);
+  const regularPlace = input.places.find(p => p.id === regularPlaceId);
   const cheapPlace = input.places.find(p => p.id === cheapest.placeId);
   if (!regularPlace || !cheapPlace) return;
 
@@ -268,10 +280,10 @@ function checkCheaperStation(input: InsightEngineInput, units: UnitLabels, insig
     type: 'cheaper_station',
     score: Math.min(60, Math.round(30 + priceDiff * 100)),
     title: `You'd save ~$${savingsPerFill}/${units.fillWord} at ${cheapPlace.name}`,
-    subtitle: `Avg $${regular.avgPrice.toFixed(2)}/${units.volumeUnit} at ${regularPlace.name} vs. $${cheapest.avgPrice.toFixed(2)} at ${cheapPlace.name}`,
+    subtitle: `Avg $${regularAvgPrice.toFixed(2)}/${units.volumeUnit} at ${regularPlace.name} vs. $${cheapest.avgPrice.toFixed(2)} at ${cheapPlace.name}`,
     icon: '⛽',
     iconBgColor: 'rgba(232, 119, 43, 0.12)',
-    dataKey: `${cheapest.placeId}|${regular.placeId}|${priceDiffRounded}`,
+    dataKey: `${cheapest.placeId}|${regularPlaceId}|${priceDiffRounded}`,
   });
 }
 
