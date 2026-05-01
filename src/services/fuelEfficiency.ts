@@ -1,6 +1,6 @@
 import type { VehicleEvent } from '../types';
 
-interface EfficiencySegment {
+export interface EfficiencySegment {
   date: string;
   efficiency: number;
   isPartial: boolean;
@@ -81,4 +81,27 @@ export function computeFuelEfficiency(
   const average = totalVolume > 0 ? totalDistance / totalVolume : null;
 
   return { segments, average };
+}
+
+export function downsampleEfficiencyData(
+  points: EfficiencySegment[],
+  maxPoints: number = 30,
+): EfficiencySegment[] {
+  if (points.length <= maxPoints) return points;
+
+  const buckets = new Map<string, number[]>();
+  for (const p of points) {
+    const key = p.date.slice(0, 7);
+    const arr = buckets.get(key);
+    if (arr) arr.push(p.efficiency);
+    else buckets.set(key, [p.efficiency]);
+  }
+
+  return Array.from(buckets.entries())
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([month, values]) => ({
+      date: month,
+      efficiency: values.reduce((s, v) => s + v, 0) / values.length,
+      isPartial: false,
+    }));
 }

@@ -69,11 +69,11 @@ export default function RootLayout() {
   }
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
+    <GestureHandlerRootView style={{ flex: 1, backgroundColor: resolvedColorScheme === 'dark' ? '#0E0E0C' : '#F5F4F1' }}>
       <ThemeProvider value={resolvedColorScheme === 'dark' ? DarkTheme : DefaultTheme}>
         <BottomSheetModalProvider>
-          <View style={{ flex: 1 }}>
-            <RootNavigator />
+          <View style={{ flex: 1, backgroundColor: resolvedColorScheme === 'dark' ? '#0E0E0C' : '#F5F4F1' }}>
+            <RootNavigator resolvedColorScheme={resolvedColorScheme} />
             <ErrorToast />
           </View>
         </BottomSheetModalProvider>
@@ -82,11 +82,12 @@ export default function RootLayout() {
   );
 }
 
-function RootNavigator() {
+function RootNavigator({ resolvedColorScheme }: { resolvedColorScheme: string }) {
   const hasCompletedOnboarding = useSettingsStore((s) => s.settings.hasCompletedOnboarding);
   const vehicleCount = useVehicleStore((s) => s.vehicles.length);
   const router = useRouter();
   const segments = useSegments();
+  const bg = resolvedColorScheme === 'dark' ? '#0E0E0C' : '#F5F4F1';
 
   useEffect(() => {
     if (!hasCompletedOnboarding && vehicleCount === 0) {
@@ -100,9 +101,9 @@ function RootNavigator() {
   }, [hasCompletedOnboarding, vehicleCount, segments]);
 
   return (
-    <Stack>
+    <Stack screenOptions={{ contentStyle: { backgroundColor: bg } }}>
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      <Stack.Screen name="(modals)" options={{ headerShown: false, presentation: 'modal' }} />
+      <Stack.Screen name="(modals)" options={{ headerShown: false, presentation: 'modal', contentStyle: { backgroundColor: 'transparent' } }} />
       <Stack.Screen name="onboarding" options={{ headerShown: false }} />
       <Stack.Screen name="+not-found" />
     </Stack>

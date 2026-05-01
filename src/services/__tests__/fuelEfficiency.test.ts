@@ -1,5 +1,6 @@
-import { computeFuelEfficiency } from '../fuelEfficiency';
+import { computeFuelEfficiency, downsampleEfficiencyData } from '../fuelEfficiency';
 import type { VehicleEvent } from '../../types';
+import type { EfficiencySegment } from '../fuelEfficiency';
 
 function makeFuelEvent(
   id: string,
@@ -114,5 +115,74 @@ describe('computeFuelEfficiency', () => {
     const { average } = computeFuelEfficiency(events);
     // No valid segment produced when distance is negative
     expect(average).toBeNull();
+  });
+});
+
+describe('downsampleEfficiencyData', () => {
+  function makeSegment(date: string, efficiency: number): EfficiencySegment {
+    return { date, efficiency, isPartial: false };
+  }
+
+  it('returns points as-is when count <= maxPoints', () => {
+    const points = [
+      makeSegment('2026-01-15', 25),
+      makeSegment('2026-02-10', 28),
+      makeSegment('2026-03-05', 30),
+    ];
+    const result = downsampleEfficiencyData(points, 30);
+    expect(result).toEqual(points);
+  });
+
+  it('aggregates into monthly averages when count > maxPoints', () => {
+    const points = [
+      makeSegment('2024-01-05', 20),
+      makeSegment('2024-01-20', 30),
+      makeSegment('2024-02-10', 24),
+      makeSegment('2024-02-25', 26),
+      makeSegment('2024-03-15', 28),
+    ];
+    const result = downsampleEfficiencyData(points, 4);
+    expect(result).toHaveLength(3);
+    expect(result[0]).toEqual({ date: '2024-01', efficiency: 25, isPartial: false });
+    expect(result[1]).toEqual({ date: '2024-02', efficiency: 25, isPartial: false });
+    expect(result[2]).toEqual({ date: '2024-03', efficiency: 28, isPartial: false });
+  });
+
+  it('uses default maxPoints of 30', () => {
+    const points = Array.from({ length: 31 }, (_, i) =>
+      makeSegment(`2024-01-${String(i + 1).padStart(2, '0')}`, 25)
+    );
+    const result = downsampleEfficiencyData(points);
+    // 31 points all in January → aggregated to 1 point
+    expect(result).toHaveLength(1);
+    expect(result[0].date).toBe('2024-01');
+    expect(result[0].efficiency).toBe(25);
+  });
+
+  it('handles exactly maxPoints (no aggregation)', () => {
+    const points = Array.from({ length: 30 }, (_, i) =>
+      makeSegment(`2024-01-${String(i + 1).padStart(2, '0')}`, 20 + i)
+    );
+    const result = downsampleEfficiencyData(points, 30);
+    expect(result).toEqual(points);
+  });
+
+  it('single month with one fill-up produces one aggregated point', () => {
+    const points = [makeSegment('2024-06-15', 32)];
+    const result = downsampleEfficiencyData(points, 0); // force aggregation
+    expect(result).toHaveLength(1);
+    expect(result[0]).toEqual({ date: '2024-06', efficiency: 32, isPartial: false });
+  });
+
+  it('preserves chronological order across months', () => {
+    const points = [
+      makeSegment('2023-12-01', 20),
+      makeSegment('2024-01-15', 25),
+      makeSegment('2024-02-10', 30),
+      makeSegment('2024-03-20', 28),
+    ];
+    const result = downsampleEfficiencyData(points, 3);
+    const dates = result.map(r => r.date);
+    expect(dates).toEqual(['2023-12', '2024-01', '2024-02', '2024-03']);
   });
 });

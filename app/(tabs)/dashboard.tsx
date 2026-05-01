@@ -64,6 +64,7 @@ export default function DashboardScreen() {
   const categories = useReferenceDataStore((s) => s.categories);
   const serviceLabels = useEventStore((s) => s.serviceLabels);
   const isLoading = useEventStore((s) => s.isLoading);
+  const scrollRef = useRef<ScrollView>(null);
   const [period, setPeriod] = useState<string>('3M');
   const [showCelebration, setShowCelebration] = useState(false);
   const prevEventCountRef = useRef(eventCount);
@@ -154,14 +155,36 @@ export default function DashboardScreen() {
   const chartWidth = width - 64;
 
   const lineChartData = useMemo(() => {
-    return metrics.chartData
-      .filter((d) => d.efficiency > 0)
-      .map((d) => ({
-        value: Math.round(d.efficiency * 10) / 10,
-        label: new Date(d.date + 'T00:00:00').toLocaleDateString('en-US', {
+    const filtered = metrics.chartData.filter((d) => d.efficiency > 0);
+    const isAggregated = filtered.length > 0 && filtered[0].date.length === 7;
+
+    return filtered.map((d, i) => {
+      let label: string;
+      if (d.date.length === 7) {
+        // Aggregated monthly point: "Mar '24"
+        const dt = new Date(d.date + '-01T00:00:00');
+        const month = dt.toLocaleDateString('en-US', { month: 'short' });
+        const year = d.date.slice(2, 4);
+        label = `${month} '${year}`;
+      } else {
+        // Raw fill-up point: "Mar 15"
+        label = new Date(d.date + 'T00:00:00').toLocaleDateString('en-US', {
           month: 'short',
           day: 'numeric',
-        }),
+        });
+      }
+
+      // Thin labels for aggregated data: show every Nth label for ~6-8 visible
+      if (isAggregated && filtered.length > 8) {
+        const step = Math.ceil(filtered.length / 7);
+        if (i % step !== 0 && i !== filtered.length - 1) {
+          label = '';
+        }
+      }
+
+      return {
+        value: Math.round(d.efficiency * 10) / 10,
+        label,
         dataPointColor: d.isPartial ? 'transparent' : '#1A9A8F',
         dataPointRadius: d.isPartial ? 4 : 5,
         customDataPoint: d.isPartial
@@ -169,7 +192,8 @@ export default function DashboardScreen() {
               <View style={{ width: 8, height: 8, borderRadius: 4, borderWidth: 2, borderColor: '#1A9A8F', backgroundColor: isDark ? '#1A1917' : '#F5F4F1', borderStyle: 'dashed' }} />
             )
           : undefined,
-      }));
+      };
+    });
   }, [metrics.chartData, isDark]);
 
   const donutData = useMemo(() => {
@@ -247,12 +271,58 @@ export default function DashboardScreen() {
   return (
     <SafeAreaView className="flex-1 bg-surface dark:bg-surface-dark" edges={['top']}>
       <VehicleSwitcher />
+
+      {/* ── Period tabs: pinned above scroll ── */}
+      <View className="bg-surface dark:bg-surface-dark" style={{ borderBottomWidth: 1, borderBottomColor: isDark ? '#2A2926' : '#E2E0DB' }}>
+        <View className="flex-row px-4" style={{ gap: 2 }}>
+          {PERIODS.map((p) => {
+            const selected = period === p.value;
+            return (
+              <Pressable
+                key={p.value}
+                onPress={() => setPeriod(p.value)}
+                className="flex-1 items-center"
+                style={{ paddingVertical: 10 }}
+                accessibilityLabel={`Period ${p.label}${selected ? ', selected' : ''}`}
+                accessibilityRole="tab"
+                accessibilityState={{ selected }}
+              >
+                <Text
+                  style={{
+                    fontSize: 13,
+                    fontWeight: selected ? '700' : '500',
+                    color: selected
+                      ? (isDark ? '#F5F4F1' : '#1C1B18')
+                      : (isDark ? '#8A8680' : '#706C67'),
+                  }}
+                >
+                  {p.label}
+                </Text>
+                {selected && (
+                  <View
+                    style={{
+                      position: 'absolute',
+                      bottom: 0,
+                      left: 8,
+                      right: 8,
+                      height: 2,
+                      borderRadius: 1,
+                      backgroundColor: '#4272C4',
+                    }}
+                  />
+                )}
+              </Pressable>
+            );
+          })}
+        </View>
+      </View>
+
       {isLoading ? (
         <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 80 }}>
           <DashboardSkeleton />
         </ScrollView>
       ) : (
-      <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 80 }}>
+      <ScrollView ref={scrollRef} className="flex-1" contentContainerStyle={{ paddingBottom: 80 }}>
 
         {/* ── First-event celebration banner ── */}
         {showCelebration && (
@@ -264,45 +334,8 @@ export default function DashboardScreen() {
           </View>
         )}
 
-        {/* ── Hero: period + total spent ── */}
+        {/* ── Hero: total spent ── */}
         <View className="px-4 pt-5">
-          {/* Period tabs: bare text, weight-only selection */}
-          <View className="flex-row mb-5" style={{ gap: 2 }}>
-            {PERIODS.map((p) => (
-              <Pressable
-                key={p.value}
-                onPress={() => setPeriod(p.value)}
-                className="flex-1 items-center py-2"
-                accessibilityLabel={`Period ${p.label}${period === p.value ? ', selected' : ''}`}
-                accessibilityRole="tab"
-                accessibilityState={{ selected: period === p.value }}
-              >
-                <Text
-                  style={{
-                    fontSize: 13,
-                    fontWeight: period === p.value ? '700' : '500',
-                    color: period === p.value
-                      ? (isDark ? '#F5F4F1' : '#1C1B18')
-                      : (isDark ? '#8A8680' : '#706C67'),
-                  }}
-                >
-                  {p.label}
-                </Text>
-                {period === p.value && (
-                  <View
-                    style={{
-                      width: 4,
-                      height: 4,
-                      borderRadius: 2,
-                      backgroundColor: isDark ? '#F5F4F1' : '#1C1B18',
-                      marginTop: 4,
-                    }}
-                  />
-                )}
-              </Pressable>
-            ))}
-          </View>
-
           {/* Total spent: the gravitational centre */}
           <Text
             style={{

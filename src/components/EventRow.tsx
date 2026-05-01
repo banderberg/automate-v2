@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, Pressable, type TextStyle } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import type { VehicleEvent, Place } from '../types';
 
 interface EventRowProps {
@@ -44,7 +44,11 @@ function EventRowInner({ event, odometerUnit, place, label, onPress, currency = 
         className="w-9 h-9 rounded-full items-center justify-center mr-3"
         style={{ backgroundColor: config.bgColor }}
       >
-        <Ionicons name={config.icon} size={18} color={config.color} accessible={false} />
+        {event.type === 'fuel' ? (
+          <MaterialCommunityIcons name="gas-station-outline" size={20} color={config.color} accessible={false} />
+        ) : (
+          <Ionicons name={config.icon} size={18} color={config.color} accessible={false} />
+        )}
       </View>
 
       <View className="flex-1 mr-2">
