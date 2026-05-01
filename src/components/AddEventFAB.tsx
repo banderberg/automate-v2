@@ -1,7 +1,7 @@
 import { useRef, useCallback } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { useColorScheme } from 'nativewind';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useGuardedNavigate } from '../hooks/useGuardedNavigate';
 import {
@@ -89,16 +89,16 @@ export function AddEventFAB() {
 
           <Pressable
             onPress={() => handleNavigate('/(modals)/fuel-event')}
-            className="flex-row items-center px-4 py-4 active:bg-surface"
+            className="flex-row items-center px-4 py-4 active:bg-surface dark:active:bg-surface-dark"
             accessibilityLabel={isElectric ? 'Add Charge event' : 'Add Fill-Up event'}
             accessibilityRole="button"
           >
             <View className="w-10 h-10 rounded-full items-center justify-center mr-4" style={{ backgroundColor: '#D0F5EE' }}>
-              <Ionicons
-                name={isElectric ? 'flash' : 'water'}
-                size={20}
-                color="#1A9A8F"
-              />
+              {isElectric ? (
+                <Ionicons name="flash" size={20} color="#1A9A8F" />
+              ) : (
+                <MaterialCommunityIcons name="gas-station-outline" size={22} color="#1A9A8F" />
+              )}
             </View>
             <Text className="text-base font-medium text-ink dark:text-ink-on-dark">
               {isElectric ? 'Charge' : 'Fill-Up'}
@@ -107,7 +107,7 @@ export function AddEventFAB() {
 
           <Pressable
             onPress={() => handleNavigate('/(modals)/service-event')}
-            className="flex-row items-center px-4 py-4 active:bg-surface"
+            className="flex-row items-center px-4 py-4 active:bg-surface dark:active:bg-surface-dark"
             accessibilityLabel="Add service"
             accessibilityRole="button"
           >
@@ -119,7 +119,7 @@ export function AddEventFAB() {
 
           <Pressable
             onPress={() => handleNavigate('/(modals)/expense-event')}
-            className="flex-row items-center px-4 py-4 active:bg-surface"
+            className="flex-row items-center px-4 py-4 active:bg-surface dark:active:bg-surface-dark"
             accessibilityLabel="Add expense"
             accessibilityRole="button"
           >
