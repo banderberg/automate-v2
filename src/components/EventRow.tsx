@@ -29,7 +29,6 @@ function EventRowInner({ event, odometerUnit, place, label, onPress, currency = 
   const config = TYPE_CONFIG[event.type];
   const unitLabel = odometerUnit === 'miles' ? 'mi' : 'km';
   const dateText = formatDate(event.date);
-  const topLine = place?.name ? `${dateText} · ${place.name}` : dateText;
   const odometerText = event.odometer != null
     ? `${event.odometer.toLocaleString('en-US')} ${unitLabel}`
     : '--';
@@ -50,12 +49,21 @@ function EventRowInner({ event, odometerUnit, place, label, onPress, currency = 
 
       <View className="flex-1 mr-2">
         <Text className="text-sm text-ink dark:text-ink-on-dark" numberOfLines={1}>
-          {topLine}
+          {dateText}
         </Text>
+        {place?.name ? (
+          <Text className="text-xs text-ink-muted dark:text-ink-muted-on-dark" numberOfLines={1}>
+            {place.name}
+          </Text>
+        ) : null}
         <Text className="text-xs text-ink-muted dark:text-ink-muted-on-dark" numberOfLines={1} style={tabularNums}>
           {odometerText}
-          {label ? <Text className="font-semibold text-ink-secondary dark:text-ink-secondary-on-dark"> · {label}</Text> : null}
         </Text>
+        {label ? (
+          <Text className="text-xs font-semibold text-ink-secondary dark:text-ink-secondary-on-dark" numberOfLines={1}>
+            {label}
+          </Text>
+        ) : null}
       </View>
 
       <Text className="text-sm font-semibold text-ink dark:text-ink-on-dark" numberOfLines={1} style={tabularNums}>
