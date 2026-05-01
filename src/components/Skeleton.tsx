@@ -2,14 +2,14 @@ import { useEffect, useRef } from 'react';
 import { Animated, View, type ViewStyle } from 'react-native';
 import { useColorScheme } from 'nativewind';
 
-interface SkeletonBoneProps {
+export interface SkeletonBoneProps {
   width: number | `${number}%`;
   height: number;
   borderRadius?: number;
   style?: ViewStyle;
 }
 
-function SkeletonBone({ width, height, borderRadius = 8, style }: SkeletonBoneProps) {
+export function SkeletonBone({ width, height, borderRadius = 8, style }: SkeletonBoneProps) {
   const { colorScheme } = useColorScheme();
   const isDark = colorScheme === 'dark';
   const opacity = useRef(new Animated.Value(0.4)).current;
