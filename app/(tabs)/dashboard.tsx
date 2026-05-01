@@ -167,14 +167,13 @@ export default function DashboardScreen() {
   }, [metrics.chartData, isDark]);
 
   const donutData = useMemo(() => {
-    const items = [];
-    if (metrics.spendingBreakdown.fuel > 0)
-      items.push({ value: metrics.spendingBreakdown.fuel, color: '#1A9A8F', text: '' });
-    if (metrics.spendingBreakdown.service > 0)
-      items.push({ value: metrics.spendingBreakdown.service, color: '#E8772B', text: '' });
-    if (metrics.spendingBreakdown.expense > 0)
-      items.push({ value: metrics.spendingBreakdown.expense, color: '#2EAD76', text: '' });
-    return items;
+    const { fuel, service, expense, total } = metrics.spendingBreakdown;
+    if (total === 0) return [];
+    return [
+      { value: fuel || 0.001, color: fuel > 0 ? '#1A9A8F' : '#E2E0DB', text: '' },
+      { value: service || 0.001, color: service > 0 ? '#E8772B' : '#E2E0DB', text: '' },
+      { value: expense || 0.001, color: expense > 0 ? '#2EAD76' : '#E2E0DB', text: '' },
+    ];
   }, [metrics.spendingBreakdown]);
 
   const placeMap = useMemo(() => {
