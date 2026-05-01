@@ -19,6 +19,7 @@ export function ChartTransition({ transitionKey, isDark, children }: ChartTransi
   const prevKeyRef = useRef(transitionKey);
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const shimmerTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const animRef = useRef<Animated.CompositeAnimation | null>(null);
 
   useEffect(() => {
     if (prevKeyRef.current === transitionKey) return;
@@ -26,16 +27,20 @@ export function ChartTransition({ transitionKey, isDark, children }: ChartTransi
 
     if (measuredHeight == null) return;
 
+    animRef.current?.stop();
+
     setPhase('shimmer');
     fadeAnim.setValue(0);
 
     shimmerTimerRef.current = setTimeout(() => {
       setPhase('reveal');
-      Animated.timing(fadeAnim, {
+      const anim = Animated.timing(fadeAnim, {
         toValue: 1,
         duration: FADE_DURATION,
         useNativeDriver: true,
-      }).start(() => {
+      });
+      animRef.current = anim;
+      anim.start(() => {
         setPhase('idle');
       });
     }, SHIMMER_DURATION);
@@ -44,6 +49,7 @@ export function ChartTransition({ transitionKey, isDark, children }: ChartTransi
       if (shimmerTimerRef.current != null) {
         clearTimeout(shimmerTimerRef.current);
       }
+      animRef.current?.stop();
     };
   }, [transitionKey]);
 
