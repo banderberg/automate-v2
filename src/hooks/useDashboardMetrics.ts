@@ -17,6 +17,20 @@ interface EfficiencyChartPoint {
   isPartial: boolean;
 }
 
+export interface PeriodDelta {
+  value: number;
+  percentage: number;
+  direction: 'up' | 'down';
+}
+
+export interface MonthlySpending {
+  label: string;
+  fuel: number;
+  service: number;
+  expense: number;
+  total: number;
+}
+
 interface DashboardMetrics {
   totalSpent: number;
   costPerMile: number | null;
@@ -28,9 +42,19 @@ interface DashboardMetrics {
   spendingBreakdown: SpendingBreakdown;
   chartData: EfficiencyChartPoint[];
   recentEvents: VehicleEvent[];
+  // New fields for smart dashboard
+  totalSpentDelta: PeriodDelta | null;
+  costPerMileDelta: PeriodDelta | null;
+  efficiencyDelta: PeriodDelta | null;
+  previousPeriodTotal: number | null;
+  previousCostPerMile: number | null;
+  periodLabel: string;
+  monthlySpending: MonthlySpending[];
+  projectedAnnualCost: number | null;
+  ytdSpent: number | null;
 }
 
-function getDateRange(period: string): { startDate: string; endDate: string } {
+export function getDateRange(period: string): { startDate: string; endDate: string } {
   const now = new Date();
   const endDate = now.toISOString().split('T')[0];
   let start: Date;
@@ -65,7 +89,7 @@ function getDateRange(period: string): { startDate: string; endDate: string } {
   return { startDate: start.toISOString().split('T')[0], endDate };
 }
 
-function getPreviousPeriodRange(period: string): { startDate: string; endDate: string } {
+export function getPreviousPeriodRange(period: string): { startDate: string; endDate: string } {
   const current = getDateRange(period);
   const currentStart = new Date(current.startDate + 'T00:00:00Z');
   const currentEnd = new Date(current.endDate + 'T00:00:00Z');
@@ -78,6 +102,102 @@ function getPreviousPeriodRange(period: string): { startDate: string; endDate: s
     startDate: prevStart.toISOString().split('T')[0],
     endDate: prevEnd.toISOString().split('T')[0],
   };
+}
+
+function computeDelta(current: number, previous: number, threshold: number = 0.05): PeriodDelta | null {
+  if (previous === 0) return null;
+  const percentage = (current - previous) / Math.abs(previous);
+  if (Math.abs(percentage) < threshold) return null;
+  return {
+    value: current - previous,
+    percentage,
+    direction: percentage > 0 ? 'up' : 'down',
+  };
+}
+
+function getPeriodLabel(period: string): string {
+  switch (period) {
+    case '1M': return '1 month';
+    case '3M': return '3 months';
+    case '6M': return '6 months';
+    case 'YTD': return 'year';
+    case '1Y': return '1 year';
+    case 'All': return 'all time';
+    default: return '3 months';
+  }
+}
+
+function computeMonthlySpending(events: VehicleEvent[]): MonthlySpending[] {
+  const byMonth = new Map<string, { fuel: number; service: number; expense: number }>();
+
+  for (const e of events) {
+    const month = e.date.slice(0, 7); // "YYYY-MM"
+    const entry = byMonth.get(month) ?? { fuel: 0, service: 0, expense: 0 };
+    entry[e.type] += e.cost;
+    byMonth.set(month, entry);
+  }
+
+  const sorted = Array.from(byMonth.entries()).sort(([a], [b]) => a.localeCompare(b));
+  const years = new Set(sorted.map(([m]) => m.slice(0, 4)));
+  const multiYear = years.size > 1;
+
+  return sorted.map(([month, data]) => {
+    const monthName = new Date(month + '-01T00:00:00').toLocaleDateString('en-US', { month: 'short' });
+    const label = multiYear ? `${monthName} '${month.slice(2, 4)}` : monthName;
+    return {
+      label,
+      fuel: data.fuel,
+      service: data.service,
+      expense: data.expense,
+      total: data.fuel + data.service + data.expense,
+    };
+  });
+}
+
+function computeWeeklySpending(events: VehicleEvent[]): MonthlySpending[] {
+  const byWeek = new Map<string, { fuel: number; service: number; expense: number; weekStart: Date }>();
+
+  for (const e of events) {
+    const d = new Date(e.date + 'T00:00:00');
+    const day = d.getDay();
+    const mondayOffset = day === 0 ? -6 : 1 - day;
+    const monday = new Date(d);
+    monday.setDate(d.getDate() + mondayOffset);
+    const key = monday.toISOString().split('T')[0];
+    const entry = byWeek.get(key) ?? { fuel: 0, service: 0, expense: 0, weekStart: monday };
+    entry[e.type] += e.cost;
+    byWeek.set(key, entry);
+  }
+
+  return Array.from(byWeek.entries())
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([, data]) => ({
+      label: data.weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+      fuel: data.fuel,
+      service: data.service,
+      expense: data.expense,
+      total: data.fuel + data.service + data.expense,
+    }));
+}
+
+function computeProjectedAnnualCost(allEvents: VehicleEvent[]): { projected: number; ytdSpent: number } | null {
+  const now = new Date();
+  const yearStart = new Date(now.getFullYear(), 0, 1);
+
+  const ytdEvents = allEvents.filter((e) => e.date >= yearStart.toISOString().split('T')[0]);
+  if (ytdEvents.length === 0) return null;
+
+  const firstEventDate = new Date(
+    ytdEvents.reduce((min, e) => (e.date < min ? e.date : min), ytdEvents[0].date) + 'T00:00:00'
+  );
+  const daysElapsed = Math.floor((now.getTime() - firstEventDate.getTime()) / 86400000);
+  if (daysElapsed < 30) return null;
+
+  const ytdSpent = ytdEvents.reduce((sum, e) => sum + e.cost, 0);
+  const daysInYear = now.getFullYear() % 4 === 0 && (now.getFullYear() % 100 !== 0 || now.getFullYear() % 400 === 0) ? 366 : 365;
+  const dailyRate = ytdSpent / daysElapsed;
+
+  return { projected: dailyRate * daysInYear, ytdSpent };
 }
 
 export function useDashboardMetrics(period: string): DashboardMetrics {
@@ -136,6 +256,50 @@ export function useDashboardMetrics(period: string): DashboardMetrics {
 
     const recentEvents = events.slice(0, 5);
 
+    // --- New: Period deltas ---
+    let totalSpentDelta: PeriodDelta | null = null;
+    let costPerMileDelta: PeriodDelta | null = null;
+    let efficiencyDelta: PeriodDelta | null = null;
+    let previousPeriodTotalValue: number | null = null;
+    let previousCostPerMileValue: number | null = null;
+
+    if (period !== 'All') {
+      const prev = getPreviousPeriodRange(period);
+      const prevEvents = events.filter(
+        (e) => e.date >= prev.startDate && e.date <= prev.endDate
+      );
+
+      if (prevEvents.length > 0) {
+        const prevTotal = prevEvents.reduce((sum, e) => sum + e.cost, 0);
+        previousPeriodTotalValue = prevTotal;
+        totalSpentDelta = computeDelta(totalSpent, prevTotal);
+
+        const prevCpm = computeCostPerMile(prevEvents);
+        previousCostPerMileValue = prevCpm;
+        if (costPerMile != null && prevCpm != null) {
+          costPerMileDelta = computeDelta(costPerMile, prevCpm);
+        }
+
+        if (efficiency.average != null) {
+          const prevFuelEventsForDelta = prevEvents
+            .filter((e) => e.type === 'fuel' && e.odometer != null)
+            .sort((a, b) => a.odometer! - b.odometer!);
+          const prevEfficiency = computeFuelEfficiency(prevFuelEventsForDelta);
+          if (prevEfficiency.average != null) {
+            efficiencyDelta = computeDelta(efficiency.average, prevEfficiency.average);
+          }
+        }
+      }
+    }
+
+    // --- New: Monthly/weekly spending for bar chart ---
+    const monthlySpending = period === '1M'
+      ? computeWeeklySpending(periodEvents)
+      : computeMonthlySpending(periodEvents);
+
+    // --- New: Projected annual cost (always YTD-based) ---
+    const projectionResult = computeProjectedAnnualCost(events);
+
     return {
       totalSpent,
       costPerMile,
@@ -144,6 +308,15 @@ export function useDashboardMetrics(period: string): DashboardMetrics {
       spendingBreakdown,
       chartData,
       recentEvents,
+      totalSpentDelta,
+      costPerMileDelta,
+      efficiencyDelta,
+      previousPeriodTotal: previousPeriodTotalValue,
+      previousCostPerMile: previousCostPerMileValue,
+      periodLabel: getPeriodLabel(period),
+      monthlySpending,
+      projectedAnnualCost: projectionResult?.projected ?? null,
+      ytdSpent: projectionResult?.ytdSpent ?? null,
     };
   }, [events, period]);
 }

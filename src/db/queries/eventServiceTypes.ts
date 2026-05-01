@@ -65,3 +65,48 @@ export async function setForEvent(
     }
   });
 }
+
+export interface ServiceEventWithType {
+  eventId: string;
+  date: string;
+  odometer: number;
+  serviceTypeName: string;
+  serviceTypeId: string;
+}
+
+export async function getServiceEventsByType(
+  vehicleId: string
+): Promise<Map<string, ServiceEventWithType[]>> {
+  const db = getDatabase();
+  const rows = await db.getAllAsync<{
+    eventId: string;
+    date: string;
+    odometer: number | null;
+    serviceTypeName: string;
+    serviceTypeId: string;
+  }>(
+    `SELECT e.id AS eventId, e.date, e.odometer, st.name AS serviceTypeName, st.id AS serviceTypeId
+     FROM event e
+     JOIN event_service_type est ON est.eventId = e.id
+     JOIN service_type st ON st.id = est.serviceTypeId
+     WHERE e.vehicleId = ? AND e.odometer IS NOT NULL
+     ORDER BY e.odometer ASC`,
+    [vehicleId]
+  );
+
+  const map = new Map<string, ServiceEventWithType[]>();
+  for (const row of rows) {
+    if (row.odometer == null) continue;
+    const entry: ServiceEventWithType = {
+      eventId: row.eventId,
+      date: row.date,
+      odometer: row.odometer,
+      serviceTypeName: row.serviceTypeName,
+      serviceTypeId: row.serviceTypeId,
+    };
+    const existing = map.get(row.serviceTypeId) ?? [];
+    existing.push(entry);
+    map.set(row.serviceTypeId, existing);
+  }
+  return map;
+}
