@@ -67,6 +67,7 @@ export default function DashboardScreen() {
   const [period, setPeriod] = useState<string>('3M');
   const [showCelebration, setShowCelebration] = useState(false);
   const prevEventCountRef = useRef(eventCount);
+  const prevVehicleIdRef = useRef(activeVehicle?.id);
   const metrics = useDashboardMetrics(period);
 
   const [insightInput, setInsightInput] = useState<InsightEngineInput | null>(null);
@@ -125,13 +126,18 @@ export default function DashboardScreen() {
   const { insights, dismiss } = useInsights(insightInput, activeVehicle?.id ?? null);
 
   useEffect(() => {
+    if (activeVehicle?.id !== prevVehicleIdRef.current) {
+      prevVehicleIdRef.current = activeVehicle?.id;
+      prevEventCountRef.current = eventCount;
+      return;
+    }
     if (prevEventCountRef.current === 0 && eventCount > 0) {
       setShowCelebration(true);
       const timer = setTimeout(() => setShowCelebration(false), 4000);
       return () => clearTimeout(timer);
     }
     prevEventCountRef.current = eventCount;
-  }, [eventCount]);
+  }, [eventCount, activeVehicle?.id]);
 
   const odometerUnit = activeVehicle?.odometerUnit ?? 'miles';
   const volumeUnit = activeVehicle?.volumeUnit ?? 'gallons';
