@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, type ReactNode } from 'react';
-import { Animated, View, type LayoutChangeEvent } from 'react-native';
+import { Animated, type LayoutChangeEvent } from 'react-native';
 import { SkeletonBone } from './Skeleton';
 
 type Phase = 'idle' | 'shimmer' | 'reveal';
@@ -51,7 +51,7 @@ export function ChartTransition({ transitionKey, isDark, children }: ChartTransi
       }
       animRef.current?.stop();
     };
-  }, [transitionKey]);
+  }, [transitionKey, fadeAnim, measuredHeight]);
 
   const handleLayout = (e: LayoutChangeEvent) => {
     const h = e.nativeEvent.layout.height;
