@@ -34,11 +34,13 @@ export function VehicleSwitcher({ tintColor }: VehicleSwitcherProps) {
   }, []);
 
   const handleSelectVehicle = useCallback(
-    async (vehicle: Vehicle) => {
+    (vehicle: Vehicle) => {
       if (vehicle.id !== activeVehicle?.id) {
-        await switchVehicle(vehicle.id);
+        handleDismiss();
+        switchVehicle(vehicle.id);
+      } else {
+        handleDismiss();
       }
-      handleDismiss();
     },
     [activeVehicle?.id, handleDismiss]
   );
