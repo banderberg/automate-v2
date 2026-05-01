@@ -499,7 +499,8 @@ export default function DashboardScreen() {
                 rulesType="solid"
                 dataPointsColor="#1A9A8F"
                 dataPointsRadius={4}
-                spacing={lineChartData.length > 1 ? Math.max(44, chartWidth / lineChartData.length) : 100}
+                spacing={lineChartData.length > 1 ? Math.max(28, chartWidth / lineChartData.length) : 100}
+                scrollToEnd
                 initialSpacing={16}
                 endSpacing={16}
                 isAnimated
