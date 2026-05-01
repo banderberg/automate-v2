@@ -120,7 +120,7 @@ export default function DashboardScreen() {
 
     loadInsightData();
     return () => { cancelled = true; };
-  }, [activeVehicle?.id, eventCount, metrics.totalSpent, period]);
+  }, [activeVehicle?.id, metrics, places]);
 
   const { insights, dismiss } = useInsights(insightInput, activeVehicle?.id ?? null);
 

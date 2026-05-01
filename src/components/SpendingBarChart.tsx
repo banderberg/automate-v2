@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { View, Text, ScrollView } from 'react-native';
 import { BarChart } from 'react-native-gifted-charts';
 
@@ -39,8 +39,12 @@ export function SpendingBarChart({ data, isDark, chartWidth, period }: SpendingB
 
   const selected = selectedIndex != null ? displayData[selectedIndex] : null;
   const needsScroll = displayData.length > 12;
-  const barSpacing = Math.max(20, Math.min(44, (chartWidth - 40) / displayData.length - 24));
+  const barSpacing = needsScroll ? 28 : Math.max(20, Math.min(44, (chartWidth - 40) / displayData.length - 24));
   const headerLabel = period === '1M' ? 'Weekly' : 'Monthly';
+
+  useEffect(() => {
+    setSelectedIndex(null);
+  }, [period, data]);
 
   return (
     <View
@@ -63,13 +67,14 @@ export function SpendingBarChart({ data, isDark, chartWidth, period }: SpendingB
       </View>
       <View accessibilityLabel={`Spending bar chart, ${displayData.length} bars`}>
         <BarChart
+          key={`${period}-${displayData.length}`}
           stackData={stackData}
-          width={needsScroll ? displayData.length * (24 + barSpacing) : chartWidth}
+          width={chartWidth}
           height={160}
           barWidth={24}
           spacing={barSpacing}
           initialSpacing={16}
-          endSpacing={16}
+          endSpacing={32}
           noOfSections={3}
           yAxisColor="transparent"
           xAxisColor={isDark ? '#2A2926' : '#F0EFEC'}

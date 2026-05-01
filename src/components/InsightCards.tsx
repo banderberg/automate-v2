@@ -6,7 +6,7 @@ import type { DisplayedInsight } from '../hooks/useInsights';
 interface InsightCardsProps {
   insights: DisplayedInsight[];
   isDark: boolean;
-  onDismiss: (impressionId: string, insightType: string) => void;
+  onDismiss: (impressionId: string | null, insightType: string) => void;
 }
 
 export function InsightCards({ insights, isDark, onDismiss }: InsightCardsProps) {
@@ -14,6 +14,7 @@ export function InsightCards({ insights, isDark, onDismiss }: InsightCardsProps)
 
   useEffect(() => {
     if (insights.length > 0) {
+      fadeAnim.setValue(0);
       Animated.timing(fadeAnim, {
         toValue: 1,
         duration: 300,
@@ -34,11 +35,7 @@ export function InsightCards({ insights, isDark, onDismiss }: InsightCardsProps)
           icon={insight.icon}
           iconBgColor={insight.iconBgColor}
           isDark={isDark}
-          onDismiss={() => {
-            if (insight.impressionId) {
-              onDismiss(insight.impressionId, insight.type);
-            }
-          }}
+          onDismiss={() => onDismiss(insight.impressionId, insight.type)}
         />
       ))}
     </Animated.View>

@@ -137,15 +137,21 @@ function computeMonthlySpending(events: VehicleEvent[]): MonthlySpending[] {
     byMonth.set(month, entry);
   }
 
-  return Array.from(byMonth.entries())
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([month, data]) => ({
-      label: new Date(month + '-01T00:00:00').toLocaleDateString('en-US', { month: 'short' }),
+  const sorted = Array.from(byMonth.entries()).sort(([a], [b]) => a.localeCompare(b));
+  const years = new Set(sorted.map(([m]) => m.slice(0, 4)));
+  const multiYear = years.size > 1;
+
+  return sorted.map(([month, data]) => {
+    const monthName = new Date(month + '-01T00:00:00').toLocaleDateString('en-US', { month: 'short' });
+    const label = multiYear ? `${monthName} '${month.slice(2, 4)}` : monthName;
+    return {
+      label,
       fuel: data.fuel,
       service: data.service,
       expense: data.expense,
       total: data.fuel + data.service + data.expense,
-    }));
+    };
+  });
 }
 
 function computeWeeklySpending(events: VehicleEvent[]): MonthlySpending[] {

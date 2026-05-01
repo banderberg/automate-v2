@@ -40,19 +40,30 @@ export function useInsights(
       }
 
       const now = Date.now();
+      console.log(`[Insights] Engine produced ${allInsights.length} candidates:`, allInsights.map(i => `${i.type}(score=${i.score})`).join(', '));
       const filtered = allInsights.filter((insight) => {
         const lastImpression = impressionMap.get(insight.type);
         if (!lastImpression) return true;
 
-        if (lastImpression.dataHash === insight.dataKey) return false;
+        if (lastImpression.dataHash === insight.dataKey) {
+          console.log(`[Insights] SUPPRESSED ${insight.type}: same dataKey (already shown with identical data)`);
+          return false;
+        }
 
         const shownAt = new Date(lastImpression.shownAt).getTime();
         const cooldown = lastImpression.dismissedAt ? DISMISSED_COOLDOWN_MS : SHOWN_COOLDOWN_MS;
-        return now - shownAt >= cooldown;
+        const remaining = cooldown - (now - shownAt);
+        if (remaining > 0) {
+          console.log(`[Insights] SUPPRESSED ${insight.type}: cooldown ${Math.round(remaining / 60000)}min remaining (${lastImpression.dismissedAt ? 'dismissed' : 'shown'})`);
+          return false;
+        }
+        return true;
       });
 
+      console.log(`[Insights] After suppression: ${filtered.length} remain`);
       filtered.sort((a, b) => b.score - a.score);
       const top = filtered.slice(0, MAX_INSIGHTS);
+      console.log(`[Insights] Displaying top ${top.length}:`, top.map(i => `${i.type}(score=${i.score})`).join(', '));
 
       if (cancelled) return;
       setInsights(top.map((i) => ({ ...i, impressionId: null })));
@@ -79,8 +90,10 @@ export function useInsights(
     };
   }, [input, vehicleId]);
 
-  const dismiss = useCallback(async (impressionId: string, insightType: string) => {
-    await insightImpressions.markDismissed(impressionId);
+  const dismiss = useCallback(async (impressionId: string | null, insightType: string) => {
+    if (impressionId) {
+      await insightImpressions.markDismissed(impressionId);
+    }
     setInsights((prev) => prev.filter((i) => i.type !== insightType));
   }, []);
 
