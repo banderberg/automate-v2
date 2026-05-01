@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { useEventStore } from '../stores/eventStore';
-import { computeFuelEfficiency } from '../services/fuelEfficiency';
+import { computeFuelEfficiency, downsampleEfficiencyData } from '../services/fuelEfficiency';
+import type { EfficiencySegment } from '../services/fuelEfficiency';
 import { computeCostPerMile } from '../services/costPerMile';
 import type { VehicleEvent } from '../types';
 
@@ -9,12 +10,6 @@ interface SpendingBreakdown {
   service: number;
   expense: number;
   total: number;
-}
-
-interface EfficiencyChartPoint {
-  date: string;
-  efficiency: number;
-  isPartial: boolean;
 }
 
 export interface PeriodDelta {
@@ -36,11 +31,11 @@ interface DashboardMetrics {
   costPerMile: number | null;
   efficiency: {
     average: number | null;
-    segments: EfficiencyChartPoint[];
+    segments: EfficiencySegment[];
   };
   efficiencyTrend: 'up' | 'down' | 'flat' | null;
   spendingBreakdown: SpendingBreakdown;
-  chartData: EfficiencyChartPoint[];
+  chartData: EfficiencySegment[];
   recentEvents: VehicleEvent[];
   // New fields for smart dashboard
   totalSpentDelta: PeriodDelta | null;
@@ -250,8 +245,8 @@ export function useDashboardMetrics(period: string): DashboardMetrics {
       total: totalSpent,
     };
 
-    const chartData: EfficiencyChartPoint[] = efficiency.segments.filter(
-      (s) => s.efficiency > 0 || s.isPartial
+    const chartData = downsampleEfficiencyData(
+      efficiency.segments.filter(s => s.efficiency > 0)
     );
 
     const recentEvents = events.slice(0, 5);
