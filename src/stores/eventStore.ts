@@ -121,35 +121,35 @@ export const useEventStore = create<EventStore>((set, get) => ({
         return { events: insertSorted(state.events, event), serviceLabels };
       });
 
-      // Increment event counter and check for review prompt
-      try {
-        const { useSettingsStore } = await import('./settingsStore');
-        const settings = useSettingsStore.getState().settings;
-        const newCount = settings.totalEventsLogged + 1;
-        await useSettingsStore.getState().updateSetting('totalEventsLogged', newCount);
+      // Fire-and-forget: increment counter and maybe prompt review (non-blocking)
+      (async () => {
+        try {
+          const { useSettingsStore } = await import('./settingsStore');
+          const settings = useSettingsStore.getState().settings;
+          const newCount = settings.totalEventsLogged + 1;
+          await useSettingsStore.getState().updateSetting('totalEventsLogged', newCount);
 
-        if (newCount >= 5) {
-          const lastPrompt = settings.lastReviewPromptDate;
-          const daysSinceLastPrompt = lastPrompt
-            ? (Date.now() - new Date(lastPrompt).getTime()) / (1000 * 60 * 60 * 24)
-            : Infinity;
+          if (newCount >= 5) {
+            const lastPrompt = settings.lastReviewPromptDate;
+            const daysSinceLastPrompt = lastPrompt
+              ? (Date.now() - new Date(lastPrompt).getTime()) / (1000 * 60 * 60 * 24)
+              : Infinity;
 
-          if (daysSinceLastPrompt >= 90) {
-            const StoreReview = await import('expo-store-review');
-            if (await StoreReview.isAvailableAsync()) {
-              await StoreReview.requestReview();
-              await useSettingsStore.getState().updateSetting(
-                'lastReviewPromptDate',
-                new Date().toISOString().slice(0, 10)
-              );
-            } else if (__DEV__) {
-              console.log('[ReviewPrompt] StoreReview not available (expected in dev builds)');
+            if (daysSinceLastPrompt >= 90) {
+              const StoreReview = await import('expo-store-review');
+              if (await StoreReview.isAvailableAsync()) {
+                await StoreReview.requestReview();
+                await useSettingsStore.getState().updateSetting(
+                  'lastReviewPromptDate',
+                  new Date().toISOString().slice(0, 10)
+                );
+              }
             }
           }
+        } catch {
+          // Review prompt is best-effort, never block event creation
         }
-      } catch (reviewErr) {
-        if (__DEV__) console.log('[ReviewPrompt] error:', reviewErr);
-      }
+      })();
 
       return event;
     } catch (e) {

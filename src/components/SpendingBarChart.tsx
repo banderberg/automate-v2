@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, useEffect } from 'react';
+import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { View, Text, ScrollView } from 'react-native';
 import { BarChart } from 'react-native-gifted-charts';
 import { ChartTransition } from '@/src/components/ChartTransition';
@@ -29,16 +29,20 @@ export function SpendingBarChart({ data, isDark, chartWidth, period, currencyCod
     return capped;
   }, [data]);
 
+  const handleBarPress = useCallback((index: number) => {
+    setSelectedIndex(index);
+  }, []);
+
   const stackData = useMemo(() => {
     return displayData.map((d, index) => ({
       stacks: [
-        { value: d.fuel, color: '#1A9A8F', onPress: () => setSelectedIndex(index) },
-        { value: d.service, color: '#E8772B', onPress: () => setSelectedIndex(index) },
-        { value: d.expense, color: '#2EAD76', onPress: () => setSelectedIndex(index) },
+        { value: d.fuel, color: '#1A9A8F', onPress: () => handleBarPress(index) },
+        { value: d.service, color: '#E8772B', onPress: () => handleBarPress(index) },
+        { value: d.expense, color: '#2EAD76', onPress: () => handleBarPress(index) },
       ],
       label: d.label,
     }));
-  }, [displayData]);
+  }, [displayData, handleBarPress]);
 
   const selected = selectedIndex != null ? displayData[selectedIndex] : null;
   const needsScroll = displayData.length > 12;

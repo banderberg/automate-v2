@@ -38,6 +38,8 @@ const PERIODS = [
   { value: 'All', label: 'All' },
 ] as const;
 
+const SCROLL_CONTENT_STYLE = { paddingBottom: 80 } as const;
+
 function cardShadow(isDark: boolean) {
   return {
     backgroundColor: isDark ? '#1A1917' : '#FEFDFB',
@@ -213,6 +215,12 @@ export default function DashboardScreen() {
     return m;
   }, [places]);
 
+  const categoryMap = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const c of categories) m.set(c.id, c.name);
+    return m;
+  }, [categories]);
+
   const handleEventPress = useCallback(
     (eventId: string, type: 'fuel' | 'service' | 'expense') => {
       const routes = {
@@ -319,11 +327,11 @@ export default function DashboardScreen() {
       </View>
 
       {isLoading ? (
-        <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 80 }}>
+        <ScrollView className="flex-1" contentContainerStyle={SCROLL_CONTENT_STYLE}>
           <DashboardSkeleton />
         </ScrollView>
       ) : (
-      <ScrollView ref={scrollRef} className="flex-1" contentContainerStyle={{ paddingBottom: 80 }}>
+      <ScrollView ref={scrollRef} className="flex-1" contentContainerStyle={SCROLL_CONTENT_STYLE}>
 
         {/* ── First-event celebration banner ── */}
         {showCelebration && (
@@ -669,7 +677,7 @@ export default function DashboardScreen() {
               {metrics.recentEvents.map((event, index) => {
                 const place = event.placeId ? placeMap.get(event.placeId) ?? null : null;
                 const eventLabel = event.type === 'expense'
-                  ? (event.categoryId ? categories.find((c) => c.id === event.categoryId)?.name : undefined)
+                  ? (event.categoryId ? categoryMap.get(event.categoryId) : undefined)
                   : event.type === 'service'
                     ? serviceLabels.get(event.id)
                     : undefined;

@@ -19,23 +19,49 @@ interface ReminderStore {
   clearReminders(): void;
 }
 
-async function getLinkedName(reminder: Reminder): Promise<string> {
+async function batchLinkedNames(reminders: Reminder[]): Promise<Map<string, string>> {
   const db = getDatabase();
-  if (reminder.serviceTypeId) {
-    const row = await db.getFirstAsync<{ name: string }>(
-      'SELECT name FROM service_type WHERE id = ?',
-      [reminder.serviceTypeId]
+  const nameMap = new Map<string, string>();
+
+  const serviceTypeIds = reminders
+    .filter((r) => r.serviceTypeId)
+    .map((r) => r.serviceTypeId!);
+  const categoryIds = reminders
+    .filter((r) => r.categoryId)
+    .map((r) => r.categoryId!);
+
+  if (serviceTypeIds.length > 0) {
+    const placeholders = serviceTypeIds.map(() => '?').join(',');
+    const rows = await db.getAllAsync<{ id: string; name: string }>(
+      `SELECT id, name FROM service_type WHERE id IN (${placeholders})`,
+      serviceTypeIds
     );
-    return row?.name ?? 'Unknown';
+    for (const row of rows) nameMap.set(row.id, row.name);
   }
-  if (reminder.categoryId) {
-    const row = await db.getFirstAsync<{ name: string }>(
-      'SELECT name FROM category WHERE id = ?',
-      [reminder.categoryId]
+
+  if (categoryIds.length > 0) {
+    const placeholders = categoryIds.map(() => '?').join(',');
+    const rows = await db.getAllAsync<{ id: string; name: string }>(
+      `SELECT id, name FROM category WHERE id IN (${placeholders})`,
+      categoryIds
     );
-    return row?.name ?? 'Unknown';
+    for (const row of rows) nameMap.set(row.id, row.name);
   }
-  return 'Unknown';
+
+  return nameMap;
+}
+
+function enrichReminders(
+  reminders: Reminder[],
+  currentOdometer: number | null,
+  today: string,
+  nameMap: Map<string, string>
+): ReminderWithStatus[] {
+  return reminders.map((reminder) => {
+    const nextDue = computeNextDue(reminder, currentOdometer, today);
+    const linkedName = nameMap.get(reminder.serviceTypeId ?? reminder.categoryId ?? '') ?? 'Unknown';
+    return { ...reminder, ...nextDue, linkedName };
+  });
 }
 
 async function enrichReminder(
@@ -43,13 +69,10 @@ async function enrichReminder(
   currentOdometer: number | null,
   today: string
 ): Promise<ReminderWithStatus> {
+  const nameMap = await batchLinkedNames([reminder]);
+  const linkedName = nameMap.get(reminder.serviceTypeId ?? reminder.categoryId ?? '') ?? 'Unknown';
   const nextDue = computeNextDue(reminder, currentOdometer, today);
-  const linkedName = await getLinkedName(reminder);
-  return {
-    ...reminder,
-    ...nextDue,
-    linkedName,
-  };
+  return { ...reminder, ...nextDue, linkedName };
 }
 
 async function scheduleNotificationForReminder(
@@ -103,13 +126,13 @@ export const useReminderStore = create<ReminderStore>((set, get) => ({
   async loadForVehicle(vehicleId) {
     set({ isLoading: true, error: null });
     try {
-      const reminders = await reminderQueries.getByVehicle(vehicleId);
-      const maxOdometer = await eventQueries.getMaxOdometer(vehicleId);
+      const [reminders, maxOdometer] = await Promise.all([
+        reminderQueries.getByVehicle(vehicleId),
+        eventQueries.getMaxOdometer(vehicleId),
+      ]);
       const today = new Date().toISOString().split('T')[0];
-
-      const enriched = await Promise.all(
-        reminders.map((r) => enrichReminder(r, maxOdometer, today))
-      );
+      const nameMap = await batchLinkedNames(reminders);
+      const enriched = enrichReminders(reminders, maxOdometer, today, nameMap);
       enriched.sort(sortByUrgency);
 
       set({ reminders: enriched, isLoading: false });

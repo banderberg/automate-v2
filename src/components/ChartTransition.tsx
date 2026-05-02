@@ -18,11 +18,13 @@ interface ChartTransitionProps {
 export function ChartTransition({ transitionKey, children }: ChartTransitionProps) {
   const [displayedKey, setDisplayedKey] = useState(transitionKey);
   const scaleY = useSharedValue(1);
+  const opacity = useSharedValue(1);
   const isFirstRender = useRef(true);
   const cachedChildren = useRef<React.ReactNode>(children);
 
   if (transitionKey === displayedKey) {
     cachedChildren.current = children;
+    opacity.value = 1;
   }
 
   useEffect(() => {
@@ -34,17 +36,23 @@ export function ChartTransition({ transitionKey, children }: ChartTransitionProp
     if (transitionKey === displayedKey) return;
 
     cancelAnimation(scaleY);
+    cancelAnimation(opacity);
 
     const updateKey = () => {
       setDisplayedKey(transitionKey);
     };
 
     scaleY.value = withSequence(
-      withTiming(0, { duration: 200, easing: Easing.out(Easing.quad) }),
+      withTiming(0, {
+        duration: 200,
+        easing: Easing.out(Easing.quad),
+      }),
       withDelay(500, withTiming(1, { duration: 300, easing: Easing.out(Easing.quad) }))
     );
 
-    setTimeout(() => runOnJS(updateKey)(), 210);
+    opacity.value = withTiming(0, { duration: 200 }, (finished) => {
+      if (finished) runOnJS(updateKey)();
+    });
   }, [transitionKey]);
 
   const animatedStyle = useAnimatedStyle(() => ({
