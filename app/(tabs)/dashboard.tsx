@@ -20,6 +20,7 @@ import { getOdometerLabel, getEfficiencyLabel } from '@/src/constants/units';
 import { ProjectedCost } from '@/src/components/ProjectedCost';
 import { InsightCards } from '@/src/components/InsightCards';
 import { SpendingBarChart } from '@/src/components/SpendingBarChart';
+import { ChartTransition } from '@/src/components/ChartTransition';
 import { useInsights } from '@/src/hooks/useInsights';
 import { getServiceEventsByType } from '@/src/db/queries/eventServiceTypes';
 import { getFuelEventsByFuelType } from '@/src/db/queries/events';
@@ -512,38 +513,38 @@ export default function DashboardScreen() {
               </Text>
               <Text style={{ fontSize: 11, color: isDark ? '#8A8680' : '#706C67' }}>{effLabel}</Text>
             </View>
-            <View
-              accessibilityLabel={`Fuel efficiency chart, ${lineChartData.length} data points, average ${metrics.efficiency.average?.toFixed(1) ?? 'N/A'} ${effLabel}`}
-            >
-              <LineChart
-                data={lineChartData}
-                width={chartWidth}
-                height={160}
-                color="#1A9A8F"
-                thickness={2.5}
-                curved
-                areaChart
-                startFillColor="rgba(26, 154, 143, 0.10)"
-                endFillColor="rgba(26, 154, 143, 0.0)"
-                startOpacity={0.1}
-                endOpacity={0}
-                noOfSections={3}
-                yAxisColor="transparent"
-                xAxisColor={isDark ? '#2A2926' : '#F0EFEC'}
-                yAxisTextStyle={{ fontSize: 10, color: isDark ? '#8A8680' : '#706C67' }}
-                xAxisLabelTextStyle={{ fontSize: 9, color: isDark ? '#8A8680' : '#706C67' }}
-                hideRules={false}
-                rulesColor={isDark ? '#2A292620' : '#F0EFEC80'}
-                rulesType="solid"
-                dataPointsColor="#1A9A8F"
-                dataPointsRadius={4}
-                spacing={lineChartData.length > 1 ? Math.max(28, chartWidth / lineChartData.length) : 100}
-                scrollToEnd
-                initialSpacing={16}
-                endSpacing={16}
-                isAnimated
-                animationDuration={500}
-                pointerConfig={{
+            <ChartTransition transitionKey={period}>
+              <View
+                accessibilityLabel={`Fuel efficiency chart, ${lineChartData.length} data points, average ${metrics.efficiency.average?.toFixed(1) ?? 'N/A'} ${effLabel}`}
+              >
+                <LineChart
+                  data={lineChartData}
+                  width={chartWidth}
+                  height={160}
+                  color="#1A9A8F"
+                  thickness={2.5}
+                  curved
+                  areaChart
+                  startFillColor="rgba(26, 154, 143, 0.10)"
+                  endFillColor="rgba(26, 154, 143, 0.0)"
+                  startOpacity={0.1}
+                  endOpacity={0}
+                  noOfSections={3}
+                  yAxisColor="transparent"
+                  xAxisColor={isDark ? '#2A2926' : '#F0EFEC'}
+                  yAxisTextStyle={{ fontSize: 10, color: isDark ? '#8A8680' : '#706C67' }}
+                  xAxisLabelTextStyle={{ fontSize: 9, color: isDark ? '#8A8680' : '#706C67' }}
+                  hideRules={false}
+                  rulesColor={isDark ? '#2A292620' : '#F0EFEC80'}
+                  rulesType="solid"
+                  dataPointsColor="#1A9A8F"
+                  dataPointsRadius={4}
+                  spacing={lineChartData.length > 1 ? Math.max(28, chartWidth / lineChartData.length) : 100}
+                  scrollToEnd
+                  initialSpacing={16}
+                  endSpacing={16}
+                  animationDuration={500}
+                  pointerConfig={{
                   pointerStripColor: '#1A9A8F80',
                   pointerStripWidth: 1,
                   pointerColor: '#1A9A8F',
@@ -558,8 +559,9 @@ export default function DashboardScreen() {
                     </View>
                   ),
                 }}
-              />
-            </View>
+                />
+              </View>
+            </ChartTransition>
             {metrics.chartData.some((d) => d.isPartial) && (
               <Text style={{ fontSize: 10, color: isDark ? '#54524D' : '#706C67', paddingHorizontal: 16, paddingBottom: 12 }}>
                 Hollow dots = partial fills (excluded from average)

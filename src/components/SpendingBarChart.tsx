@@ -1,6 +1,7 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { View, Text, ScrollView } from 'react-native';
 import { BarChart } from 'react-native-gifted-charts';
+import { ChartTransition } from '@/src/components/ChartTransition';
 
 interface MonthlySpending {
   label: string;
@@ -39,7 +40,7 @@ export function SpendingBarChart({ data, isDark, chartWidth, period }: SpendingB
 
   const selected = selectedIndex != null ? displayData[selectedIndex] : null;
   const needsScroll = displayData.length > 12;
-  const barSpacing = needsScroll ? 28 : Math.max(20, Math.min(44, (chartWidth - 40) / displayData.length - 24));
+  const barSpacing = needsScroll ? 20 : Math.max(12, Math.min(32, (chartWidth - 40) / displayData.length - 24));
   const headerLabel = period === '1M' ? 'Weekly' : 'Monthly';
 
   useEffect(() => {
@@ -65,32 +66,33 @@ export function SpendingBarChart({ data, isDark, chartWidth, period }: SpendingB
         </Text>
         <Text style={{ fontSize: 11, color: isDark ? '#8A8680' : '#706C67' }}>{headerLabel}</Text>
       </View>
-      <View accessibilityLabel={`Spending bar chart, ${displayData.length} bars`}>
-        <BarChart
-          key={`${period}-${displayData.length}`}
-          stackData={stackData}
-          width={chartWidth}
-          height={160}
-          barWidth={24}
-          spacing={barSpacing}
-          initialSpacing={16}
-          endSpacing={32}
-          noOfSections={3}
-          yAxisColor="transparent"
-          xAxisColor={isDark ? '#2A2926' : '#F0EFEC'}
-          yAxisTextStyle={{ fontSize: 10, color: isDark ? '#8A8680' : '#706C67' }}
-          xAxisLabelTextStyle={{ fontSize: 9, color: isDark ? '#8A8680' : '#706C67' }}
-          hideRules={false}
-          rulesColor={isDark ? '#2A292620' : '#F0EFEC80'}
-          rulesType="solid"
-          barBorderTopLeftRadius={4}
-          barBorderTopRightRadius={4}
-          isAnimated
-          animationDuration={400}
-          scrollRef={scrollRef}
-          scrollToEnd={needsScroll}
-        />
-      </View>
+      <ChartTransition transitionKey={period}>
+        <View accessibilityLabel={`Spending bar chart, ${displayData.length} bars`}>
+          <BarChart
+            key={`${period}-${displayData.length}`}
+            stackData={stackData}
+            width={chartWidth}
+            height={160}
+            barWidth={24}
+            spacing={barSpacing}
+            initialSpacing={16}
+            endSpacing={32}
+            noOfSections={3}
+            yAxisColor="transparent"
+            xAxisColor={isDark ? '#2A2926' : '#F0EFEC'}
+            yAxisTextStyle={{ fontSize: 10, color: isDark ? '#8A8680' : '#706C67' }}
+            xAxisLabelTextStyle={{ fontSize: 9, color: isDark ? '#8A8680' : '#706C67' }}
+            hideRules={false}
+            rulesColor={isDark ? '#2A292620' : '#F0EFEC80'}
+            rulesType="solid"
+            barBorderTopLeftRadius={4}
+            barBorderTopRightRadius={4}
+            animationDuration={400}
+            scrollRef={scrollRef}
+            scrollToEnd={needsScroll}
+          />
+        </View>
+      </ChartTransition>
       {/* Legend */}
       <View style={{ flexDirection: 'row', gap: 16, justifyContent: 'center', paddingVertical: 8 }}>
         <LegendDot color="#1A9A8F" label="Fuel" isDark={isDark} />

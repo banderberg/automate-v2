@@ -14,7 +14,7 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "bundleIdentifier": "com.automate.carexpenses",
+      "bundleIdentifier": "com.arctosbuilt.automate",
       "supportsTablet": true,
       "infoPlist": {
         "NSCameraUsageDescription": "AutoMate uses your camera to take photos of receipts and your vehicle.",
@@ -23,7 +23,7 @@
       }
     },
     "android": {
-      "package": "com.automate.carexpenses",
+      "package": "com.arctosbuilt.automate",
       "versionCode": 1,
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
