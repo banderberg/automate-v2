@@ -11,7 +11,6 @@ import { EmptyState } from '@/src/components/EmptyState';
 import { EventRow } from '@/src/components/EventRow';
 import { MetricInfo } from '@/src/components/MetricInfo';
 import { DashboardSkeleton } from '@/src/components/Skeleton';
-import { ChartTransition } from '@/src/components/ChartTransition';
 import { useVehicleStore } from '@/src/stores/vehicleStore';
 import { useEventStore } from '@/src/stores/eventStore';
 import { useReferenceDataStore } from '@/src/stores/referenceDataStore';
@@ -513,58 +512,54 @@ export default function DashboardScreen() {
               </Text>
               <Text style={{ fontSize: 11, color: isDark ? '#8A8680' : '#706C67' }}>{effLabel}</Text>
             </View>
-            <ChartTransition transitionKey={period} isDark={isDark}>
-              <View
-                accessibilityLabel={`Fuel efficiency chart, ${lineChartData.length} data points, average ${metrics.efficiency.average?.toFixed(1) ?? 'N/A'} ${effLabel}`}
-              >
-                <LineChart
-                  key={`efficiency-${period}`}
-                  data={lineChartData}
-                  width={chartWidth}
-                  height={160}
-                  color="#1A9A8F"
-                  thickness={2.5}
-                  curved
-                  areaChart
-                  startFillColor="rgba(26, 154, 143, 0.10)"
-                  endFillColor="rgba(26, 154, 143, 0.0)"
-                  startOpacity={0.1}
-                  endOpacity={0}
-                  noOfSections={3}
-                  yAxisColor="transparent"
-                  xAxisColor={isDark ? '#2A2926' : '#F0EFEC'}
-                  yAxisTextStyle={{ fontSize: 10, color: isDark ? '#8A8680' : '#706C67' }}
-                  xAxisLabelTextStyle={{ fontSize: 9, color: isDark ? '#8A8680' : '#706C67' }}
-                  hideRules={false}
-                  rulesColor={isDark ? '#2A292620' : '#F0EFEC80'}
-                  rulesType="solid"
-                  dataPointsColor="#1A9A8F"
-                  dataPointsRadius={4}
-                  spacing={lineChartData.length > 1 ? Math.max(28, chartWidth / lineChartData.length) : 100}
-                  scrollToEnd
-                  scrollAnimation={false}
-                  initialSpacing={16}
-                  endSpacing={16}
-                  isAnimated
-                  animationDuration={500}
-                  pointerConfig={{
-                    pointerStripColor: '#1A9A8F80',
-                    pointerStripWidth: 1,
-                    pointerColor: '#1A9A8F',
-                    radius: 6,
-                    pointerLabelWidth: 100,
-                    pointerLabelHeight: 36,
-                    pointerLabelComponent: (items: { value: number }[]) => (
-                      <View style={{ backgroundColor: '#1C1B18', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5 }}>
-                        <Text style={{ color: '#F5F4F1', fontSize: 12, fontWeight: '600', fontVariant: ['tabular-nums'] }}>
-                          {items[0]?.value?.toFixed(1)} {effLabel}
-                        </Text>
-                      </View>
-                    ),
-                  }}
-                />
-              </View>
-            </ChartTransition>
+            <View
+              accessibilityLabel={`Fuel efficiency chart, ${lineChartData.length} data points, average ${metrics.efficiency.average?.toFixed(1) ?? 'N/A'} ${effLabel}`}
+            >
+              <LineChart
+                data={lineChartData}
+                width={chartWidth}
+                height={160}
+                color="#1A9A8F"
+                thickness={2.5}
+                curved
+                areaChart
+                startFillColor="rgba(26, 154, 143, 0.10)"
+                endFillColor="rgba(26, 154, 143, 0.0)"
+                startOpacity={0.1}
+                endOpacity={0}
+                noOfSections={3}
+                yAxisColor="transparent"
+                xAxisColor={isDark ? '#2A2926' : '#F0EFEC'}
+                yAxisTextStyle={{ fontSize: 10, color: isDark ? '#8A8680' : '#706C67' }}
+                xAxisLabelTextStyle={{ fontSize: 9, color: isDark ? '#8A8680' : '#706C67' }}
+                hideRules={false}
+                rulesColor={isDark ? '#2A292620' : '#F0EFEC80'}
+                rulesType="solid"
+                dataPointsColor="#1A9A8F"
+                dataPointsRadius={4}
+                spacing={lineChartData.length > 1 ? Math.max(28, chartWidth / lineChartData.length) : 100}
+                scrollToEnd
+                initialSpacing={16}
+                endSpacing={16}
+                isAnimated
+                animationDuration={500}
+                pointerConfig={{
+                  pointerStripColor: '#1A9A8F80',
+                  pointerStripWidth: 1,
+                  pointerColor: '#1A9A8F',
+                  radius: 6,
+                  pointerLabelWidth: 100,
+                  pointerLabelHeight: 36,
+                  pointerLabelComponent: (items: { value: number }[]) => (
+                    <View style={{ backgroundColor: '#1C1B18', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5 }}>
+                      <Text style={{ color: '#F5F4F1', fontSize: 12, fontWeight: '600', fontVariant: ['tabular-nums'] }}>
+                        {items[0]?.value?.toFixed(1)} {effLabel}
+                      </Text>
+                    </View>
+                  ),
+                }}
+              />
+            </View>
             {metrics.chartData.some((d) => d.isPartial) && (
               <Text style={{ fontSize: 10, color: isDark ? '#54524D' : '#706C67', paddingHorizontal: 16, paddingBottom: 12 }}>
                 Hollow dots = partial fills (excluded from average)

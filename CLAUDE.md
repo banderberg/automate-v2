@@ -101,7 +101,6 @@ src/
   hooks/                 # Custom React hooks
     useInsights.ts       # Insight suppression and impression management
   components/            # Reusable UI components
-    ChartTransition.tsx  # Shimmer bridge for chart period transitions
     InsightCard.tsx       # Swipe-to-dismiss insight card
     InsightCards.tsx      # Container for 0–3 insight cards
     ProjectedCost.tsx    # Projected annual cost progress bar

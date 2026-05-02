@@ -1,7 +1,6 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { View, Text, ScrollView } from 'react-native';
 import { BarChart } from 'react-native-gifted-charts';
-import { ChartTransition } from './ChartTransition';
 
 interface MonthlySpending {
   label: string;
@@ -66,34 +65,32 @@ export function SpendingBarChart({ data, isDark, chartWidth, period }: SpendingB
         </Text>
         <Text style={{ fontSize: 11, color: isDark ? '#8A8680' : '#706C67' }}>{headerLabel}</Text>
       </View>
-      <ChartTransition transitionKey={`${period}-${displayData.length}`} isDark={isDark}>
-        <View accessibilityLabel={`Spending bar chart, ${displayData.length} bars`}>
-          <BarChart
-            key={`${period}-${displayData.length}`}
-            stackData={stackData}
-            width={chartWidth}
-            height={160}
-            barWidth={24}
-            spacing={barSpacing}
-            initialSpacing={16}
-            endSpacing={32}
-            noOfSections={3}
-            yAxisColor="transparent"
-            xAxisColor={isDark ? '#2A2926' : '#F0EFEC'}
-            yAxisTextStyle={{ fontSize: 10, color: isDark ? '#8A8680' : '#706C67' }}
-            xAxisLabelTextStyle={{ fontSize: 9, color: isDark ? '#8A8680' : '#706C67' }}
-            hideRules={false}
-            rulesColor={isDark ? '#2A292620' : '#F0EFEC80'}
-            rulesType="solid"
-            barBorderTopLeftRadius={4}
-            barBorderTopRightRadius={4}
-            isAnimated
-            animationDuration={400}
-            scrollRef={scrollRef}
-            scrollToEnd={needsScroll}
-          />
-        </View>
-      </ChartTransition>
+      <View accessibilityLabel={`Spending bar chart, ${displayData.length} bars`}>
+        <BarChart
+          key={`${period}-${displayData.length}`}
+          stackData={stackData}
+          width={chartWidth}
+          height={160}
+          barWidth={24}
+          spacing={barSpacing}
+          initialSpacing={16}
+          endSpacing={32}
+          noOfSections={3}
+          yAxisColor="transparent"
+          xAxisColor={isDark ? '#2A2926' : '#F0EFEC'}
+          yAxisTextStyle={{ fontSize: 10, color: isDark ? '#8A8680' : '#706C67' }}
+          xAxisLabelTextStyle={{ fontSize: 9, color: isDark ? '#8A8680' : '#706C67' }}
+          hideRules={false}
+          rulesColor={isDark ? '#2A292620' : '#F0EFEC80'}
+          rulesType="solid"
+          barBorderTopLeftRadius={4}
+          barBorderTopRightRadius={4}
+          isAnimated
+          animationDuration={400}
+          scrollRef={scrollRef}
+          scrollToEnd={needsScroll}
+        />
+      </View>
       {/* Legend */}
       <View style={{ flexDirection: 'row', gap: 16, justifyContent: 'center', paddingVertical: 8 }}>
         <LegendDot color="#1A9A8F" label="Fuel" isDark={isDark} />
