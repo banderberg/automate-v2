@@ -2,6 +2,7 @@ import { useState, useMemo, useRef, useEffect } from 'react';
 import { View, Text, ScrollView } from 'react-native';
 import { BarChart } from 'react-native-gifted-charts';
 import { ChartTransition } from '@/src/components/ChartTransition';
+import { formatCurrency } from '@/src/constants/currency';
 
 interface MonthlySpending {
   label: string;
@@ -16,9 +17,10 @@ interface SpendingBarChartProps {
   isDark: boolean;
   chartWidth: number;
   period: string;
+  currencyCode?: string;
 }
 
-export function SpendingBarChart({ data, isDark, chartWidth, period }: SpendingBarChartProps) {
+export function SpendingBarChart({ data, isDark, chartWidth, period, currencyCode = 'USD' }: SpendingBarChartProps) {
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const scrollRef = useRef<ScrollView>(null);
 
@@ -110,7 +112,7 @@ export function SpendingBarChart({ data, isDark, chartWidth, period }: SpendingB
               fontVariant: ['tabular-nums'],
             }}
           >
-            {selected.label}: ${Math.round(selected.fuel)} fuel + ${Math.round(selected.service)} service + ${Math.round(selected.expense)} expense = ${Math.round(selected.total)}
+            {selected.label}: {formatCurrency(Math.round(selected.fuel), currencyCode)} fuel + {formatCurrency(Math.round(selected.service), currencyCode)} service + {formatCurrency(Math.round(selected.expense), currencyCode)} expense = {formatCurrency(Math.round(selected.total), currencyCode)}
           </Text>
         </View>
       )}

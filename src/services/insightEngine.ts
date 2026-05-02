@@ -1,5 +1,6 @@
 import type { Vehicle, VehicleEvent, Place } from '../types';
 import { getOdometerLabel, getVolumeLabel, getEfficiencyLabel } from '../constants/units';
+import { formatCurrency } from '../constants/currency';
 
 export type InsightType =
   | 'efficiency_drop'
@@ -43,6 +44,7 @@ export interface InsightEngineInput {
     average: number | null;
     recentRollingAverage: number | null;
   };
+  currencyCode?: string;
 }
 
 interface UnitLabels {
@@ -64,14 +66,15 @@ function resolveUnitLabels(vehicle: Vehicle): UnitLabels {
 export function generateInsights(input: InsightEngineInput): Insight[] {
   const insights: Insight[] = [];
   const units = resolveUnitLabels(input.vehicle);
+  const cc = input.currencyCode ?? 'USD';
 
   checkEfficiencyDrop(input, units, insights);
-  checkSpendingSpike(input, units, insights);
-  checkExpensiveFillup(input, units, insights);
-  checkNextFillupCost(input, units, insights);
+  checkSpendingSpike(input, units, insights, cc);
+  checkExpensiveFillup(input, units, insights, cc);
+  checkNextFillupCost(input, units, insights, cc);
   checkMaintenanceDue(input, units, insights);
-  checkCheaperStation(input, units, insights);
-  checkMonthOverMonth(input, units, insights);
+  checkCheaperStation(input, units, insights, cc);
+  checkMonthOverMonth(input, units, insights, cc);
   checkOdometerMilestone(input, units, insights);
 
   return insights;
@@ -101,7 +104,7 @@ function checkEfficiencyDrop(input: InsightEngineInput, units: UnitLabels, insig
   });
 }
 
-function checkSpendingSpike(input: InsightEngineInput, _units: UnitLabels, insights: Insight[]): void {
+function checkSpendingSpike(input: InsightEngineInput, _units: UnitLabels, insights: Insight[], cc: string): void {
   const { totalSpent, previousPeriodTotal, periodLabel } = input.periodMetrics;
   if (previousPeriodTotal == null || previousPeriodTotal === 0) return;
 
@@ -117,14 +120,14 @@ function checkSpendingSpike(input: InsightEngineInput, _units: UnitLabels, insig
     type: 'spending_spike',
     score,
     title: `Spending up ${pctRound}% this period`,
-    subtitle: `$${Math.round(totalSpent)} vs. $${Math.round(previousPeriodTotal)} prev ${periodLabel}`,
+    subtitle: `${formatCurrency(Math.round(totalSpent), cc)} vs. ${formatCurrency(Math.round(previousPeriodTotal), cc)} prev ${periodLabel}`,
     icon: '💸',
     iconBgColor: 'rgba(239, 68, 68, 0.12)',
     dataKey: `${currentRounded}|${previousRounded}`,
   });
 }
 
-function checkExpensiveFillup(input: InsightEngineInput, units: UnitLabels, insights: Insight[]): void {
+function checkExpensiveFillup(input: InsightEngineInput, units: UnitLabels, insights: Insight[], cc: string): void {
   const fuelEvents = input.events
     .filter(e => e.type === 'fuel')
     .sort((a, b) => b.date.localeCompare(a.date));
@@ -143,15 +146,15 @@ function checkExpensiveFillup(input: InsightEngineInput, units: UnitLabels, insi
   insights.push({
     type: 'expensive_fillup',
     score,
-    title: `Last ${units.fillWord} was $${mostRecent.cost.toFixed(0)} — ${pctRound}% above average`,
-    subtitle: `Your typical ${units.fillWord} is $${avgCost.toFixed(0)}`,
+    title: `Last ${units.fillWord} was ${formatCurrency(Math.round(mostRecent.cost), cc)} — ${pctRound}% above average`,
+    subtitle: `Your typical ${units.fillWord} is ${formatCurrency(Math.round(avgCost), cc)}`,
     icon: '⚠️',
     iconBgColor: 'rgba(239, 68, 68, 0.12)',
     dataKey: mostRecent.id,
   });
 }
 
-function checkNextFillupCost(input: InsightEngineInput, units: UnitLabels, insights: Insight[]): void {
+function checkNextFillupCost(input: InsightEngineInput, units: UnitLabels, insights: Insight[], cc: string): void {
   const { vehicle } = input;
   if (!vehicle.fuelCapacity) return;
 
@@ -171,7 +174,7 @@ function checkNextFillupCost(input: InsightEngineInput, units: UnitLabels, insig
   insights.push({
     type: 'next_fillup_cost',
     score: 60,
-    title: `Next ${units.fillWord}: ~$${estimate}`,
+    title: `Next ${units.fillWord}: ~${formatCurrency(estimate, cc)}`,
     subtitle: `Based on tank size and recent prices${atPlace}`,
     icon: '🔮',
     iconBgColor: 'rgba(26, 154, 143, 0.12)',
@@ -222,7 +225,7 @@ function checkMaintenanceDue(input: InsightEngineInput, units: UnitLabels, insig
   }
 }
 
-function checkCheaperStation(input: InsightEngineInput, units: UnitLabels, insights: Insight[]): void {
+function checkCheaperStation(input: InsightEngineInput, units: UnitLabels, insights: Insight[], cc: string): void {
   const sixMonthsAgo = new Date();
   sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
   const cutoff = sixMonthsAgo.toISOString().slice(0, 10);
@@ -279,15 +282,15 @@ function checkCheaperStation(input: InsightEngineInput, units: UnitLabels, insig
   insights.push({
     type: 'cheaper_station',
     score: Math.min(60, Math.round(30 + priceDiff * 100)),
-    title: `You'd save ~$${savingsPerFill}/${units.fillWord} at ${cheapPlace.name}`,
-    subtitle: `Avg $${regularAvgPrice.toFixed(2)}/${units.volumeUnit} at ${regularPlace.name} vs. $${cheapest.avgPrice.toFixed(2)} at ${cheapPlace.name}`,
+    title: `You'd save ~${formatCurrency(savingsPerFill, cc)}/${units.fillWord} at ${cheapPlace.name}`,
+    subtitle: `Avg ${formatCurrency(regularAvgPrice, cc)}/${units.volumeUnit} at ${regularPlace.name} vs. ${formatCurrency(cheapest.avgPrice, cc)} at ${cheapPlace.name}`,
     icon: '⛽',
     iconBgColor: 'rgba(232, 119, 43, 0.12)',
     dataKey: `${cheapest.placeId}|${regularPlaceId}|${priceDiffRounded}`,
   });
 }
 
-function checkMonthOverMonth(input: InsightEngineInput, _units: UnitLabels, insights: Insight[]): void {
+function checkMonthOverMonth(input: InsightEngineInput, _units: UnitLabels, insights: Insight[], cc: string): void {
   const now = new Date();
   const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 
@@ -319,7 +322,7 @@ function checkMonthOverMonth(input: InsightEngineInput, _units: UnitLabels, insi
     type: 'month_over_month',
     score: Math.min(60, Math.round(30 + Math.abs(pct) * 60)),
     title: `${recentLabel} cost ${pctRound}% ${direction} than ${prevLabel}`,
-    subtitle: `$${Math.round(recentTotal)} vs. $${Math.round(prevTotal)}`,
+    subtitle: `${formatCurrency(Math.round(recentTotal), cc)} vs. ${formatCurrency(Math.round(prevTotal), cc)}`,
     icon: '📊',
     iconBgColor: 'rgba(232, 119, 43, 0.12)',
     dataKey: `${recentMonth}|${prevMonth}|${recentRounded}|${prevRounded}`,

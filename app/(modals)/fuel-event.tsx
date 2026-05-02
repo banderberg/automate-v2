@@ -23,9 +23,11 @@ import { EventPhotos } from '@/src/components/EventPhotos';
 import { ConfirmDialog } from '@/src/components/ConfirmDialog';
 import { useEventForm } from '@/src/hooks/useEventForm';
 import { useEventStore } from '@/src/stores/eventStore';
+import { useSettingsStore } from '@/src/stores/settingsStore';
 import { useToastStore } from '@/src/stores/toastStore';
 import { onEventSaved } from '@/src/stores/orchestrator';
 import { getVolumeLabel } from '@/src/constants/units';
+import { getCurrencySymbol, formatCurrency } from '@/src/constants/currency';
 import type { VehicleEvent } from '@/src/types';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -69,6 +71,8 @@ export default function FuelEventModal() {
   const addEvent = useEventStore((s) => s.addEvent);
   const updateEvent = useEventStore((s) => s.updateEvent);
   const getSmartDefaults = useEventStore((s) => s.getSmartDefaults);
+  const currencyCode = useSettingsStore((s) => s.settings.currency);
+  const currSymbol = getCurrencySymbol(currencyCode);
 
   const [volume, setVolume] = useState('');
   const [pricePerUnit, setPricePerUnit] = useState('');
@@ -245,7 +249,7 @@ export default function FuelEventModal() {
       }
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       const label = isElectric ? 'Charge' : 'Fill-up';
-      const costStr = resolvedCost != null ? `, $${resolvedCost.toFixed(2)}` : '';
+      const costStr = resolvedCost != null ? `, ${formatCurrency(resolvedCost, currencyCode)}` : '';
       useToastStore.getState().show(`${label} ${isEditing ? 'updated' : 'saved'}${costStr}`);
       router.back();
     } catch (err) {
@@ -322,7 +326,7 @@ export default function FuelEventModal() {
                 </View>
                 {entryMode === 'price' ? (
                   <View className="flex-row items-center bg-surface dark:bg-surface-dark rounded-xl border border-divider dark:border-divider-dark px-3.5 py-3">
-                    <Text className="text-sm text-ink-muted dark:text-ink-muted-on-dark mr-1">$</Text>
+                    <Text className="text-sm text-ink-muted dark:text-ink-muted-on-dark mr-1">{currSymbol}</Text>
                     <TextInput
                       ref={priceRef}
                       className="flex-1 text-base text-ink dark:text-ink-on-dark"
@@ -344,9 +348,9 @@ export default function FuelEventModal() {
                         color: computedPrice ? FUEL_TEAL : ghostColor,
                         fontVariant: ['tabular-nums'],
                       }}
-                      accessibilityLabel={`Calculated price: ${computedPrice ? `$${computedPrice}` : 'waiting for input'} per ${volumeLabel}`}
+                      accessibilityLabel={`Calculated price: ${computedPrice ? `${currSymbol}${computedPrice}` : 'waiting for input'} per ${volumeLabel}`}
                     >
-                      ${computedPrice || '0.000'}/{volumeLabel}
+                      {currSymbol}{computedPrice || '0.000'}/{volumeLabel}
                     </Text>
                   </View>
                 )}
@@ -362,7 +366,7 @@ export default function FuelEventModal() {
                 </View>
                 {entryMode === 'total' ? (
                   <View className="flex-row items-center bg-surface dark:bg-surface-dark rounded-xl border border-divider dark:border-divider-dark px-3.5 py-3">
-                    <Text className="text-sm text-ink-muted dark:text-ink-muted-on-dark mr-1">$</Text>
+                    <Text className="text-sm text-ink-muted dark:text-ink-muted-on-dark mr-1">{currSymbol}</Text>
                     <TextInput
                       ref={totalRef}
                       className="flex-1 text-base text-ink dark:text-ink-on-dark"
@@ -385,9 +389,9 @@ export default function FuelEventModal() {
                         color: computedTotal ? FUEL_TEAL : ghostColor,
                         fontVariant: ['tabular-nums'],
                       }}
-                      accessibilityLabel={`Calculated total: ${computedTotal ? `$${computedTotal}` : 'waiting for input'}`}
+                      accessibilityLabel={`Calculated total: ${computedTotal ? `${currSymbol}${computedTotal}` : 'waiting for input'}`}
                     >
-                      = ${computedTotal || '0.00'}
+                      = {currSymbol}{computedTotal || '0.00'}
                     </Text>
                   </View>
                 )}
@@ -411,7 +415,7 @@ export default function FuelEventModal() {
                   </Pressable>
                 </View>
                 <View className="flex-row items-center bg-surface dark:bg-surface-dark rounded-xl border border-divider dark:border-divider-dark px-3.5 py-3">
-                  <Text className="text-sm text-ink-muted dark:text-ink-muted-on-dark mr-1">$</Text>
+                  <Text className="text-sm text-ink-muted dark:text-ink-muted-on-dark mr-1">{currSymbol}</Text>
                   <TextInput
                     ref={discountRef}
                     className="flex-1 text-base text-ink dark:text-ink-on-dark"
@@ -429,7 +433,7 @@ export default function FuelEventModal() {
                   return !isNaN(d) && !isNaN(p) && d > 0 && d >= p;
                 })() && (
                   <Text className="text-xs text-warning mt-1 ml-1" accessibilityRole="alert">
-                    Discount exceeds price. Total will be $0.00.
+                    Discount exceeds price. Total will be {currSymbol}0.00.
                   </Text>
                 )}
               </View>

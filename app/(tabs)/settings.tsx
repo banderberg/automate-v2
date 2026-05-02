@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { View, Text, Pressable, ScrollView, Modal, FlatList, ActivityIndicator } from 'react-native';
+import { View, Text, Pressable, ScrollView, Modal, FlatList, ActivityIndicator, Linking } from 'react-native';
 import { ConfirmDialog } from '@/src/components/ConfirmDialog';
 import { useDialog } from '@/src/hooks/useDialog';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -18,14 +18,7 @@ import { loadTestData } from '@/src/db/testData';
 import { useReferenceDataStore } from '@/src/stores/referenceDataStore';
 import { Directory, Paths } from 'expo-file-system';
 import { getDatabase } from '@/src/db/client';
-
-const CURRENCIES = [
-  { value: 'USD', label: 'USD ($)' },
-  { value: 'EUR', label: 'EUR (€)' },
-  { value: 'GBP', label: 'GBP (£)' },
-  { value: 'CAD', label: 'CAD (C$)' },
-  { value: 'AUD', label: 'AUD (A$)' },
-];
+import { CURRENCIES } from '@/src/constants/currency';
 
 const FUEL_UNITS = [
   { value: 'gallons', label: 'Gallons' },
@@ -139,7 +132,8 @@ function PickerModal({ visible, title, options, selectedValue, onSelect, onClose
                 )}
               </Pressable>
             )}
-            scrollEnabled={false}
+            scrollEnabled={options.length > 6}
+            style={options.length > 6 ? { maxHeight: 400 } : undefined}
           />
           <View className="h-8" />
         </Pressable>
@@ -496,6 +490,26 @@ export default function SettingsScreen() {
         <SectionHeader title="About" />
         <View className="border-t border-divider-subtle dark:border-divider-dark">
           <RowItem label={`AutoMate v${Constants.expoConfig?.version ?? '2.0'}`} />
+          <RowItem
+            label="Rate AutoMate"
+            onPress={() => Linking.openURL('market://details?id=com.arctosbuilt.automate')}
+            accessibilityLabel="Rate AutoMate on Play Store"
+          />
+          <RowItem
+            label="Send Feedback"
+            onPress={() => Linking.openURL('mailto:arctos.built@gmail.com?subject=AutoMate Feedback')}
+            accessibilityLabel="Send feedback via email"
+          />
+          <RowItem
+            label="Privacy Policy"
+            onPress={() => Linking.openURL('https://banderberg.github.io/arctoslabs/privacy.html')}
+            accessibilityLabel="View privacy policy"
+          />
+          <RowItem
+            label="Open Source Licenses"
+            onPress={() => nav.push('/(modals)/licenses')}
+            accessibilityLabel="View open source licenses"
+          />
         </View>
 
         {__DEV__ && (
@@ -512,6 +526,12 @@ export default function SettingsScreen() {
                 subtitle="Delete everything and return to onboarding"
                 onPress={handleResetAllData}
                 accessibilityLabel="Reset all data"
+              />
+              <RowItem
+                label="Test Error Boundary"
+                subtitle="Triggers a render error to test the error screen"
+                onPress={() => { throw new Error('Test error boundary — triggered from developer settings'); }}
+                accessibilityLabel="Test error boundary"
               />
             </View>
           </>

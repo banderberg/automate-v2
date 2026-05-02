@@ -7,7 +7,8 @@ const HEADER = 'Date,EventType,Odometer,OdometerUnit,Cost,Volume,VolumeUnit,Pric
 export async function exportVehicleData(
   vehicleId: string | null,
   startDate?: string,
-  endDate?: string
+  endDate?: string,
+  customFileName?: string
 ): Promise<string> {
   const db = getDatabase();
 
@@ -100,10 +101,11 @@ export async function exportVehicleData(
 
   const content = BOM + csvLines.join('\n');
 
-  // Write to document directory
-  const fileName = vehicleId
-    ? `automate-export-${vehicleId.slice(0, 8)}-${new Date().toISOString().split('T')[0]}.csv`
-    : `automate-export-all-${new Date().toISOString().split('T')[0]}.csv`;
+  const defaultName = vehicleId
+    ? `automate-export-${vehicleId.slice(0, 8)}-${new Date().toISOString().split('T')[0]}`
+    : `automate-export-all-${new Date().toISOString().split('T')[0]}`;
+  const baseName = customFileName?.trim() || defaultName;
+  const fileName = baseName.endsWith('.csv') ? baseName : `${baseName}.csv`;
   const file = new File(Paths.document, fileName);
   file.create({ overwrite: true });
   file.write(content);

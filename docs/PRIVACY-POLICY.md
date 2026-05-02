@@ -93,4 +93,4 @@ If this privacy policy changes, the updated version will be included in the app 
 
 If you have questions about this privacy policy or the app, you can reach the developer at:
 
-**Email:** banderberg@gmail.com
+**Email:** arctos.built@gmail.com

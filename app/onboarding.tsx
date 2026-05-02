@@ -8,6 +8,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Image,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -22,6 +23,7 @@ import { useDialog } from '@/src/hooks/useDialog';
 import { reloadAllStores } from '@/src/stores/orchestrator';
 import { getBackupInfo, restoreBackup } from '@/src/services/backup';
 import { getVolumeUnitForFuelType } from '@/src/constants/units';
+import { decodeVin } from '@/src/services/vinDecoder';
 
 type FuelType = 'gas' | 'diesel' | 'electric';
 type OdometerUnit = 'miles' | 'kilometers';
@@ -40,6 +42,9 @@ export default function OnboardingScreen() {
   const [odometerUnit, setOdometerUnit] = useState<OdometerUnit>(
     settings.defaultOdometerUnit as OdometerUnit
   );
+  const [vin, setVin] = useState('');
+  const [vinLoading, setVinLoading] = useState(false);
+  const [vinError, setVinError] = useState('');
   const [saving, setSaving] = useState(false);
   const [restoring, setRestoring] = useState(false);
   const [completed, setCompleted] = useState(false);
@@ -138,6 +143,27 @@ export default function OnboardingScreen() {
     }
   }, [restoring]);
 
+  const handleVinLookup = useCallback(async () => {
+    if (vin.length !== 17 || vinLoading) return;
+    setVinLoading(true);
+    setVinError('');
+    try {
+      const result = await decodeVin(vin.trim());
+      if (result) {
+        if (result.year) setYear(String(result.year));
+        if (result.make) setMake(result.make);
+        if (result.model) setModel(result.model);
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      } else {
+        setVinError("Couldn't look up VIN — enter details manually.");
+      }
+    } catch {
+      setVinError("Couldn't look up VIN — enter details manually.");
+    } finally {
+      setVinLoading(false);
+    }
+  }, [vin, vinLoading]);
+
   const handleContinue = useCallback(async () => {
     await updateSetting('hasCompletedOnboarding', true);
   }, [updateSetting]);
@@ -216,6 +242,60 @@ export default function OnboardingScreen() {
             <Text className="text-xs text-ink-muted dark:text-ink-muted-on-dark mb-5 font-semibold uppercase tracking-wider text-center">
               Add your first vehicle
             </Text>
+
+            {/* VIN lookup (optional) */}
+            <View className="mb-4">
+              <Text className="text-xs text-ink-muted dark:text-ink-muted-on-dark mb-1.5 font-semibold">
+                VIN (optional — auto-fills year, make, model)
+              </Text>
+              <View className="flex-row" style={{ gap: 8 }}>
+                <View className="flex-1 bg-card dark:bg-card-dark rounded-xl border border-divider dark:border-divider-dark px-3.5 py-3">
+                  <TextInput
+                    className="text-base text-ink dark:text-ink-on-dark"
+                    value={vin}
+                    onChangeText={(t) => setVin(t.replace(/[^A-Za-z0-9]/g, '').toUpperCase().slice(0, 17))}
+                    placeholder="e.g., 1HGBH41JXMN109186"
+                    placeholderTextColor="#A8A49D"
+                    maxLength={17}
+                    autoCapitalize="characters"
+                    accessibilityLabel="Vehicle identification number"
+                  />
+                </View>
+                <Pressable
+                  onPress={handleVinLookup}
+                  disabled={vin.length !== 17 || vinLoading}
+                  className={`px-4 rounded-xl items-center justify-center ${
+                    vin.length === 17 && !vinLoading
+                      ? 'bg-primary'
+                      : 'border border-divider dark:border-divider-dark'
+                  }`}
+                  accessibilityLabel="Look up VIN to auto-fill vehicle details"
+                  accessibilityRole="button"
+                >
+                  {vinLoading ? (
+                    <ActivityIndicator size="small" color="#4272C4" />
+                  ) : (
+                    <View className="items-center">
+                      <Ionicons
+                        name="search"
+                        size={18}
+                        color={vin.length === 17 ? '#FFFFFF' : '#A8A49D'}
+                      />
+                      <Text className={`text-xs font-semibold mt-0.5 ${vin.length === 17 ? 'text-white' : 'text-ink-muted dark:text-ink-muted-on-dark'}`}>
+                        Look Up
+                      </Text>
+                    </View>
+                  )}
+                </Pressable>
+              </View>
+              {vinError ? (
+                <Text className="text-xs text-amber-600 dark:text-amber-400 mt-1">{vinError}</Text>
+              ) : (
+                <Text className="text-xs text-ink-faint dark:text-ink-faint-on-dark mt-1">
+                  Enter 17 characters, then tap Look Up. Find it on the driver's door jamb or registration.
+                </Text>
+              )}
+            </View>
 
             {/* Nickname */}
             <View className="mb-4">

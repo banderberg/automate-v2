@@ -18,9 +18,11 @@ import { EventPhotos } from '@/src/components/EventPhotos';
 import { ConfirmDialog } from '@/src/components/ConfirmDialog';
 import { useEventForm } from '@/src/hooks/useEventForm';
 import { useEventStore } from '@/src/stores/eventStore';
+import { useSettingsStore } from '@/src/stores/settingsStore';
 import { useToastStore } from '@/src/stores/toastStore';
 import { onEventSaved } from '@/src/stores/orchestrator';
 import { useReferenceDataStore } from '@/src/stores/referenceDataStore';
+import { getCurrencySymbol, formatCurrency } from '@/src/constants/currency';
 import type { VehicleEvent } from '@/src/types';
 
 export default function ExpenseEventModal() {
@@ -34,6 +36,8 @@ export default function ExpenseEventModal() {
 
   const addEvent = useEventStore((s) => s.addEvent);
   const updateEvent = useEventStore((s) => s.updateEvent);
+  const currencyCode = useSettingsStore((s) => s.settings.currency);
+  const currSymbol = getCurrencySymbol(currencyCode);
   const rawCategories = useReferenceDataStore((s) => s.categories);
   const addCategory = useReferenceDataStore((s) => s.addCategory);
   const updateCategory = useReferenceDataStore((s) => s.updateCategory);
@@ -111,7 +115,7 @@ export default function ExpenseEventModal() {
         await onEventSaved(event);
       }
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      const costStr = cost ? `, $${parseFloat(cost).toFixed(2)}` : '';
+      const costStr = cost ? `, ${formatCurrency(parseFloat(cost), currencyCode)}` : '';
       useToastStore.getState().show(`Expense ${isEditing ? 'updated' : 'saved'}${costStr}`);
       router.back();
     } catch (err) {
@@ -165,7 +169,7 @@ export default function ExpenseEventModal() {
               Total Cost *
             </Text>
             <View className="flex-row items-center bg-card dark:bg-card-dark rounded-xl border border-divider dark:border-divider-dark px-3.5 py-3">
-              <Text className="text-sm text-ink-muted dark:text-ink-muted-on-dark mr-1">$</Text>
+              <Text className="text-sm text-ink-muted dark:text-ink-muted-on-dark mr-1">{currSymbol}</Text>
               <TextInput
                 className="flex-1 text-base text-ink dark:text-ink-on-dark"
                 value={cost}

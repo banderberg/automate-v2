@@ -15,16 +15,19 @@ export async function get(): Promise<AppSettings> {
     defaultOdometerUnit: (map.get('defaultOdometerUnit') ??
       'miles') as AppSettings['defaultOdometerUnit'],
     hasCompletedOnboarding: map.get('hasCompletedOnboarding') === 'true',
+    totalEventsLogged: parseInt(map.get('totalEventsLogged') ?? '0', 10),
+    lastReviewPromptDate: map.get('lastReviewPromptDate') ?? '',
   };
 }
 
 export async function set(
   key: keyof AppSettings,
-  value: string
+  value: string | number | boolean
 ): Promise<void> {
+  const stringValue = String(value);
   const db = getDatabase();
   await db.runAsync(
     'INSERT OR REPLACE INTO app_settings (key, value) VALUES (?, ?)',
-    [key, value]
+    [key, stringValue]
   );
 }

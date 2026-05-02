@@ -17,6 +17,8 @@ const DEFAULT_SETTINGS: AppSettings = {
   defaultFuelUnit: 'gallons',
   defaultOdometerUnit: 'miles',
   hasCompletedOnboarding: false,
+  totalEventsLogged: 0,
+  lastReviewPromptDate: '',
 };
 
 export const useSettingsStore = create<SettingsStore>((set) => ({

@@ -171,7 +171,7 @@ Since AutoMate is local-only with no analytics, ads, or accounts:
 | Target audience | 18 and over (never select under 13 unless COPPA-compliant) |
 | Ads declaration | No ads |
 | App access | All functionality available without special access |
-| Contact email | banderberg@gmail.com (public on your listing) |
+| Contact email | arctos.built@gmail.com (public on your listing) |
 | Category | Auto & Vehicles |
 
 ---

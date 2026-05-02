@@ -13,6 +13,8 @@ export default function ModalLayout() {
         gestureEnabled: true,
         contentStyle: { backgroundColor: bg },
       }}
-    />
+    >
+      <Stack.Screen name="licenses" options={{ headerShown: false }} />
+    </Stack>
   );
 }

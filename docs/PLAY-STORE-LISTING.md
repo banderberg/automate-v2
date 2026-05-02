@@ -74,6 +74,9 @@ Back up your entire database to a file. Restore on the same or a different devic
 ◆ VIN Decode
 Enter your Vehicle Identification Number to auto-fill year, make, and model. Uses the free NHTSA database.
 
+◆ Import Your Data
+Switching from Fuelio, Fuelly, or Drivvo? Import your complete history in seconds. Your data migrates with you.
+
 ◆ Works Offline
 Everything works without an internet connection. There is no cloud dependency.
 
@@ -97,6 +100,10 @@ PERMISSIONS (only when you ask)
 • Camera — Only when you take a receipt or vehicle photo
 • Location — Only when you tap "Use current location" for a station
 • Notifications — Only for reminders you create
+
+SWITCHING FROM ANOTHER APP?
+
+AutoMate can import your data from Fuelio, Fuelly, and Drivvo. Go to Settings → Import Data, select your export file, and you're up and running in seconds. No data left behind.
 
 Download AutoMate and finally know what your car really costs.
 ```
@@ -125,6 +132,13 @@ Everyone
 6. MPG calculator
 7. car costs
 8. service reminder
+9. Fuelio alternative
+10. Drivvo alternative
+11. no ads car tracker
+12. no subscription fuel log
+13. privacy car expense
+14. fuel tracker free
+15. car maintenance log
 
 ---
 

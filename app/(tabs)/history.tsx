@@ -18,6 +18,8 @@ import { useVehicleStore } from '@/src/stores/vehicleStore';
 import { useEventStore } from '@/src/stores/eventStore';
 import { useReferenceDataStore } from '@/src/stores/referenceDataStore';
 import { useActiveVehicle } from '@/src/hooks/useActiveVehicle';
+import { useSettingsStore } from '@/src/stores/settingsStore';
+import { formatCurrency } from '@/src/constants/currency';
 import type { VehicleEvent } from '@/src/types';
 
 type FilterType = 'all' | 'fuel' | 'service' | 'expense';
@@ -78,12 +80,14 @@ function SwipeableEventRow({
   onPress,
   onDelete,
   onLongPress,
+  currencyCode: cc = 'USD',
 }: {
   event: VehicleEvent;
   odometerUnit: 'miles' | 'kilometers';
   onPress: () => void;
   onDelete: () => void;
   onLongPress: () => void;
+  currencyCode?: string;
 }) {
   const swipeableRef = useRef<Swipeable>(null);
   const places = useReferenceDataStore((s) => s.places);
@@ -116,7 +120,7 @@ function SwipeableEventRow({
 
   return (
     <Swipeable ref={swipeableRef} renderRightActions={renderRightActions} overshootRight={false}>
-      <Pressable onLongPress={onLongPress} delayLongPress={500} accessibilityLabel={`${event.type} event on ${event.date}, $${event.cost.toFixed(2)}. Long press for options.`}>
+      <Pressable onLongPress={onLongPress} delayLongPress={500} accessibilityLabel={`${event.type} event on ${event.date}, ${formatCurrency(event.cost, cc)}. Long press for options.`}>
         <View className="bg-surface dark:bg-surface-dark">
           <EventRow
             event={event}
@@ -124,6 +128,7 @@ function SwipeableEventRow({
             place={place}
             label={eventLabel}
             onPress={onPress}
+            currencyCode={cc}
           />
         </View>
       </Pressable>
@@ -133,6 +138,7 @@ function SwipeableEventRow({
 
 export default function HistoryScreen() {
   const nav = useGuardedNavigate();
+  const currencyCode = useSettingsStore((s) => s.settings.currency);
   const vehicleCount = useVehicleStore((s) => s.vehicles.length);
   const { activeVehicle, events } = useActiveVehicle();
   const deleteEvent = useEventStore((s) => s.deleteEvent);
@@ -354,7 +360,7 @@ export default function HistoryScreen() {
                     {item.month}
                   </Text>
                   <Text className="text-sm font-semibold text-ink-muted dark:text-ink-muted-on-dark" numberOfLines={1}>
-                    ${item.total.toFixed(2)}
+                    {formatCurrency(item.total, currencyCode)}
                   </Text>
                 </View>
               );
@@ -366,6 +372,7 @@ export default function HistoryScreen() {
                 onPress={() => handleEventPress(item.event)}
                 onDelete={() => handleDelete(item.event)}
                 onLongPress={() => handleLongPress(item.event)}
+                currencyCode={currencyCode}
               />
             );
           }}

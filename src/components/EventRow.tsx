@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, Pressable, type TextStyle } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { formatCurrency } from '../constants/currency';
 import type { VehicleEvent, Place } from '../types';
 
 interface EventRowProps {
@@ -9,7 +10,7 @@ interface EventRowProps {
   place?: Place | null;
   label?: string;
   onPress: () => void;
-  currency?: string;
+  currencyCode?: string;
 }
 
 const TYPE_CONFIG = {
@@ -25,7 +26,7 @@ function formatDate(dateStr: string): string {
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
-function EventRowInner({ event, odometerUnit, place, label, onPress, currency = '$' }: EventRowProps) {
+function EventRowInner({ event, odometerUnit, place, label, onPress, currencyCode = 'USD' }: EventRowProps) {
   const config = TYPE_CONFIG[event.type];
   const unitLabel = odometerUnit === 'miles' ? 'mi' : 'km';
   const dateText = formatDate(event.date);
@@ -37,7 +38,7 @@ function EventRowInner({ event, odometerUnit, place, label, onPress, currency = 
     <Pressable
       onPress={onPress}
       className="flex-row items-center px-4 py-3 active:bg-surface dark:active:bg-surface-dark"
-      accessibilityLabel={`${config.label} on ${event.date}, ${currency}${event.cost.toFixed(2)}`}
+      accessibilityLabel={`${config.label} on ${event.date}, ${formatCurrency(event.cost, currencyCode)}`}
       accessibilityRole="button"
     >
       <View
@@ -71,7 +72,7 @@ function EventRowInner({ event, odometerUnit, place, label, onPress, currency = 
       </View>
 
       <Text className="text-sm font-semibold text-ink dark:text-ink-on-dark" numberOfLines={1} style={tabularNums}>
-        {currency}{event.cost.toFixed(2)}
+        {formatCurrency(event.cost, currencyCode)}
       </Text>
     </Pressable>
   );

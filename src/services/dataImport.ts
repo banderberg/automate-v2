@@ -20,7 +20,7 @@ export interface ParsedEvent {
 
 export interface ParsedImportData {
   events: ParsedEvent[];
-  format: 'fuelio' | 'fuelly' | 'automate';
+  format: 'fuelio' | 'fuelly' | 'automate' | 'drivvo';
 }
 
 export interface ImportResult {
@@ -108,7 +108,7 @@ function normalizeDate(dateStr: string): string | null {
 /**
  * Detect the format of a CSV file from its content.
  */
-export function detectFormat(csvContent: string): 'fuelio' | 'fuelly' | 'automate' | 'unknown' {
+export function detectFormat(csvContent: string): 'fuelio' | 'fuelly' | 'automate' | 'drivvo' | 'unknown' {
   const content = csvContent.trim();
 
   // Fuelio: starts with "## Vehicle:" header comments
@@ -124,6 +124,12 @@ export function detectFormat(csvContent: string): 'fuelio' | 'fuelly' | 'automat
   // Fuelly: header contains "MPG,Miles,Gallons"
   if (content.includes('MPG,Miles,Gallons')) {
     return 'fuelly';
+  }
+
+  // Drivvo: has "## Drivvo" section markers, or headers with "Fuel Station" + "Fill Type"
+  if (content.includes('## Drivvo') ||
+      (content.toLowerCase().includes('fuel station') && content.toLowerCase().includes('fill type'))) {
+    return 'drivvo';
   }
 
   return 'unknown';
@@ -339,6 +345,183 @@ export function parseAutomateCSV(csvContent: string): ParsedImportData {
   }
 
   return { events, format: 'automate' };
+}
+
+/**
+ * Parse a Drivvo CSV export. Handles fuel, service, and expense sections.
+ *
+ * Drivvo exports use `##` section markers (e.g. `## Fuel`, `## Service`) and
+ * each section has its own header row. Column names are matched flexibly via
+ * case-insensitive partial matching so that minor header variations across
+ * Drivvo versions are tolerated.
+ */
+export function parseDrivvoCSV(csvContent: string): ParsedImportData {
+  const lines = csvContent.split(/\r?\n/).filter((l) => l.length > 0);
+  const events: ParsedEvent[] = [];
+
+  let section: 'fuel' | 'service' | 'expense' | 'unknown' = 'unknown';
+  let headerMap: Map<string, number> = new Map();
+  let hasHeader = false;
+
+  /**
+   * Search `headerMap` for the first key that contains any of the provided
+   * search strings (case-insensitive partial match). Returns the column
+   * index or -1 if no match is found.
+   */
+  function getFieldIndex(keys: string[]): number {
+    for (const [colName, idx] of headerMap) {
+      for (const key of keys) {
+        if (colName.includes(key)) {
+          return idx;
+        }
+      }
+    }
+    return -1;
+  }
+
+  /**
+   * Get the trimmed value at the column matching any of `keys`, or an empty
+   * string if the column is missing or the field is empty.
+   */
+  function getField(fields: string[], keys: string[]): string {
+    const idx = getFieldIndex(keys);
+    if (idx < 0 || idx >= fields.length) return '';
+    return fields[idx].trim();
+  }
+
+  function buildHeaderMap(line: string): void {
+    const cols = parseCSVLine(line);
+    headerMap = new Map();
+    for (let i = 0; i < cols.length; i++) {
+      headerMap.set(cols[i].toLowerCase(), i);
+    }
+    hasHeader = true;
+  }
+
+  function isFuelHeader(lower: string): boolean {
+    return lower.includes('date') && (lower.includes('volume') || lower.includes('price') || lower.includes('total cost') || lower.includes('fill type'));
+  }
+
+  function isServiceOrExpenseHeader(lower: string): boolean {
+    return lower.includes('date') && (lower.includes('description') || lower.includes('type')) && lower.includes('cost');
+  }
+
+  for (const line of lines) {
+    // Detect section markers
+    const trimmedLine = line.trim();
+    const lowerTrimmed = trimmedLine.toLowerCase();
+
+    if (trimmedLine.startsWith('##')) {
+      hasHeader = false;
+      headerMap = new Map();
+
+      if (lowerTrimmed.includes('fuel')) {
+        section = 'fuel';
+      } else if (lowerTrimmed.includes('service') || lowerTrimmed.includes('maintenance')) {
+        section = 'service';
+      } else if (lowerTrimmed.includes('expense') || lowerTrimmed.includes('other')) {
+        section = 'expense';
+      }
+      continue;
+    }
+
+    // Skip empty / comment lines
+    if (trimmedLine.startsWith('#')) continue;
+
+    const lowerLine = trimmedLine.toLowerCase();
+
+    // Detect header rows
+    if (!hasHeader && lowerLine.includes('date')) {
+      if (isFuelHeader(lowerLine)) {
+        if (section === 'unknown') section = 'fuel';
+        buildHeaderMap(trimmedLine);
+        continue;
+      }
+      if (isServiceOrExpenseHeader(lowerLine)) {
+        if (section === 'unknown') section = 'service';
+        buildHeaderMap(trimmedLine);
+        continue;
+      }
+    }
+
+    if (!hasHeader) continue;
+
+    const fields = parseCSVLine(trimmedLine);
+
+    if (section === 'fuel') {
+      const dateStr = getField(fields, ['date']);
+      const date = normalizeDate(dateStr);
+      if (!date) continue;
+
+      const totalCostStr = getField(fields, ['total cost', 'total_cost', 'totalcost', 'total']);
+      const totalCost = parseFloat(totalCostStr);
+      if (isNaN(totalCost)) continue;
+
+      const volume = parseFloat(getField(fields, ['volume', 'quantity', 'liters', 'litres', 'gallons']));
+      const pricePerUnit = parseFloat(getField(fields, ['price/volume', 'price per', 'pricevolume', 'unit price', 'price']));
+      const odometer = parseFloat(getField(fields, ['odometer', 'odo', 'mileage', 'km']));
+      const fillType = getField(fields, ['fill type', 'fill_type', 'filltype', 'full/partial']).toLowerCase();
+      const stationName = getField(fields, ['fuel station', 'station', 'gas station', 'location']);
+      const notes = getField(fields, ['notes', 'note', 'comments', 'comment']);
+
+      const event: ParsedEvent = {
+        date,
+        type: 'fuel',
+        cost: totalCost,
+        volume: isNaN(volume) ? undefined : volume,
+        pricePerUnit: isNaN(pricePerUnit) ? undefined : pricePerUnit,
+        odometer: isNaN(odometer) ? undefined : odometer,
+        isPartialFill: fillType.includes('partial'),
+        placeName: stationName || undefined,
+        notes: notes || undefined,
+      };
+
+      events.push(event);
+    } else if (section === 'service' || section === 'expense') {
+      const dateStr = getField(fields, ['date']);
+      const date = normalizeDate(dateStr);
+      if (!date) continue;
+
+      const costStr = getField(fields, ['cost', 'total cost', 'total', 'price', 'amount']);
+      const cost = parseFloat(costStr);
+      if (isNaN(cost)) continue;
+
+      const odometer = parseFloat(getField(fields, ['odometer', 'odo', 'mileage', 'km']));
+      const description = getField(fields, ['description', 'title', 'name', 'service']);
+      const typeField = getField(fields, ['type', 'category']).toLowerCase();
+      const notes = getField(fields, ['notes', 'note', 'comments', 'comment']);
+
+      // Determine if this is a service or expense. If the section is explicitly
+      // set, use that. Otherwise look at the Type column for hints.
+      let eventType: 'service' | 'expense' = section === 'expense' ? 'expense' : 'service';
+      if (section !== 'expense' && section !== 'service') {
+        eventType = 'service';
+      }
+      // If the type field suggests it's an expense, override
+      if (typeField.includes('expense') || typeField.includes('other') || typeField.includes('tax') || typeField.includes('insurance') || typeField.includes('parking') || typeField.includes('toll') || typeField.includes('fine')) {
+        eventType = 'expense';
+      }
+
+      const event: ParsedEvent = {
+        date,
+        type: eventType,
+        cost,
+        odometer: isNaN(odometer) ? undefined : odometer,
+        notes: notes || undefined,
+      };
+
+      if (eventType === 'service' && description) {
+        event.serviceTypes = [description];
+      }
+      if (eventType === 'expense' && description) {
+        event.category = description;
+      }
+
+      events.push(event);
+    }
+  }
+
+  return { events, format: 'drivvo' };
 }
 
 /**

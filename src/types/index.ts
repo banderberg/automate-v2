@@ -98,6 +98,8 @@ export interface AppSettings {
   defaultFuelUnit: 'gallons' | 'litres';
   defaultOdometerUnit: 'miles' | 'kilometers';
   hasCompletedOnboarding: boolean;
+  totalEventsLogged: number;
+  lastReviewPromptDate: string;
 }
 
 export interface ReminderWithStatus extends Reminder {

@@ -1,5 +1,7 @@
 import { printToFileAsync } from 'expo-print';
+import { File, Paths } from 'expo-file-system';
 import { getDatabase } from '../db/client';
+import { formatCurrency as fmtCurrency, getCurrencySymbol } from '../constants/currency';
 
 interface EventRow {
   eventId: string;
@@ -35,8 +37,10 @@ function escapeHtml(text: string): string {
     .replace(/'/g, '&#039;');
 }
 
+let _pdfCurrencyCode = 'USD';
+
 function formatCurrency(amount: number): string {
-  return `$${amount.toFixed(2)}`;
+  return fmtCurrency(amount, _pdfCurrencyCode);
 }
 
 function formatDate(dateStr: string): string {
@@ -83,7 +87,7 @@ function buildDescription(
     case 'fuel': {
       const vol = row.volume != null ? row.volume.toFixed(2) : '-';
       const unit = row.volumeUnit || 'gal';
-      const price = row.pricePerUnit != null ? `$${row.pricePerUnit.toFixed(3)}` : '-';
+      const price = row.pricePerUnit != null ? `${getCurrencySymbol(_pdfCurrencyCode)}${row.pricePerUnit.toFixed(3)}` : '-';
       return `Fill-Up: ${vol} ${unit} @ ${price}/${unit === 'gallons' ? 'gal' : unit === 'litres' ? 'L' : unit}`;
     }
     case 'service':
@@ -390,7 +394,10 @@ export async function generateServiceHistoryPDF(
   vehicleId: string,
   startDate?: string,
   endDate?: string,
+  currencyCode?: string,
+  customFileName?: string,
 ): Promise<string> {
+  _pdfCurrencyCode = currencyCode ?? 'USD';
   const db = getDatabase();
 
   // Query vehicle details
@@ -452,5 +459,13 @@ export async function generateServiceHistoryPDF(
   const html = buildHtml(vehicle, rows, serviceTypeMap, startDate, endDate);
   const { uri } = await printToFileAsync({ html });
 
-  return uri;
+  const defaultName = `${vehicle.nickname}-service-history-${new Date().toISOString().split('T')[0]}`;
+  const baseName = customFileName?.trim() || defaultName;
+  const fileName = baseName.endsWith('.pdf') ? baseName : `${baseName}.pdf`;
+  const dest = new File(Paths.document, fileName);
+  if (dest.exists) dest.delete();
+  const tempFile = new File(uri);
+  tempFile.move(dest);
+
+  return dest.uri;
 }

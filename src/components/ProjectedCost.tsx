@@ -1,12 +1,14 @@
 import { View, Text } from 'react-native';
+import { formatCurrency } from '../constants/currency';
 
 interface ProjectedCostProps {
   projectedAnnual: number;
   ytdSpent: number;
   isDark: boolean;
+  currencyCode?: string;
 }
 
-export function ProjectedCost({ projectedAnnual, ytdSpent, isDark }: ProjectedCostProps) {
+export function ProjectedCost({ projectedAnnual, ytdSpent, isDark, currencyCode = 'USD' }: ProjectedCostProps) {
   const progress = projectedAnnual > 0 ? ytdSpent / projectedAnnual : 0;
   const year = new Date().getFullYear();
 
@@ -18,7 +20,7 @@ export function ProjectedCost({ projectedAnnual, ytdSpent, isDark }: ProjectedCo
         paddingHorizontal: 16,
         paddingVertical: 12,
       }}
-      accessibilityLabel={`Projected annual cost: $${Math.round(projectedAnnual).toLocaleString('en-US')}. $${Math.round(ytdSpent).toLocaleString('en-US')} spent so far.`}
+      accessibilityLabel={`Projected annual cost: ${formatCurrency(Math.round(projectedAnnual), currencyCode)}. ${formatCurrency(Math.round(ytdSpent), currencyCode)} spent so far.`}
     >
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
         <Text
@@ -40,7 +42,7 @@ export function ProjectedCost({ projectedAnnual, ytdSpent, isDark }: ProjectedCo
             fontVariant: ['tabular-nums'],
           }}
         >
-          ${Math.round(projectedAnnual).toLocaleString('en-US')}
+          {formatCurrency(Math.round(projectedAnnual), currencyCode)}
         </Text>
       </View>
       <View
@@ -62,7 +64,7 @@ export function ProjectedCost({ projectedAnnual, ytdSpent, isDark }: ProjectedCo
       </View>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 }}>
         <Text style={{ fontSize: 10, color: isDark ? '#706C67' : '#8A8680', fontVariant: ['tabular-nums'] }}>
-          ${Math.round(ytdSpent).toLocaleString('en-US')} spent
+          {formatCurrency(Math.round(ytdSpent), currencyCode)} spent
         </Text>
         <Text style={{ fontSize: 10, color: isDark ? '#706C67' : '#8A8680' }}>
           Dec {year}

@@ -26,6 +26,8 @@ import { getServiceEventsByType } from '@/src/db/queries/eventServiceTypes';
 import { getFuelEventsByFuelType } from '@/src/db/queries/events';
 import type { InsightEngineInput } from '@/src/services/insightEngine';
 import { computeFuelEfficiency } from '@/src/services/fuelEfficiency';
+import { splitCurrency, formatCurrency } from '@/src/constants/currency';
+import { useSettingsStore } from '@/src/stores/settingsStore';
 
 const PERIODS = [
   { value: '1M', label: '1M' },
@@ -48,17 +50,13 @@ function cardShadow(isDark: boolean) {
   } as const;
 }
 
-function splitCurrency(amount: number): { dollars: string; cents: string } {
-  const [d, c] = amount.toFixed(2).split('.');
-  return { dollars: parseInt(d).toLocaleString('en-US'), cents: c };
-}
-
 export default function DashboardScreen() {
   const nav = useGuardedNavigate();
   const { width } = useWindowDimensions();
   const { colorScheme } = useColorScheme();
   const isDark = colorScheme === 'dark';
 
+  const currencyCode = useSettingsStore((s) => s.settings.currency);
   const vehicleCount = useVehicleStore((s) => s.vehicles.length);
   const { activeVehicle, eventCount } = useActiveVehicle();
   const places = useReferenceDataStore((s) => s.places);
@@ -118,12 +116,13 @@ export default function DashboardScreen() {
           average: effResult.average,
           recentRollingAverage,
         },
+        currencyCode,
       });
     }
 
     loadInsightData();
     return () => { cancelled = true; };
-  }, [activeVehicle?.id, metrics, places]);
+  }, [activeVehicle?.id, metrics, places, currencyCode]);
 
   const { insights, dismiss } = useInsights(insightInput, activeVehicle?.id ?? null);
 
@@ -136,6 +135,7 @@ export default function DashboardScreen() {
     if (prevEventCountRef.current === 0 && eventCount > 0) {
       setShowCelebration(true);
       const timer = setTimeout(() => setShowCelebration(false), 4000);
+      prevEventCountRef.current = eventCount;
       return () => clearTimeout(timer);
     }
     prevEventCountRef.current = eventCount;
@@ -225,7 +225,7 @@ export default function DashboardScreen() {
     [nav]
   );
 
-  const { dollars, cents } = splitCurrency(metrics.totalSpent);
+  const { symbol: heroSymbol, dollars, cents, position: heroPosition } = splitCurrency(metrics.totalSpent, currencyCode);
 
   // -- Empty states --
 
@@ -351,17 +351,19 @@ export default function DashboardScreen() {
             Total Spent
           </Text>
           <View className="flex-row items-baseline">
-            <Text
-              style={{
-                fontSize: 22,
-                fontWeight: '500',
-                color: isDark ? '#8A8680' : '#706C67',
-                marginRight: 2,
-                marginBottom: 2,
-              }}
-            >
-              $
-            </Text>
+            {heroPosition === 'prefix' && (
+              <Text
+                style={{
+                  fontSize: 22,
+                  fontWeight: '500',
+                  color: isDark ? '#8A8680' : '#706C67',
+                  marginRight: 2,
+                  marginBottom: 2,
+                }}
+              >
+                {heroSymbol}
+              </Text>
+            )}
             <Text
               style={{
                 fontSize: 54,
@@ -373,16 +375,31 @@ export default function DashboardScreen() {
             >
               {dollars}
             </Text>
-            <Text
-              style={{
-                fontSize: 28,
-                fontWeight: '600',
-                color: isDark ? '#8A8680' : '#706C67',
-                marginBottom: 2,
-              }}
-            >
-              .{cents}
-            </Text>
+            {cents !== '' && (
+              <Text
+                style={{
+                  fontSize: 28,
+                  fontWeight: '600',
+                  color: isDark ? '#8A8680' : '#706C67',
+                  marginBottom: 2,
+                }}
+              >
+                .{cents}
+              </Text>
+            )}
+            {heroPosition === 'suffix' && (
+              <Text
+                style={{
+                  fontSize: 22,
+                  fontWeight: '500',
+                  color: isDark ? '#8A8680' : '#706C67',
+                  marginLeft: 4,
+                  marginBottom: 2,
+                }}
+              >
+                {heroSymbol}
+              </Text>
+            )}
           </View>
           {metrics.totalSpentDelta && (
             <Text
@@ -400,7 +417,7 @@ export default function DashboardScreen() {
 
         {/* ── Secondary metrics ── */}
         <View className="flex-row px-4 mt-4 mb-8">
-          <View className="flex-1" accessibilityLabel={`Cost per ${odoLabel}: ${metrics.costPerMile != null ? `$${metrics.costPerMile.toFixed(2)}` : 'not enough data'}`} accessibilityHint="Total spending divided by distance driven">
+          <View className="flex-1" accessibilityLabel={`Cost per ${odoLabel}: ${metrics.costPerMile != null ? formatCurrency(metrics.costPerMile, currencyCode) : 'not enough data'}`} accessibilityHint="Total spending divided by distance driven">
             <View className="flex-row items-center" style={{ gap: 4, marginBottom: 2 }}>
               <Text
                 style={{
@@ -426,11 +443,11 @@ export default function DashboardScreen() {
                 fontVariant: ['tabular-nums'],
               }}
             >
-              {metrics.costPerMile != null ? `$${metrics.costPerMile.toFixed(2)}` : '--'}
+              {metrics.costPerMile != null ? formatCurrency(metrics.costPerMile, currencyCode) : '--'}
             </Text>
             {metrics.costPerMileDelta && (
               <Text style={{ fontSize: 11, color: metrics.costPerMileDelta.direction === 'up' ? '#EF4444' : '#10B981', marginTop: 2 }}>
-                {metrics.costPerMileDelta.direction === 'up' ? '↑' : '↓'} ${Math.abs(metrics.costPerMileDelta.value).toFixed(2)}
+                {metrics.costPerMileDelta.direction === 'up' ? '↑' : '↓'} {formatCurrency(Math.abs(metrics.costPerMileDelta.value), currencyCode)}
               </Text>
             )}
           </View>
@@ -489,6 +506,7 @@ export default function DashboardScreen() {
               projectedAnnual={metrics.projectedAnnualCost}
               ytdSpent={metrics.ytdSpent}
               isDark={isDark}
+              currencyCode={currencyCode}
             />
           </View>
         )}
@@ -589,6 +607,7 @@ export default function DashboardScreen() {
               isDark={isDark}
               chartWidth={chartWidth}
               period={period}
+              currencyCode={currencyCode}
             />
           </View>
         )}
@@ -598,7 +617,7 @@ export default function DashboardScreen() {
           <View
             className="mx-4 mb-6"
             style={{ ...cardShadow(isDark), padding: 16 }}
-            accessibilityLabel={`Spending: fuel $${metrics.spendingBreakdown.fuel.toFixed(0)}, service $${metrics.spendingBreakdown.service.toFixed(0)}, expense $${metrics.spendingBreakdown.expense.toFixed(0)}`}
+            accessibilityLabel={`Spending: fuel ${formatCurrency(metrics.spendingBreakdown.fuel, currencyCode)}, service ${formatCurrency(metrics.spendingBreakdown.service, currencyCode)}, expense ${formatCurrency(metrics.spendingBreakdown.expense, currencyCode)}`}
           >
             <Text style={{ fontSize: 13, fontWeight: '600', color: isDark ? '#F5F4F1' : '#1C1B18', marginBottom: 16 }}>
               Spending
@@ -611,17 +630,17 @@ export default function DashboardScreen() {
                 radius={58}
                 innerCircleColor={isDark ? '#1A1917' : '#FEFDFB'}
                 centerLabelComponent={() => (
-                  <View style={{ alignItems: 'center' }}>
-                    <Text style={{ fontSize: 16, fontWeight: '800', color: isDark ? '#F5F4F1' : '#1C1B18', fontVariant: ['tabular-nums'] }}>
-                      ${metrics.spendingBreakdown.total < 100 ? metrics.spendingBreakdown.total.toFixed(2) : metrics.spendingBreakdown.total.toFixed(0)}
+                  <View style={{ alignItems: 'center', justifyContent: 'center', width: 72 }}>
+                    <Text numberOfLines={1} adjustsFontSizeToFit style={{ fontSize: 16, fontWeight: '800', color: isDark ? '#F5F4F1' : '#1C1B18', fontVariant: ['tabular-nums'] }}>
+                      {formatCurrency(metrics.spendingBreakdown.total < 100 ? metrics.spendingBreakdown.total : Math.round(metrics.spendingBreakdown.total), currencyCode)}
                     </Text>
                   </View>
                 )}
               />
               <View className="flex-1 ml-6" style={{ gap: 14 }}>
-                <SpendingRow isDark={isDark} color="#1A9A8F" label="Fuel" amount={metrics.spendingBreakdown.fuel} total={metrics.spendingBreakdown.total} />
-                <SpendingRow isDark={isDark} color="#E8772B" label="Service" amount={metrics.spendingBreakdown.service} total={metrics.spendingBreakdown.total} />
-                <SpendingRow isDark={isDark} color="#2EAD76" label="Expense" amount={metrics.spendingBreakdown.expense} total={metrics.spendingBreakdown.total} />
+                <SpendingRow isDark={isDark} color="#1A9A8F" label="Fuel" amount={metrics.spendingBreakdown.fuel} total={metrics.spendingBreakdown.total} currencyCode={currencyCode} />
+                <SpendingRow isDark={isDark} color="#E8772B" label="Service" amount={metrics.spendingBreakdown.service} total={metrics.spendingBreakdown.total} currencyCode={currencyCode} />
+                <SpendingRow isDark={isDark} color="#2EAD76" label="Expense" amount={metrics.spendingBreakdown.expense} total={metrics.spendingBreakdown.total} currencyCode={currencyCode} />
               </View>
             </View>
           </View>
@@ -665,6 +684,7 @@ export default function DashboardScreen() {
                       place={place}
                       label={eventLabel}
                       onPress={() => handleEventPress(event.id, event.type)}
+                      currencyCode={currencyCode}
                     />
                   </View>
                 );
@@ -686,12 +706,14 @@ function SpendingRow({
   label,
   amount,
   total,
+  currencyCode: cc = 'USD',
 }: {
   isDark: boolean;
   color: string;
   label: string;
   amount: number;
   total: number;
+  currencyCode?: string;
 }) {
   const pct = total > 0 && amount > 0 ? Math.round((amount / total) * 100) : 0;
   const dimmed = amount <= 0;
@@ -700,7 +722,7 @@ function SpendingRow({
       <View accessible={false} style={{ width: 10, height: 10, borderRadius: 3, backgroundColor: dimmed ? '#E2E0DB' : color }} />
       <Text style={{ flex: 1, fontSize: 13, color: isDark ? '#C5C2BC' : '#5C5A55' }}>{label}</Text>
       <Text numberOfLines={1} style={{ fontSize: 13, fontWeight: '600', color: isDark ? '#F5F4F1' : '#1C1B18', fontVariant: ['tabular-nums'] }}>
-        ${amount.toFixed(0)}
+        {formatCurrency(Math.round(amount), cc)}
       </Text>
       <Text numberOfLines={1} style={{ fontSize: 11, color: isDark ? '#8A8680' : '#706C67', minWidth: 28, textAlign: 'right', fontVariant: ['tabular-nums'] }}>
         {pct}%

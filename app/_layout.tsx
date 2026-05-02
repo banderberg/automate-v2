@@ -15,7 +15,7 @@ import { useEventStore } from '@/src/stores/eventStore';
 import { useReminderStore } from '@/src/stores/reminderStore';
 import { ErrorToast } from '@/src/components/ErrorToast';
 
-export { ErrorBoundary } from 'expo-router';
+export { AppErrorBoundary as ErrorBoundary } from '@/src/components/AppErrorBoundary';
 
 export const unstable_settings = {
   initialRouteName: '(tabs)',

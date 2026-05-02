@@ -10,17 +10,20 @@ import { ModalHeader } from '@/src/components/ModalHeader';
 import { ConfirmDialog } from '@/src/components/ConfirmDialog';
 import { useDialog } from '@/src/hooks/useDialog';
 import { useVehicleStore } from '@/src/stores/vehicleStore';
+import { useSettingsStore } from '@/src/stores/settingsStore';
+import { formatCurrency } from '@/src/constants/currency';
 import { onImportComplete } from '@/src/stores/orchestrator';
 import {
   detectFormat,
   parseFuelioCSV,
   parseFuellyCSV,
   parseAutomateCSV,
+  parseDrivvoCSV,
   importData,
 } from '@/src/services/dataImport';
 import type { ParsedImportData, ParsedEvent } from '@/src/services/dataImport';
 
-type DetectedFormat = 'fuelio' | 'fuelly' | 'automate' | 'unknown';
+type DetectedFormat = 'fuelio' | 'fuelly' | 'automate' | 'drivvo' | 'unknown';
 
 let _importCache: {
   parsedData: ParsedImportData;
@@ -32,6 +35,7 @@ const FORMAT_LABELS: Record<DetectedFormat, string> = {
   fuelio: 'Fuelio Export',
   fuelly: 'Fuelly Export',
   automate: 'AutoMate Export',
+  drivvo: 'Drivvo Export',
   unknown: 'Unknown Format',
 };
 
@@ -39,6 +43,7 @@ const FORMAT_COLORS: Record<DetectedFormat, { bg: string; text: string }> = {
   fuelio: { bg: '#1A9A8F20', text: '#1A9A8F' },
   fuelly: { bg: '#E8772B20', text: '#E8772B' },
   automate: { bg: '#4272C420', text: '#4272C4' },
+  drivvo: { bg: '#9333EA20', text: '#9333EA' },
   unknown: { bg: '#EF444420', text: '#EF4444' },
 };
 
@@ -46,8 +51,8 @@ function formatEventType(type: ParsedEvent['type']): string {
   return type.charAt(0).toUpperCase() + type.slice(1);
 }
 
-function formatCost(cost: number): string {
-  return `$${cost.toFixed(2)}`;
+function formatCost(cost: number, cc: string): string {
+  return formatCurrency(cost, cc);
 }
 
 export default function ImportModal() {
@@ -55,6 +60,7 @@ export default function ImportModal() {
   const { colorScheme } = useColorScheme();
   const isDark = colorScheme === 'dark';
   const vehicles = useVehicleStore((s) => s.vehicles);
+  const currencyCode = useSettingsStore((s) => s.settings.currency);
 
   const [isReadingFile, setIsReadingFile] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
@@ -120,6 +126,9 @@ export default function ImportModal() {
           break;
         case 'automate':
           data = parseAutomateCSV(content);
+          break;
+        case 'drivvo':
+          data = parseDrivvoCSV(content);
           break;
       }
 
@@ -236,7 +245,7 @@ export default function ImportModal() {
               </Text>
             </View>
             <Text className="text-sm text-ink-secondary dark:text-ink-secondary-on-dark">
-              This file does not match Fuelio, Fuelly, or AutoMate CSV formats. Please select a supported CSV export file.
+              This file does not match Fuelio, Fuelly, Drivvo, or AutoMate CSV formats. Please select a supported CSV export file.
             </Text>
           </View>
         )}
@@ -273,7 +282,7 @@ export default function ImportModal() {
                     className="text-sm font-semibold text-ink dark:text-ink-on-dark"
                     style={{ fontVariant: ['tabular-nums'] }}
                   >
-                    {formatCost(event.cost)}
+                    {formatCost(event.cost, currencyCode)}
                   </Text>
                 </View>
               ))}

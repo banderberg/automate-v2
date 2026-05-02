@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback } from 'react';
-import { View, Text, Pressable, ScrollView, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, Pressable, ScrollView, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -9,6 +9,7 @@ import { ConfirmDialog } from '@/src/components/ConfirmDialog';
 import { useDialog } from '@/src/hooks/useDialog';
 import { DateField } from '@/src/components/DateField';
 import { useVehicleStore } from '@/src/stores/vehicleStore';
+import { useSettingsStore } from '@/src/stores/settingsStore';
 import { useToastStore } from '@/src/stores/toastStore';
 import { exportVehicleData } from '@/src/services/csvExport';
 import { generateServiceHistoryPDF } from '@/src/services/pdfExport';
@@ -17,12 +18,14 @@ type ExportFormat = 'csv' | 'pdf';
 
 export default function ExportModal() {
   const router = useRouter();
+  const currencyCode = useSettingsStore((s) => s.settings.currency);
   const vehicles = useVehicleStore((s) => s.vehicles);
 
   const [format, setFormat] = useState<ExportFormat>('csv');
   const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>(null);
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
+  const [fileName, setFileName] = useState('');
   const [exporting, setExporting] = useState(false);
   const [showVehiclePicker, setShowVehiclePicker] = useState(false);
   const { showDialog, dialogProps } = useDialog();
@@ -55,6 +58,8 @@ export default function ExportModal() {
           selectedVehicleId,
           fromDate || undefined,
           toDate || undefined,
+          currencyCode,
+          fileName || undefined,
         );
         const canShare = await Sharing.isAvailableAsync();
         if (canShare) {
@@ -72,6 +77,7 @@ export default function ExportModal() {
           selectedVehicleId,
           fromDate || undefined,
           toDate || undefined,
+          fileName || undefined,
         );
         const canShare = await Sharing.isAvailableAsync();
         if (canShare) {
@@ -91,7 +97,7 @@ export default function ExportModal() {
     } finally {
       setExporting(false);
     }
-  }, [format, selectedVehicleId, fromDate, toDate]);
+  }, [format, selectedVehicleId, fromDate, toDate, currencyCode]);
 
   return (
     <SafeAreaView className="flex-1 bg-surface dark:bg-surface-dark" edges={['top']}>
@@ -283,6 +289,23 @@ export default function ExportModal() {
             <Text className="flex-1 ml-2 text-base text-ink-muted">To (all time)</Text>
           </Pressable>
         )}
+
+        {/* File name */}
+        <Text className="text-xs text-ink-muted dark:text-ink-muted-on-dark mb-2 font-semibold">
+          File Name (optional)
+        </Text>
+        <View className="bg-surface dark:bg-surface-dark rounded-xl border border-divider dark:border-divider-dark px-3.5 py-3 mb-4">
+          <TextInput
+            className="text-base text-ink dark:text-ink-on-dark"
+            value={fileName}
+            onChangeText={setFileName}
+            placeholder={`automate-export-${new Date().toISOString().split('T')[0]}`}
+            placeholderTextColor="#A8A49D"
+            autoCapitalize="none"
+            autoCorrect={false}
+            accessibilityLabel="Export file name"
+          />
+        </View>
 
         {/* Export button */}
         <Pressable
