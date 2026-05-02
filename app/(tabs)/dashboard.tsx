@@ -693,11 +693,11 @@ function SpendingRow({
   amount: number;
   total: number;
 }) {
-  if (amount <= 0) return null;
-  const pct = total > 0 ? Math.round((amount / total) * 100) : 0;
+  const pct = total > 0 && amount > 0 ? Math.round((amount / total) * 100) : 0;
+  const dimmed = amount <= 0;
   return (
-    <View className="flex-row items-center" style={{ gap: 10 }}>
-      <View accessible={false} style={{ width: 10, height: 10, borderRadius: 3, backgroundColor: color }} />
+    <View className="flex-row items-center" style={{ gap: 10, opacity: dimmed ? 0.45 : 1 }}>
+      <View accessible={false} style={{ width: 10, height: 10, borderRadius: 3, backgroundColor: dimmed ? '#E2E0DB' : color }} />
       <Text style={{ flex: 1, fontSize: 13, color: isDark ? '#C5C2BC' : '#5C5A55' }}>{label}</Text>
       <Text numberOfLines={1} style={{ fontSize: 13, fontWeight: '600', color: isDark ? '#F5F4F1' : '#1C1B18', fontVariant: ['tabular-nums'] }}>
         ${amount.toFixed(0)}
