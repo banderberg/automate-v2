@@ -33,6 +33,7 @@ import { switchVehicle, onVehicleAdded, onVehicleUnitChanged } from '@/src/store
 import { decodeVin } from '@/src/services/vinDecoder';
 import { getVolumeUnitForFuelType } from '@/src/constants/units';
 import type { Vehicle } from '@/src/types';
+import { t } from '@/src/i18n';
 
 type FuelType = 'gas' | 'diesel' | 'electric';
 type OdometerUnit = 'miles' | 'kilometers';
@@ -131,7 +132,7 @@ export default function VehicleModal() {
     if (source === 'camera') {
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
       if (status !== 'granted') {
-        showDialog('Permission needed', 'Camera access is required to take a photo.');
+        showDialog(t('vehicleModal.permissionTitle'), t('vehicleModal.cameraPermissionMessage'));
         return;
       }
       result = await ImagePicker.launchCameraAsync(options);
@@ -153,8 +154,8 @@ export default function VehicleModal() {
 
   const handlePhotoPress = useCallback(() => {
     const options = imagePath
-      ? ['Take Photo', 'Choose from Library', 'Remove Photo', 'Cancel']
-      : ['Take Photo', 'Choose from Library', 'Cancel'];
+      ? [t('vehicleModal.takePhoto'), t('vehicleModal.chooseFromLibrary'), t('vehicleModal.removePhoto'), t('common.cancel')]
+      : [t('vehicleModal.takePhoto'), t('vehicleModal.chooseFromLibrary'), t('common.cancel')];
     const cancelIndex = options.length - 1;
     const destructiveIndex = imagePath ? 2 : undefined;
 
@@ -168,13 +169,13 @@ export default function VehicleModal() {
         }
       );
     } else {
-      showDialog('Vehicle Photo', undefined, [
-        { text: 'Take Photo', onPress: () => pickImage('camera') },
-        { text: 'Choose from Library', onPress: () => pickImage('library') },
+      showDialog(t('vehicleModal.photoSheetTitle'), undefined, [
+        { text: t('vehicleModal.takePhoto'), onPress: () => pickImage('camera') },
+        { text: t('vehicleModal.chooseFromLibrary'), onPress: () => pickImage('library') },
         ...(imagePath
-          ? [{ text: 'Remove Photo', style: 'destructive' as const, onPress: () => { setImagePath(undefined); markDirty(); } }]
+          ? [{ text: t('vehicleModal.removePhoto'), style: 'destructive' as const, onPress: () => { setImagePath(undefined); markDirty(); } }]
           : []),
-        { text: 'Cancel', style: 'cancel' as const },
+        { text: t('common.cancel'), style: 'cancel' as const },
       ]);
     }
   }, [imagePath, pickImage]);
@@ -196,11 +197,11 @@ export default function VehicleModal() {
       if (hasExisting) {
         const parts = [result.year && `${result.year}`, result.make, result.model].filter(Boolean).join(' ');
         showDialog(
-          'Use VIN Details?',
-          `Replace current values with "${parts}"?`,
+          t('vehicleModal.vinReplaceTitle'),
+          t('vehicleModal.vinReplaceMessage', { values: parts }),
           [
-            { text: 'Keep Current', style: 'cancel', onPress: () => setVinStatus('success') },
-            { text: 'Replace', onPress: applyDecoded },
+            { text: t('vehicleModal.vinKeepCurrent'), style: 'cancel', onPress: () => setVinStatus('success') },
+            { text: t('vehicleModal.vinReplace'), onPress: applyDecoded },
           ]
         );
       } else {
@@ -224,11 +225,15 @@ export default function VehicleModal() {
       if (isEditing && unit !== originalOdometerUnit) {
         const eventCount = events.length;
         showDialog(
-          'Convert Odometer Readings',
-          `This will convert ${eventCount} odometer reading${eventCount !== 1 ? 's' : ''} from ${originalOdometerUnit} to ${unit}. Continue?`,
+          t('vehicleModal.convertOdoTitle'),
+          t(eventCount === 1 ? 'vehicleModal.convertOdoMessageOne' : 'vehicleModal.convertOdoMessageOther', {
+            count: eventCount,
+            from: originalOdometerUnit,
+            to: unit,
+          }),
           [
-            { text: 'Cancel', style: 'cancel' },
-            { text: 'Convert', onPress: () => setOdometerUnit(unit) },
+            { text: t('common.cancel'), style: 'cancel' },
+            { text: t('vehicleModal.convertCta'), onPress: () => setOdometerUnit(unit) },
           ]
         );
       } else {
@@ -267,7 +272,7 @@ export default function VehicleModal() {
           await onVehicleUnitChanged(vehicleId);
         }
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        useToastStore.getState().show(`${vehicleName} updated`);
+        useToastStore.getState().show(t('vehicleModal.updatedToast', { name: vehicleName }));
         router.back();
       } else {
         const isFirst = vehicles.length === 0;
@@ -278,29 +283,29 @@ export default function VehicleModal() {
             await updateSetting('hasCompletedOnboarding', true);
           }
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-          useToastStore.getState().show(`${vehicleName} added`);
+          useToastStore.getState().show(t('vehicleModal.addedToast', { name: vehicleName }));
           router.back();
         } else {
           showDialog(
-            'Make Active?',
-            `Make "${vehicleName}" the active vehicle?`,
+            t('vehicleModal.makeActiveTitle'),
+            t('vehicleModal.makeActiveMessage', { name: vehicleName }),
             [
               {
-                text: 'No',
+                text: t('vehicleModal.no'),
                 onPress: async () => {
                   await addVehicle(data, false);
                   Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-                  useToastStore.getState().show(`${vehicleName} added`);
+                  useToastStore.getState().show(t('vehicleModal.addedToast', { name: vehicleName }));
                   router.back();
                 },
               },
               {
-                text: 'Yes',
+                text: t('vehicleModal.yes'),
                 onPress: async () => {
                   const vehicle = await addVehicle(data, true);
                   await onVehicleAdded(vehicle.id, true);
                   Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-                  useToastStore.getState().show(`${vehicleName} added`);
+                  useToastStore.getState().show(t('vehicleModal.addedToast', { name: vehicleName }));
                   router.back();
                 },
               },
@@ -310,7 +315,7 @@ export default function VehicleModal() {
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : '';
-      showDialog("Couldn't Save Vehicle", msg || 'Check your entries and try again. If this keeps happening, try restarting the app.');
+      showDialog(t('vehicleModal.saveErrorTitle'), msg || t('vehicleModal.saveErrorMessage'));
     } finally {
       setSaving(false);
     }
@@ -319,9 +324,9 @@ export default function VehicleModal() {
   const handleCancel = useCallback(() => {
     const hasInput = !isEditing && !!(nickname.trim() || year || make.trim() || model.trim());
     if (isDirty.current || hasInput) {
-      showDialog('Discard Changes?', 'You have unsaved changes.', [
-        { text: 'Keep Editing', style: 'cancel' },
-        { text: 'Discard', style: 'destructive', onPress: () => router.back() },
+      showDialog(t('eventForm.discardTitle'), t('eventForm.discardMessage'), [
+        { text: t('eventForm.keepEditing'), style: 'cancel' },
+        { text: t('eventForm.discard'), style: 'destructive', onPress: () => router.back() },
       ]);
     } else {
       router.back();
@@ -340,8 +345,8 @@ export default function VehicleModal() {
 
     if (isOnly) {
       showDialog(
-        'Cannot Delete',
-        'Add another vehicle before deleting this one.'
+        t('vehicleModal.cannotDeleteTitle'),
+        t('vehicleModal.cannotDeleteMessage')
       );
       return;
     }
@@ -352,8 +357,8 @@ export default function VehicleModal() {
 
     if (isActive && others.length > 0) {
       showDialog(
-        'Choose New Active Vehicle',
-        `Choose the vehicle to activate after deleting "${vehicle.nickname}".`,
+        t('vehicleModal.chooseActiveTitle'),
+        t('vehicleModal.chooseActiveMessage', { name: vehicle.nickname }),
         [
           ...others.map((v) => ({
             text: v.nickname,
@@ -363,28 +368,33 @@ export default function VehicleModal() {
                 await deleteVehicle(vehicleId);
                 router.back();
               } catch {
-                showDialog("Couldn't Delete Vehicle", 'Something went wrong. Try again or restart the app.');
+                showDialog(t('vehicleModal.deleteVehicleErrorTitle'), t('vehicleModal.deleteVehicleErrorMessage'));
               }
             },
           })),
-          { text: 'Cancel', style: 'cancel' as const },
+          { text: t('common.cancel'), style: 'cancel' as const },
         ]
       );
     } else {
+      const messageKey = cascadeCount === 0
+        ? 'vehicleModal.deleteVehicleMessageZero'
+        : cascadeCount === 1
+          ? 'vehicleModal.deleteVehicleMessageOne'
+          : 'vehicleModal.deleteVehicleMessageOther';
       showDialog(
-        'Delete Vehicle',
-        `Delete "${vehicle.nickname}"? This will permanently remove ${cascadeCount > 0 ? `${cascadeCount} event${cascadeCount !== 1 ? 's' : ''} and reminder${cascadeCount !== 1 ? 's' : ''}` : 'it'}.`,
+        t('vehicleModal.deleteVehicleTitle'),
+        t(messageKey, { name: vehicle.nickname, count: cascadeCount }),
         [
-          { text: 'Cancel', style: 'cancel' },
+          { text: t('common.cancel'), style: 'cancel' },
           {
-            text: 'Delete',
+            text: t('common.delete'),
             style: 'destructive',
             onPress: async () => {
               try {
                 await deleteVehicle(vehicleId);
                 router.back();
               } catch {
-                showDialog("Couldn't Delete Vehicle", 'Something went wrong. Try again or restart the app.');
+                showDialog(t('vehicleModal.deleteVehicleErrorTitle'), t('vehicleModal.deleteVehicleErrorMessage'));
               }
             },
           },
@@ -396,7 +406,7 @@ export default function VehicleModal() {
   return (
     <SafeAreaView className="flex-1 bg-surface dark:bg-surface-dark" edges={['top']}>
       <ModalHeader
-        title={isEditing ? 'Edit Vehicle' : 'Add Vehicle'}
+        title={isEditing ? t('vehicleModal.editTitle') : t('vehicleModal.addTitle')}
         onCancel={handleCancel}
         onSave={handleSave}
         saveDisabled={!canSave}
@@ -411,7 +421,7 @@ export default function VehicleModal() {
             <Pressable
               onPress={handlePhotoPress}
               className="w-[120px] h-[120px] rounded-full bg-surface dark:bg-surface-dark items-center justify-center overflow-hidden border-2 border-divider dark:border-divider-dark"
-              accessibilityLabel={imagePath ? 'Change vehicle photo' : 'Add vehicle photo'}
+              accessibilityLabel={imagePath ? t('vehicleModal.changePhotoA11y') : t('vehicleModal.addPhotoA11y')}
               accessibilityRole="button"
             >
               {imagePath ? (
@@ -423,7 +433,7 @@ export default function VehicleModal() {
               ) : (
                 <View className="items-center">
                   <Ionicons name="camera-outline" size={32} color="#A8A49D" />
-                  <Text className="text-xs text-ink-muted mt-1">Add Photo</Text>
+                  <Text className="text-xs text-ink-muted mt-1">{t('vehicleModal.addPhotoLabel')}</Text>
                 </View>
               )}
             </Pressable>
@@ -431,45 +441,45 @@ export default function VehicleModal() {
 
           <View className="mb-6">
             <Text className="text-xs text-ink-muted dark:text-ink-muted-on-dark mb-1.5 font-semibold">
-              Nickname *
+              {t('vehicleModal.nicknameLabel')}
             </Text>
             <View className="bg-surface dark:bg-surface-dark rounded-xl border border-divider dark:border-divider-dark px-3.5 py-3">
               <TextInput
                 className="text-base text-ink dark:text-ink-on-dark"
                 value={nickname}
-                onChangeText={(t) => { setNickname(t.slice(0, 30)); markDirty(); }}
-                placeholder="e.g., The Corolla"
+                onChangeText={(text) => { setNickname(text.slice(0, 30)); markDirty(); }}
+                placeholder={t('vehicleModal.nicknamePlaceholder')}
                 placeholderTextColor="#A8A49D"
                 maxLength={30}
-                accessibilityLabel="Vehicle nickname"
+                accessibilityLabel={t('vehicleModal.nicknameA11y')}
               />
             </View>
           </View>
 
           {/* ── Vehicle Details ── */}
           <Text className="text-xs text-ink-muted dark:text-ink-muted-on-dark font-semibold uppercase mb-3" style={{ letterSpacing: 1.5 }}>
-            Vehicle Details
+            {t('vehicleModal.vehicleDetails')}
           </Text>
 
           <View className="mb-4">
             <Text className="text-xs text-ink-muted dark:text-ink-muted-on-dark mb-1.5 font-semibold">
-              VIN
+              {t('vehicleModal.vinLabel')}
             </Text>
             <View className="flex-row items-center bg-surface dark:bg-surface-dark rounded-xl border border-divider dark:border-divider-dark px-3.5 py-3">
               <TextInput
                 className="flex-1 text-base text-ink dark:text-ink-on-dark"
                 value={vin}
-                onChangeText={(t) => {
-                  setVin(t.toUpperCase().slice(0, 17));
+                onChangeText={(text) => {
+                  setVin(text.toUpperCase().slice(0, 17));
                   if (vinStatus !== 'idle') setVinStatus('idle');
                   markDirty();
                 }}
                 onBlur={handleVinBlur}
-                placeholder="17-character VIN"
+                placeholder={t('vehicleModal.vinPlaceholder')}
                 placeholderTextColor="#A8A49D"
                 autoCapitalize="characters"
                 maxLength={17}
-                accessibilityLabel="Vehicle Identification Number"
+                accessibilityLabel={t('vehicleModal.vinA11y')}
               />
               {vinStatus === 'loading' && (
                 <ActivityIndicator size="small" color="#4272C4" />
@@ -479,133 +489,133 @@ export default function VehicleModal() {
               <View className="flex-row items-center mt-1.5 gap-1">
                 <Ionicons name="checkmark-circle" size={14} color="#10B981" />
                 <Text className="text-xs" style={{ color: '#10B981' }}>
-                  Filled {[year && year, make, model].filter(Boolean).join(', ')} from VIN
+                  {t('vehicleModal.vinFilledFmt', { values: [year && year, make, model].filter(Boolean).join(', ') })}
                 </Text>
               </View>
             )}
             {vinStatus === 'error' && (
-              <Text className="text-xs mt-1" style={{ color: '#F59E0B' }}>Couldn't look up VIN. Enter details manually.</Text>
+              <Text className="text-xs mt-1" style={{ color: '#F59E0B' }}>{t('vehicleModal.vinErrorMessage')}</Text>
             )}
           </View>
 
           <View className="mb-4">
             <Text className="text-xs text-ink-muted dark:text-ink-muted-on-dark mb-1.5 font-semibold">
-              Year *
+              {t('vehicleModal.yearLabel')}
             </Text>
             <View className="bg-surface dark:bg-surface-dark rounded-xl border border-divider dark:border-divider-dark px-3.5 py-3">
               <TextInput
                 className="text-base text-ink dark:text-ink-on-dark"
                 value={year}
-                onChangeText={(t) => { setYear(t.replace(/[^0-9]/g, '').slice(0, 4)); markDirty(); }}
-                placeholder="2024"
+                onChangeText={(text) => { setYear(text.replace(/[^0-9]/g, '').slice(0, 4)); markDirty(); }}
+                placeholder={t('vehicleModal.yearPlaceholder')}
                 placeholderTextColor="#A8A49D"
                 keyboardType="number-pad"
                 maxLength={4}
-                accessibilityLabel="Vehicle year"
+                accessibilityLabel={t('vehicleModal.yearA11y')}
               />
             </View>
           </View>
 
           <View className="mb-4">
             <Text className="text-xs text-ink-muted dark:text-ink-muted-on-dark mb-1.5 font-semibold">
-              Make *
+              {t('vehicleModal.makeLabel')}
             </Text>
             <View className="bg-surface dark:bg-surface-dark rounded-xl border border-divider dark:border-divider-dark px-3.5 py-3">
               <TextInput
                 className="text-base text-ink dark:text-ink-on-dark"
                 value={make}
-                onChangeText={(t) => { setMake(t); markDirty(); }}
-                placeholder="Toyota"
+                onChangeText={(text) => { setMake(text); markDirty(); }}
+                placeholder={t('vehicleModal.makePlaceholder')}
                 placeholderTextColor="#A8A49D"
                 maxLength={50}
-                accessibilityLabel="Vehicle make"
+                accessibilityLabel={t('vehicleModal.makeA11y')}
               />
             </View>
           </View>
 
           <View className="mb-4">
             <Text className="text-xs text-ink-muted dark:text-ink-muted-on-dark mb-1.5 font-semibold">
-              Model *
+              {t('vehicleModal.modelLabel')}
             </Text>
             <View className="bg-surface dark:bg-surface-dark rounded-xl border border-divider dark:border-divider-dark px-3.5 py-3">
               <TextInput
                 className="text-base text-ink dark:text-ink-on-dark"
                 value={model}
-                onChangeText={(t) => { setModel(t); markDirty(); }}
-                placeholder="Corolla"
+                onChangeText={(text) => { setModel(text); markDirty(); }}
+                placeholder={t('vehicleModal.modelPlaceholder')}
                 placeholderTextColor="#A8A49D"
                 maxLength={50}
-                accessibilityLabel="Vehicle model"
+                accessibilityLabel={t('vehicleModal.modelA11y')}
               />
             </View>
           </View>
 
           <View className="mb-6">
             <Text className="text-xs text-ink-muted dark:text-ink-muted-on-dark mb-1.5 font-semibold">
-              Trim
+              {t('vehicleModal.trimLabel')}
             </Text>
             <View className="bg-surface dark:bg-surface-dark rounded-xl border border-divider dark:border-divider-dark px-3.5 py-3">
               <TextInput
                 className="text-base text-ink dark:text-ink-on-dark"
                 value={trim}
-                onChangeText={(t) => { setTrim(t); markDirty(); }}
-                placeholder="SE, XLE, etc."
+                onChangeText={(text) => { setTrim(text); markDirty(); }}
+                placeholder={t('vehicleModal.trimPlaceholder')}
                 placeholderTextColor="#A8A49D"
                 maxLength={30}
-                accessibilityLabel="Vehicle trim"
+                accessibilityLabel={t('vehicleModal.trimA11y')}
               />
             </View>
           </View>
 
           {/* ── Configuration ── */}
           <Text className="text-xs text-ink-muted dark:text-ink-muted-on-dark font-semibold uppercase mb-3" style={{ letterSpacing: 1.5 }}>
-            Configuration
+            {t('vehicleModal.configuration')}
           </Text>
 
           <View className="mb-4">
             <Text className="text-xs text-ink-muted dark:text-ink-muted-on-dark mb-2 font-semibold">
-              Fuel Type
+              {t('vehicleModal.fuelTypeLabel')}
             </Text>
             <SegmentedControl
               options={[
-                { value: 'gas' as FuelType, label: 'Gas' },
-                { value: 'diesel' as FuelType, label: 'Diesel' },
-                { value: 'electric' as FuelType, label: 'Electric' },
+                { value: 'gas' as FuelType, label: t('vehicleModal.fuelTypeGas') },
+                { value: 'diesel' as FuelType, label: t('vehicleModal.fuelTypeDiesel') },
+                { value: 'electric' as FuelType, label: t('vehicleModal.fuelTypeElectric') },
               ]}
               selectedValue={fuelType}
               onValueChange={handleFuelTypeChange}
-              accessibilityLabel="Fuel type"
+              accessibilityLabel={t('vehicleModal.fuelTypeA11y')}
             />
           </View>
 
           <View className="mb-4">
             <Text className="text-xs text-ink-muted dark:text-ink-muted-on-dark mb-2 font-semibold">
-              Odometer Unit
+              {t('vehicleModal.odometerUnitLabel')}
             </Text>
             <SegmentedControl
               options={[
-                { value: 'miles' as OdometerUnit, label: 'Miles' },
-                { value: 'kilometers' as OdometerUnit, label: 'Kilometers' },
+                { value: 'miles' as OdometerUnit, label: t('vehicleModal.odoMiles') },
+                { value: 'kilometers' as OdometerUnit, label: t('vehicleModal.odoKilometers') },
               ]}
               selectedValue={odometerUnit}
               onValueChange={handleOdometerUnitChange}
-              accessibilityLabel="Odometer unit"
+              accessibilityLabel={t('vehicleModal.odometerUnitA11y')}
             />
           </View>
 
           <View className="mb-4">
             <Text className="text-xs text-ink-muted dark:text-ink-muted-on-dark mb-1.5 font-semibold">
-              Fuel Capacity
+              {t('vehicleModal.fuelCapacityLabel')}
             </Text>
             <View className="flex-row items-center bg-surface dark:bg-surface-dark rounded-xl border border-divider dark:border-divider-dark px-3.5 py-3">
               <TextInput
                 className="flex-1 text-base text-ink dark:text-ink-on-dark"
                 value={fuelCapacity}
-                onChangeText={(t) => { setFuelCapacity(t); markDirty(); }}
-                placeholder="Optional"
+                onChangeText={(text) => { setFuelCapacity(text); markDirty(); }}
+                placeholder={t('vehicleModal.fuelCapacityPlaceholder')}
                 placeholderTextColor="#A8A49D"
                 keyboardType="decimal-pad"
-                accessibilityLabel={`Fuel capacity in ${capacityLabel}`}
+                accessibilityLabel={t('vehicleModal.fuelCapacityA11y', { unit: capacityLabel })}
               />
               <Text className="text-sm text-ink-muted ml-2">{capacityLabel}</Text>
             </View>
@@ -617,17 +627,17 @@ export default function VehicleModal() {
                 className="text-xs text-ink-muted dark:text-ink-muted-on-dark font-semibold uppercase mb-3 mt-6"
                 style={{ letterSpacing: 1.5 }}
               >
-                Documents
+                {t('vehicleModal.documents')}
               </Text>
               <Pressable
                 onPress={() => nav.push(`/(modals)/vehicle-documents?vehicleId=${vehicleId}`)}
                 className="flex-row items-center justify-between px-4 py-4 bg-card dark:bg-card-dark rounded-xl border border-divider dark:border-divider-dark mb-4"
-                accessibilityLabel={`Documents, ${documentCount} stored`}
+                accessibilityLabel={t('vehicleModal.documentsRowA11y', { count: documentCount })}
                 accessibilityRole="button"
               >
                 <View className="flex-row items-center gap-3">
                   <Ionicons name="document-text-outline" size={20} color="#A8A49D" />
-                  <Text className="text-base text-ink dark:text-ink-on-dark">Documents</Text>
+                  <Text className="text-base text-ink dark:text-ink-on-dark">{t('vehicleModal.documents')}</Text>
                 </View>
                 <View className="flex-row items-center gap-2">
                   <Text className="text-sm text-ink-muted dark:text-ink-muted-on-dark">{documentCount}</Text>
@@ -638,10 +648,10 @@ export default function VehicleModal() {
               <Pressable
                 onPress={handleDelete}
                 className="mt-4 mb-8 py-3 rounded-xl border border-destructive items-center"
-                accessibilityLabel="Delete vehicle"
+                accessibilityLabel={t('vehicleModal.deleteVehicleA11y')}
                 accessibilityRole="button"
               >
-                <Text className="text-destructive font-semibold text-base">Delete Vehicle</Text>
+                <Text className="text-destructive font-semibold text-base">{t('vehicleModal.deleteVehicle')}</Text>
               </Pressable>
             </>
           )}
