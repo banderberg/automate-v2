@@ -17,8 +17,15 @@
     "settings": "Settings"
   },
   "notFound": {
-    "title": "This screen does not exist.",
+    "stackTitle": "Oops!",
+    "title": "This screen doesn't exist.",
     "link": "Go to home screen!"
+  },
+  "tabsA11y": {
+    "dashboard": "Dashboard tab",
+    "history": "History tab",
+    "reminders": "Reminders tab",
+    "settings": "Settings tab"
   },
   "settings": {
     "title": "Settings",
@@ -49,6 +56,12 @@
     "manageVehicles": "Manage Vehicles",
     "vehicleCountOne": "{{count}} vehicle",
     "vehicleCountOther": "{{count}} vehicles",
+    "eventCountOne": "{{count}} event",
+    "eventCountOther": "{{count}} events",
+    "reminderCountOne": "{{count}} reminder",
+    "reminderCountOther": "{{count}} reminders",
+    "documentCountOne": "{{count}} document",
+    "documentCountOther": "{{count}} documents",
     "backupData": "Backup Data",
     "backupSubtitle": "Save a copy of all vehicles and events",
     "backupPreparing": "Preparing backup…",

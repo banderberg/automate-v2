@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
 import { useColorScheme } from 'nativewind';
+import { t } from '@/src/i18n';
 
 export default function TabLayout() {
   const { colorScheme } = useColorScheme();
@@ -24,41 +25,41 @@ export default function TabLayout() {
       <Tabs.Screen
         name="dashboard"
         options={{
-          title: 'Dashboard',
+          title: t('tabs.dashboard'),
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="bar-chart" size={size} color={color} />
           ),
-          tabBarAccessibilityLabel: 'Dashboard tab',
+          tabBarAccessibilityLabel: t('tabsA11y.dashboard'),
         }}
       />
       <Tabs.Screen
         name="history"
         options={{
-          title: 'History',
+          title: t('tabs.history'),
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="list" size={size} color={color} />
           ),
-          tabBarAccessibilityLabel: 'History tab',
+          tabBarAccessibilityLabel: t('tabsA11y.history'),
         }}
       />
       <Tabs.Screen
         name="reminders"
         options={{
-          title: 'Reminders',
+          title: t('tabs.reminders'),
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="notifications" size={size} color={color} />
           ),
-          tabBarAccessibilityLabel: 'Reminders tab',
+          tabBarAccessibilityLabel: t('tabsA11y.reminders'),
         }}
       />
       <Tabs.Screen
         name="settings"
         options={{
-          title: 'Settings',
+          title: t('tabs.settings'),
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="settings" size={size} color={color} />
           ),
-          tabBarAccessibilityLabel: 'Settings tab',
+          tabBarAccessibilityLabel: t('tabsA11y.settings'),
         }}
       />
     </Tabs>
