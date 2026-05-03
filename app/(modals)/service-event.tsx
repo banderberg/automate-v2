@@ -26,6 +26,7 @@ import { useReferenceDataStore } from '@/src/stores/referenceDataStore';
 import { getCurrencySymbol, formatCurrency } from '@/src/constants/currency';
 import * as eventServiceTypeQueries from '@/src/db/queries/eventServiceTypes';
 import type { VehicleEvent } from '@/src/types';
+import { t } from '@/src/i18n';
 
 export default function ServiceEventModal() {
   const {
@@ -34,7 +35,7 @@ export default function ServiceEventModal() {
     odometerError, saving, setSaving, setBoundsLoaded,
     markDirty, handleOdometerBlur, handleCancel, handleDelete,
     showDialog, dialogProps,
-  } = useEventForm({ type: 'service', deleteLabel: 'Service' });
+  } = useEventForm({ type: 'service' });
 
   const addEvent = useEventStore((s) => s.addEvent);
   const updateEvent = useEventStore((s) => s.updateEvent);
@@ -53,7 +54,7 @@ export default function ServiceEventModal() {
   const [estimatedOdometer, setEstimatedOdometer] = useState<number | null>(null);
 
   const odometerUnit = activeVehicle?.odometerUnit ?? 'miles';
-  const title = isEditing ? 'Edit Service' : 'Add Service';
+  const title = isEditing ? t('serviceModal.editTitle') : t('serviceModal.addTitle');
 
   const serviceTypes = useMemo(() => {
     const counts = new Map<string, number>();
@@ -75,7 +76,7 @@ export default function ServiceEventModal() {
       if (existingEvent) setPlaceId(existingEvent.placeId);
       (async () => {
         const types = await eventServiceTypeQueries.getByEvent(eventId);
-        setSelectedServiceTypeIds(types.map((t) => t.id));
+        setSelectedServiceTypeIds(types.map((st) => st.id));
       })();
     } else {
       (async () => {
@@ -107,7 +108,7 @@ export default function ServiceEventModal() {
 
   const handleSave = useCallback(async () => {
     if (selectedServiceTypeIds.length === 0) {
-      setServiceTypeError('Select at least one service type');
+      setServiceTypeError(t('serviceModal.serviceTypeError'));
       return;
     }
     if (!canSave || !activeVehicle) return;
@@ -132,12 +133,15 @@ export default function ServiceEventModal() {
         await onEventSaved(event, selectedServiceTypeIds);
       }
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      const costStr = cost ? `, ${formatCurrency(parseFloat(cost), currencyCode)}` : '';
-      useToastStore.getState().show(`Service ${isEditing ? 'updated' : 'saved'}${costStr}`);
+      const costStr = cost ? formatCurrency(parseFloat(cost), currencyCode) : '';
+      const toastKey = costStr
+        ? (isEditing ? 'serviceModal.updatedWithCost' : 'serviceModal.savedWithCost')
+        : (isEditing ? 'serviceModal.updated' : 'serviceModal.saved');
+      useToastStore.getState().show(t(toastKey, { cost: costStr }));
       router.back();
     } catch (err) {
       const msg = err instanceof Error ? err.message : '';
-      showDialog("Couldn't Save Service", msg || 'Check your entries and try again. If this keeps happening, try restarting the app.');
+      showDialog(t('serviceModal.saveErrorTitle'), msg || t('serviceModal.saveErrorMessage'));
     } finally {
       setSaving(false);
     }
@@ -174,7 +178,7 @@ export default function ServiceEventModal() {
             selectedIds={selectedServiceTypeIds}
             onSelectionChange={handleServiceTypesChange}
             multiSelect
-            label="Service Types *"
+            label={t('serviceModal.serviceTypesLabel')}
             error={serviceTypeError}
             accentColor="#E8772B"
             onAdd={async (name) => { await addServiceType(name); }}
@@ -184,18 +188,18 @@ export default function ServiceEventModal() {
 
           <View className="mb-4">
             <Text className="text-xs text-ink-muted dark:text-ink-muted-on-dark mb-1.5 font-semibold">
-              Total Cost *
+              {t('serviceModal.totalCostLabel')}
             </Text>
             <View className="flex-row items-center bg-card dark:bg-card-dark rounded-xl border border-divider dark:border-divider-dark px-3.5 py-3">
               <Text className="text-sm text-ink-muted dark:text-ink-muted-on-dark mr-1">{currSymbol}</Text>
               <TextInput
                 className="flex-1 text-base text-ink dark:text-ink-on-dark"
                 value={cost}
-                onChangeText={(t) => { markDirty(); setCost(t); }}
+                onChangeText={(text) => { markDirty(); setCost(text); }}
                 keyboardType="decimal-pad"
                 placeholder="0.00"
                 placeholderTextColor="#A8A49D"
-                accessibilityLabel="Total cost"
+                accessibilityLabel={t('serviceModal.totalCostA11y')}
               />
             </View>
           </View>
@@ -208,20 +212,20 @@ export default function ServiceEventModal() {
 
           <View className="mb-4">
             <View className="flex-row justify-between mb-1.5">
-              <Text className="text-xs text-ink-muted dark:text-ink-muted-on-dark font-semibold">Notes</Text>
+              <Text className="text-xs text-ink-muted dark:text-ink-muted-on-dark font-semibold">{t('serviceModal.notesLabel')}</Text>
               <Text className="text-xs text-ink-faint dark:text-ink-faint-on-dark">{notes.length}/500</Text>
             </View>
             <TextInput
               className="bg-card dark:bg-card-dark rounded-xl border border-divider dark:border-divider-dark px-3.5 py-3 text-base text-ink dark:text-ink-on-dark"
               value={notes}
-              onChangeText={(t) => { markDirty(); setNotes(t.slice(0, 500)); }}
+              onChangeText={(text) => { markDirty(); setNotes(text.slice(0, 500)); }}
               multiline
               numberOfLines={3}
               textAlignVertical="top"
-              placeholder="Optional notes..."
+              placeholder={t('serviceModal.notesPlaceholder')}
               placeholderTextColor="#A8A49D"
               style={{ minHeight: 80 }}
-              accessibilityLabel="Notes"
+              accessibilityLabel={t('serviceModal.notesA11y')}
             />
           </View>
 
@@ -236,10 +240,10 @@ export default function ServiceEventModal() {
               onPress={handleDelete}
               style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
               className="mb-8 py-3 rounded-xl border border-destructive items-center"
-              accessibilityLabel="Delete service"
+              accessibilityLabel={t('serviceModal.deleteServiceA11y')}
               accessibilityRole="button"
             >
-              <Text className="text-destructive font-semibold text-base">Delete Service</Text>
+              <Text className="text-destructive font-semibold text-base">{t('serviceModal.deleteService')}</Text>
             </Pressable>
           )}
         </ScrollView>

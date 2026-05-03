@@ -9,15 +9,21 @@ import { ModalHeader } from '@/src/components/ModalHeader';
 import { EmptyState } from '@/src/components/EmptyState';
 import { useDocumentStore } from '@/src/stores/documentStore';
 import type { VehicleDocument } from '@/src/types';
+import { t, type TranslationKey } from '@/src/i18n';
 
-const TYPE_LABELS: Record<string, string> = {
-  insurance: 'Insurance',
-  registration: 'Registration',
-  title: 'Title',
-  emissions: 'Emissions',
-  inspection: 'Inspection',
-  other: 'Other',
+const TYPE_LABEL_KEYS: Record<string, TranslationKey> = {
+  insurance: 'vehicleDocuments.typeInsurance',
+  registration: 'vehicleDocuments.typeRegistration',
+  title: 'vehicleDocuments.typeTitle',
+  emissions: 'vehicleDocuments.typeEmissions',
+  inspection: 'vehicleDocuments.typeInspection',
+  other: 'vehicleDocuments.typeOther',
 };
+
+function typeLabel(type: string): string {
+  const key = TYPE_LABEL_KEYS[type];
+  return key ? t(key) : type;
+}
 
 function isDocumentPdf(filePath: string): boolean {
   return filePath.toLowerCase().endsWith('.pdf');
@@ -49,13 +55,15 @@ function formatExpirationLabel(expirationDate: string): string {
   const diffMs = exp.getTime() - now.getTime();
   const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
 
-  if (diffDays < 0) return 'Expired';
-  if (diffDays === 0) return 'Expires today';
-  if (diffDays === 1) return 'Expires tomorrow';
-  if (diffDays <= 30) return `Expires in ${diffDays} days`;
+  if (diffDays < 0) return t('vehicleDocuments.expired');
+  if (diffDays === 0) return t('vehicleDocuments.expiresToday');
+  if (diffDays === 1) return t('vehicleDocuments.expiresTomorrow');
+  if (diffDays <= 30) return t('vehicleDocuments.expiresInDays', { days: diffDays });
 
   const d = new Date(expirationDate + 'T00:00:00');
-  return `Exp. ${d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
+  return t('vehicleDocuments.expiresOn', {
+    date: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+  });
 }
 
 function DocumentRow({
@@ -72,7 +80,7 @@ function DocumentRow({
     <Pressable
       onPress={onPress}
       className="flex-row items-center px-4 py-3 bg-card dark:bg-card-dark border-b border-divider-subtle dark:border-divider-dark active:bg-surface dark:active:bg-surface-dark"
-      accessibilityLabel={`${doc.name}, ${TYPE_LABELS[doc.type] ?? doc.type}`}
+      accessibilityLabel={t('vehicleDocuments.rowA11y', { name: doc.name, type: typeLabel(doc.type) })}
       accessibilityRole="button"
     >
       <View className="w-12 h-12 rounded-lg bg-surface dark:bg-surface-dark items-center justify-center overflow-hidden mr-3">
@@ -100,7 +108,7 @@ function DocumentRow({
           className="text-xs text-ink-muted dark:text-ink-muted-on-dark mt-0.5"
           numberOfLines={1}
         >
-          {TYPE_LABELS[doc.type] ?? doc.type}
+          {typeLabel(doc.type)}
         </Text>
         {doc.expirationDate && (
           <Text
@@ -151,19 +159,19 @@ export default function VehicleDocumentsScreen() {
   return (
     <SafeAreaView className="flex-1 bg-surface dark:bg-surface-dark" edges={['top']}>
       <ModalHeader
-        title="Documents"
-        cancelLabel="Done"
+        title={t('vehicleDocuments.title')}
+        cancelLabel={t('common.done')}
         onCancel={nav.back}
         onSave={handleAdd}
-        saveLabel="Add"
+        saveLabel={t('vehicleDocuments.addLabel')}
       />
 
       {documents.length === 0 && !isLoading ? (
         <EmptyState
           icon={<Ionicons name="document-text-outline" size={48} color="#A8A49D" />}
-          title="No Documents"
-          description="Store insurance, registration, and other vehicle documents here."
-          actionLabel="Add Document"
+          title={t('vehicleDocuments.emptyTitle')}
+          description={t('vehicleDocuments.emptyDescription')}
+          actionLabel={t('vehicleDocuments.addDocumentAction')}
           onAction={handleAdd}
         />
       ) : (
