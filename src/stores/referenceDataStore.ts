@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import type { ServiceType, Category, Place } from '../types';
 import { serviceTypeQueries, categoryQueries } from '../db/queries/namedEntities';
 import * as placeQueries from '../db/queries/places';
+import { logError } from '../services/logger';
 
 interface ReferenceDataStore {
   serviceTypes: ServiceType[];
@@ -42,6 +43,7 @@ export const useReferenceDataStore = create<ReferenceDataStore>((set, get) => ({
       ]);
       set({ serviceTypes, categories, places, isLoading: false });
     } catch (e) {
+      logError(e, { store: 'referenceDataStore', action: 'initialize' });
       const msg = e instanceof Error ? e.message : 'Failed to load reference data';
       set({ error: msg, isLoading: false });
     }
@@ -60,6 +62,7 @@ export const useReferenceDataStore = create<ReferenceDataStore>((set, get) => ({
       set((state) => ({ serviceTypes: [...state.serviceTypes, serviceType] }));
       return serviceType;
     } catch (e) {
+      logError(e, { store: 'referenceDataStore', action: 'addServiceType' });
       const msg = e instanceof Error ? e.message : 'Failed to add service type';
       set({ error: msg });
       throw new Error(msg);
@@ -82,6 +85,7 @@ export const useReferenceDataStore = create<ReferenceDataStore>((set, get) => ({
         ),
       }));
     } catch (e) {
+      logError(e, { store: 'referenceDataStore', action: 'updateServiceType', id });
       const msg = e instanceof Error ? e.message : 'Failed to update service type';
       set({ error: msg });
       throw new Error(msg);
@@ -96,6 +100,7 @@ export const useReferenceDataStore = create<ReferenceDataStore>((set, get) => ({
         serviceTypes: state.serviceTypes.filter((st) => st.id !== id),
       }));
     } catch (e) {
+      logError(e, { store: 'referenceDataStore', action: 'deleteServiceType', id });
       const msg = e instanceof Error ? e.message : 'Failed to delete service type';
       set({ error: msg });
       throw new Error(msg);
@@ -115,6 +120,7 @@ export const useReferenceDataStore = create<ReferenceDataStore>((set, get) => ({
       set((state) => ({ categories: [...state.categories, category] }));
       return category;
     } catch (e) {
+      logError(e, { store: 'referenceDataStore', action: 'addCategory' });
       const msg = e instanceof Error ? e.message : 'Failed to add category';
       set({ error: msg });
       throw new Error(msg);
@@ -137,6 +143,7 @@ export const useReferenceDataStore = create<ReferenceDataStore>((set, get) => ({
         ),
       }));
     } catch (e) {
+      logError(e, { store: 'referenceDataStore', action: 'updateCategory', id });
       const msg = e instanceof Error ? e.message : 'Failed to update category';
       set({ error: msg });
       throw new Error(msg);
@@ -151,6 +158,7 @@ export const useReferenceDataStore = create<ReferenceDataStore>((set, get) => ({
         categories: state.categories.filter((c) => c.id !== id),
       }));
     } catch (e) {
+      logError(e, { store: 'referenceDataStore', action: 'deleteCategory', id });
       const msg = e instanceof Error ? e.message : 'Failed to delete category';
       set({ error: msg });
       throw new Error(msg);
@@ -172,6 +180,7 @@ export const useReferenceDataStore = create<ReferenceDataStore>((set, get) => ({
       }));
       return place;
     } catch (e) {
+      logError(e, { store: 'referenceDataStore', action: 'addPlace' });
       const msg = e instanceof Error ? e.message : 'Failed to add place';
       set({ error: msg });
       throw new Error(msg);
@@ -198,6 +207,7 @@ export const useReferenceDataStore = create<ReferenceDataStore>((set, get) => ({
           .sort((a, b) => a.name.localeCompare(b.name)),
       }));
     } catch (e) {
+      logError(e, { store: 'referenceDataStore', action: 'updatePlace', id });
       const msg = e instanceof Error ? e.message : 'Failed to update place';
       set({ error: msg });
       throw new Error(msg);
@@ -212,6 +222,7 @@ export const useReferenceDataStore = create<ReferenceDataStore>((set, get) => ({
         places: state.places.filter((p) => p.id !== id),
       }));
     } catch (e) {
+      logError(e, { store: 'referenceDataStore', action: 'deletePlace', id });
       const msg = e instanceof Error ? e.message : 'Failed to delete place';
       set({ error: msg });
       throw new Error(msg);

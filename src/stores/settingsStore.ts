@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import type { AppSettings } from '../types';
 import * as settingsQueries from '../db/queries/settings';
+import { logError } from '../services/logger';
 
 interface SettingsStore {
   settings: AppSettings;
@@ -32,6 +33,7 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
       const settings = await settingsQueries.get();
       set({ settings, isLoading: false });
     } catch (e) {
+      logError(e, { store: 'settingsStore', action: 'initialize' });
       const msg = e instanceof Error ? e.message : 'Failed to load settings';
       set({ error: msg, isLoading: false });
     }
@@ -46,6 +48,7 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
         settings: { ...state.settings, [key]: value },
       }));
     } catch (e) {
+      logError(e, { store: 'settingsStore', action: 'updateSetting', key });
       const msg = e instanceof Error ? e.message : 'Failed to update setting';
       set({ error: msg });
     }

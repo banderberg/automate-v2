@@ -3,6 +3,7 @@ import type { Vehicle } from '../types';
 import * as vehicleQueries from '../db/queries/vehicles';
 import * as vehicleDocumentQueries from '../db/queries/vehicleDocuments';
 import { convertAllForVehicle } from '../db/queries/odometerConversion';
+import { logError } from '../services/logger';
 
 interface VehicleStore {
   vehicles: Vehicle[];
@@ -34,6 +35,7 @@ export const useVehicleStore = create<VehicleStore>((set, get) => ({
       const active = vehicles.find((v) => v.isActive) ?? null;
       set({ vehicles, activeVehicle: active, isLoading: false });
     } catch (e) {
+      logError(e, { store: 'vehicleStore', action: 'initialize' });
       const msg = e instanceof Error ? e.message : 'Failed to load vehicles';
       set({ error: msg, isLoading: false });
     }
@@ -54,6 +56,7 @@ export const useVehicleStore = create<VehicleStore>((set, get) => ({
         activeVehicle: { ...vehicle, isActive: true },
       }));
     } catch (e) {
+      logError(e, { store: 'vehicleStore', action: 'setActiveVehicle', vehicleId: id });
       const msg = e instanceof Error ? e.message : 'Failed to switch vehicle';
       set({ error: msg });
     }
@@ -98,6 +101,7 @@ export const useVehicleStore = create<VehicleStore>((set, get) => ({
 
       return vehicle;
     } catch (e) {
+      logError(e, { store: 'vehicleStore', action: 'addVehicle' });
       const msg = e instanceof Error ? e.message : 'Failed to add vehicle';
       set({ error: msg });
       throw new Error(msg);
@@ -127,6 +131,7 @@ export const useVehicleStore = create<VehicleStore>((set, get) => ({
       }));
 
     } catch (e) {
+      logError(e, { store: 'vehicleStore', action: 'updateVehicle', vehicleId: id });
       const msg = e instanceof Error ? e.message : 'Failed to update vehicle';
       set({ error: msg });
       throw new Error(msg);
@@ -162,6 +167,7 @@ export const useVehicleStore = create<VehicleStore>((set, get) => ({
         activeVehicle: newActive,
       });
     } catch (e) {
+      logError(e, { store: 'vehicleStore', action: 'deleteVehicle', vehicleId: id });
       const msg = e instanceof Error ? e.message : 'Failed to delete vehicle';
       set({ error: msg });
       throw new Error(msg);
@@ -185,6 +191,7 @@ export const useVehicleStore = create<VehicleStore>((set, get) => ({
         return { vehicles: reordered };
       });
     } catch (e) {
+      logError(e, { store: 'vehicleStore', action: 'reorderVehicles' });
       const msg = e instanceof Error ? e.message : 'Failed to reorder vehicles';
       set({ error: msg });
       throw new Error(msg);
