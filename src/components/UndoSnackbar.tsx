@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import { View, Text, Pressable, Animated } from 'react-native';
 import { useEventStore } from '../stores/eventStore';
 import { useColorScheme } from 'nativewind';
+import { t } from '@/src/i18n';
 
 export function UndoSnackbar() {
   const pendingDelete = useEventStore((s) => s.pendingDelete);
@@ -45,14 +46,14 @@ export function UndoSnackbar() {
           elevation: 8,
         }}
       >
-        <Text className="text-sm" style={{ color: '#F5F4F1' }}>Event deleted</Text>
+        <Text className="text-sm" style={{ color: '#F5F4F1' }}>{t('undo.eventDeleted')}</Text>
         <Pressable
           onPress={undoDelete}
           hitSlop={8}
-          accessibilityLabel="Undo delete"
+          accessibilityLabel={t('undo.undoA11y')}
           accessibilityRole="button"
         >
-          <Text className="text-sm font-semibold text-primary">Undo</Text>
+          <Text className="text-sm font-semibold text-primary">{t('undo.undoLabel')}</Text>
         </Pressable>
       </View>
     </Animated.View>

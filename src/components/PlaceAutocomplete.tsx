@@ -11,6 +11,7 @@ import {
 import type { BottomSheetBackdropProps } from '@gorhom/bottom-sheet';
 import { useReferenceDataStore } from '../stores/referenceDataStore';
 import type { Place } from '../types';
+import { t } from '@/src/i18n';
 
 interface PlaceAutocompleteProps {
   value: string | undefined;
@@ -23,8 +24,9 @@ export function PlaceAutocomplete({
   value,
   onChange,
   placeType,
-  label = 'Place',
+  label,
 }: PlaceAutocompleteProps) {
+  const resolvedLabel = label ?? t('placeAutocomplete.defaultLabel');
   const { colorScheme } = useColorScheme();
   const isDark = colorScheme === 'dark';
   const selectSheetRef = useRef<BottomSheetModal>(null);
@@ -89,11 +91,11 @@ export function PlaceAutocomplete({
 
   return (
     <View className="mb-4">
-      <Text className="text-xs text-ink-muted dark:text-ink-muted-on-dark mb-1.5 font-semibold">{label}</Text>
+      <Text className="text-xs text-ink-muted dark:text-ink-muted-on-dark mb-1.5 font-semibold">{resolvedLabel}</Text>
       <Pressable
         onPress={() => selectSheetRef.current?.present()}
         className="flex-row items-center bg-card dark:bg-card-dark rounded-xl border border-divider dark:border-divider-dark px-3.5 py-3"
-        accessibilityLabel={`Select ${label.toLowerCase()}`}
+        accessibilityLabel={t('placeAutocomplete.selectA11y', { label: resolvedLabel.toLowerCase() })}
         accessibilityRole="button"
       >
         <Ionicons name="location-outline" size={18} color="#A8A49D" />
@@ -103,10 +105,10 @@ export function PlaceAutocomplete({
           }`}
           numberOfLines={1}
         >
-          {selectedPlace?.name ?? 'Select place (optional)'}
+          {selectedPlace?.name ?? t('placeAutocomplete.selectPlaceholder')}
         </Text>
         {selectedPlace && (
-          <Pressable onPress={handleClear} hitSlop={8} accessibilityLabel="Clear place" accessibilityRole="button">
+          <Pressable onPress={handleClear} hitSlop={8} accessibilityLabel={t('placeAutocomplete.clearA11y')} accessibilityRole="button">
             <Ionicons name="close-circle" size={18} color="#A8A49D" />
           </Pressable>
         )}
@@ -128,7 +130,7 @@ export function PlaceAutocomplete({
               className="text-sm text-ink dark:text-ink-on-dark bg-surface dark:bg-surface-dark rounded-xl px-3.5 py-2.5"
               value={search}
               onChangeText={setSearch}
-              placeholder="Search places..."
+              placeholder={t('placeAutocomplete.searchPlaceholder')}
               placeholderTextColor="#A8A49D"
             />
           </View>
@@ -141,7 +143,7 @@ export function PlaceAutocomplete({
               <Pressable
                 onPress={() => handleSelect(item.id)}
                 className="flex-row items-center px-4 py-3 active:bg-surface"
-                accessibilityLabel={`Select ${item.name}`}
+                accessibilityLabel={t('placeAutocomplete.selectItemA11y', { name: item.name })}
                 accessibilityRole="button"
               >
                 <Ionicons name="location" size={16} color="#5C5A55" />
@@ -162,13 +164,13 @@ export function PlaceAutocomplete({
               <Pressable
                 onPress={() => addSheetRef.current?.present()}
                 className="flex-row items-center px-4 py-3 border-t border-divider-subtle"
-                accessibilityLabel="Add new place"
+                accessibilityLabel={t('placeAutocomplete.addNewPlaceA11y')}
                 accessibilityRole="button"
               >
                 <View className="w-6 h-6 rounded-full bg-primary-light items-center justify-center">
                   <Ionicons name="add" size={16} color="#4272C4" />
                 </View>
-                <Text className="text-sm text-primary font-semibold ml-3">Add new place</Text>
+                <Text className="text-sm text-primary font-semibold ml-3">{t('placeAutocomplete.addNewPlace')}</Text>
               </Pressable>
             }
           />
@@ -188,25 +190,25 @@ export function PlaceAutocomplete({
       >
         <BottomSheetView style={{ paddingBottom: 40 }}>
           <Text className="px-4 pt-2 pb-3 text-base font-semibold text-ink dark:text-ink-on-dark">
-            Add New Place
+            {t('placeAutocomplete.addSheetTitle')}
           </Text>
 
           <View className="px-4">
-            <Text className="text-xs text-ink-muted dark:text-ink-muted-on-dark mb-1 font-semibold">Name *</Text>
+            <Text className="text-xs text-ink-muted dark:text-ink-muted-on-dark mb-1 font-semibold">{t('placeAutocomplete.nameLabel')}</Text>
             <BottomSheetTextInput
               className="text-sm text-ink dark:text-ink-on-dark bg-surface dark:bg-surface-dark rounded-xl px-3.5 py-2.5 mb-3"
               value={newName}
               onChangeText={setNewName}
-              placeholder="e.g., Shell on Main St"
+              placeholder={t('placeAutocomplete.namePlaceholder')}
               placeholderTextColor="#A8A49D"
             />
 
-            <Text className="text-xs text-ink-muted dark:text-ink-muted-on-dark mb-1 font-semibold">Address</Text>
+            <Text className="text-xs text-ink-muted dark:text-ink-muted-on-dark mb-1 font-semibold">{t('placeAutocomplete.addressLabel')}</Text>
             <BottomSheetTextInput
               className="text-sm text-ink dark:text-ink-on-dark bg-surface dark:bg-surface-dark rounded-xl px-3.5 py-2.5 mb-4"
               value={newAddress}
               onChangeText={setNewAddress}
-              placeholder="Optional"
+              placeholder={t('placeAutocomplete.addressPlaceholder')}
               placeholderTextColor="#A8A49D"
             />
 
@@ -216,10 +218,10 @@ export function PlaceAutocomplete({
                 newName.trim() ? 'bg-primary' : 'bg-divider'
               }`}
               disabled={!newName.trim()}
-              accessibilityLabel="Save place"
+              accessibilityLabel={t('placeAutocomplete.savePlaceA11y')}
               accessibilityRole="button"
             >
-              <Text className="text-white font-semibold text-sm">Save Place</Text>
+              <Text className="text-white font-semibold text-sm">{t('placeAutocomplete.savePlace')}</Text>
             </Pressable>
           </View>
         </BottomSheetView>

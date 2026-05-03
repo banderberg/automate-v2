@@ -8,6 +8,7 @@ import {
   SafeAreaView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { t } from '@/src/i18n';
 
 interface Props {
   children: React.ReactNode;
@@ -44,13 +45,14 @@ export class AppErrorBoundary extends React.Component<Props, State> {
   };
 
   handleReport = () => {
-    const errorMsg = this.state.error?.message ?? 'Unknown error';
+    const errorMsg = this.state.error?.message ?? t('errorBoundary.unknownError');
     const stack = this.state.error?.stack?.slice(0, 500) ?? '';
     const body = encodeURIComponent(
       `Error: ${errorMsg}\n\nStack:\n${stack}`,
     );
+    const subject = encodeURIComponent(t('errorBoundary.bugReportSubject'));
     Linking.openURL(
-      `mailto:arctos.built@gmail.com?subject=AutoMate Bug Report&body=${body}`,
+      `mailto:arctos.built@gmail.com?subject=${subject}&body=${body}`,
     );
   };
 
@@ -62,25 +64,24 @@ export class AppErrorBoundary extends React.Component<Props, State> {
             <View style={styles.iconCircle}>
               <Ionicons name="warning-outline" size={40} color="#EF4444" />
             </View>
-            <Text style={styles.title}>Something went wrong</Text>
+            <Text style={styles.title}>{t('errorBoundary.title')}</Text>
             <Text style={styles.subtitle}>
-              The app encountered an unexpected error. Restarting usually fixes
-              it.
+              {t('errorBoundary.subtitle')}
             </Text>
             <TouchableOpacity
               style={styles.button}
               onPress={this.handleRestart}
-              accessibilityLabel="Restart app"
+              accessibilityLabel={t('errorBoundary.restartA11y')}
               accessibilityRole="button"
             >
-              <Text style={styles.buttonText}>Restart</Text>
+              <Text style={styles.buttonText}>{t('errorBoundary.restart')}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               onPress={this.handleReport}
-              accessibilityLabel="Report issue via email"
+              accessibilityLabel={t('errorBoundary.reportIssueA11y')}
               accessibilityRole="link"
             >
-              <Text style={styles.linkText}>Report Issue</Text>
+              <Text style={styles.linkText}>{t('errorBoundary.reportIssue')}</Text>
             </TouchableOpacity>
           </View>
         </SafeAreaView>

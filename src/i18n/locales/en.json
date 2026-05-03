@@ -7,8 +7,10 @@
     "close": "Close",
     "back": "Back",
     "edit": "Edit",
+    "ok": "OK",
     "loading": "Loading…",
-    "selected": "selected"
+    "selected": "selected",
+    "closeDialog": "Close dialog"
   },
   "tabs": {
     "dashboard": "Dashboard",
@@ -20,6 +22,109 @@
     "stackTitle": "Oops!",
     "title": "This screen doesn't exist.",
     "link": "Go to home screen!"
+  },
+  "metricInfo": {
+    "dialogTitle": "How is this calculated?",
+    "buttonA11y": "More info"
+  },
+  "insight": {
+    "dismissAction": "Dismiss"
+  },
+  "dateField": {
+    "label": "Date",
+    "doneA11y": "Done selecting date"
+  },
+  "undo": {
+    "eventDeleted": "Event deleted",
+    "undoLabel": "Undo",
+    "undoA11y": "Undo delete"
+  },
+  "placeAutocomplete": {
+    "defaultLabel": "Place",
+    "selectA11y": "Select {{label}}",
+    "selectPlaceholder": "Select place (optional)",
+    "clearA11y": "Clear place",
+    "searchPlaceholder": "Search places…",
+    "selectItemA11y": "Select {{name}}",
+    "addNewPlace": "Add new place",
+    "addNewPlaceA11y": "Add new place",
+    "addSheetTitle": "Add New Place",
+    "nameLabel": "Name *",
+    "namePlaceholder": "e.g., Shell on Main St",
+    "addressLabel": "Address",
+    "addressPlaceholder": "Optional",
+    "savePlace": "Save Place",
+    "savePlaceA11y": "Save place"
+  },
+  "chipPicker": {
+    "manage": "Manage",
+    "manageA11y": "Manage {{label}}",
+    "manageTitle": "Manage {{label}}",
+    "custom": "Custom",
+    "addCustomA11y": "Add custom {{label}}",
+    "defaultItemLabel": "item",
+    "addNewPlaceholder": "Add new…",
+    "add": "Add",
+    "addA11y": "Add",
+    "saveA11y": "Save",
+    "cancelEditA11y": "Cancel edit",
+    "editItemA11y": "Edit {{name}}",
+    "deleteItemA11y": "Delete {{name}}",
+    "deleteConfirmTitle": "Delete",
+    "deleteConfirmMessage": "Remove \"{{name}}\"?",
+    "addFailed": "Failed to add",
+    "selectedSuffix": ", selected"
+  },
+  "vehicleSwitcher": {
+    "addVehicleHeader": "Add a Vehicle",
+    "yourVehicles": "Your Vehicles",
+    "addVehicle": "Add Vehicle",
+    "manageVehicles": "Manage Vehicles",
+    "activeVehicleA11y": "Active vehicle",
+    "headerSwitchA11y": "Active vehicle: {{name}}. Tap to switch vehicle.",
+    "headerVehicleA11y": "Vehicle: {{name}}",
+    "headerNone": "None",
+    "selectVehicleA11y": "Select {{name}}"
+  },
+  "photos": {
+    "label": "Photos",
+    "addLabel": "Add",
+    "addA11y": "Add photo",
+    "photoNumberA11y": "Photo {{n}}",
+    "previewTitle": "Photo",
+    "previewCloseA11y": "Close photo preview",
+    "previewFullscreenA11y": "Full screen photo preview",
+    "deletePhoto": "Delete Photo",
+    "deletePhotoA11y": "Delete photo",
+    "deleteConfirmTitle": "Delete Photo",
+    "deleteConfirmMessage": "Remove this photo?",
+    "permissionTitle": "Permission needed",
+    "cameraPermissionMessage": "Camera access is required to take a photo.",
+    "addPhotoSheetTitle": "Add Photo",
+    "takePhoto": "Take Photo",
+    "chooseFromLibrary": "Choose from Library"
+  },
+  "fab": {
+    "logActivity": "Log Activity",
+    "logActivityA11y": "Log activity",
+    "fillUp": "Fill-Up",
+    "charge": "Charge",
+    "service": "Service",
+    "expense": "Expense",
+    "addFillUpA11y": "Add Fill-Up event",
+    "addChargeA11y": "Add Charge event",
+    "addServiceA11y": "Add service",
+    "addExpenseA11y": "Add expense"
+  },
+  "errorBoundary": {
+    "title": "Something went wrong",
+    "subtitle": "The app encountered an unexpected error. Restarting usually fixes it.",
+    "restart": "Restart",
+    "restartA11y": "Restart app",
+    "reportIssue": "Report Issue",
+    "reportIssueA11y": "Report issue via email",
+    "bugReportSubject": "AutoMate Bug Report",
+    "unknownError": "Unknown error"
   },
   "tabsA11y": {
     "dashboard": "Dashboard tab",

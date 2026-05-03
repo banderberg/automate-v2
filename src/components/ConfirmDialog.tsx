@@ -1,5 +1,6 @@
 import { Modal, View, Text, Pressable } from 'react-native';
 import { useColorScheme } from 'nativewind';
+import { t } from '@/src/i18n';
 
 export interface DialogButton {
   text: string;
@@ -21,7 +22,7 @@ export function ConfirmDialog({ visible, title, message, buttons, onDismiss }: C
 
   const resolvedButtons: DialogButton[] = buttons?.length
     ? buttons
-    : [{ text: 'OK', style: 'default', onPress: onDismiss }];
+    : [{ text: t('common.ok'), style: 'default', onPress: onDismiss }];
 
   const cancelBtn = resolvedButtons.find((b) => b.style === 'cancel');
   const actionBtns = resolvedButtons.filter((b) => b.style !== 'cancel');
@@ -39,7 +40,7 @@ export function ConfirmDialog({ visible, title, message, buttons, onDismiss }: C
         style={{ backgroundColor: 'rgba(28, 27, 24, 0.5)' }}
         onPress={onDismiss}
         accessibilityRole="button"
-        accessibilityLabel="Close dialog"
+        accessibilityLabel={t('common.closeDialog')}
       >
         <Pressable
           className="w-full rounded-card bg-card dark:bg-card-dark overflow-hidden"

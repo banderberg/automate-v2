@@ -11,6 +11,7 @@ import {
 } from '@gorhom/bottom-sheet';
 import type { BottomSheetBackdropProps } from '@gorhom/bottom-sheet';
 import { useVehicleStore } from '../stores/vehicleStore';
+import { t } from '@/src/i18n';
 
 type EventRoute = '/(modals)/fuel-event' | '/(modals)/service-event' | '/(modals)/expense-event';
 
@@ -62,7 +63,7 @@ export function AddEventFAB() {
       <Pressable
         onPress={handleTap}
         className="absolute bottom-6 right-5 w-14 h-14 rounded-full bg-primary items-center justify-center shadow-lg"
-        accessibilityLabel="Log activity"
+        accessibilityLabel={t('fab.logActivityA11y')}
         accessibilityRole="button"
         style={{
           shadowColor: '#1C1B18',
@@ -84,13 +85,13 @@ export function AddEventFAB() {
       >
         <BottomSheetView>
           <Text className="px-4 pt-4 pb-3 text-xs font-semibold text-ink-muted dark:text-ink-muted-on-dark uppercase tracking-wider">
-            Log Activity
+            {t('fab.logActivity')}
           </Text>
 
           <Pressable
             onPress={() => handleNavigate('/(modals)/fuel-event')}
             className="flex-row items-center px-4 py-4 active:bg-surface dark:active:bg-surface-dark"
-            accessibilityLabel={isElectric ? 'Add Charge event' : 'Add Fill-Up event'}
+            accessibilityLabel={isElectric ? t('fab.addChargeA11y') : t('fab.addFillUpA11y')}
             accessibilityRole="button"
           >
             <View className="w-10 h-10 rounded-full items-center justify-center mr-4" style={{ backgroundColor: '#D0F5EE' }}>
@@ -101,32 +102,32 @@ export function AddEventFAB() {
               )}
             </View>
             <Text className="text-base font-medium text-ink dark:text-ink-on-dark">
-              {isElectric ? 'Charge' : 'Fill-Up'}
+              {isElectric ? t('fab.charge') : t('fab.fillUp')}
             </Text>
           </Pressable>
 
           <Pressable
             onPress={() => handleNavigate('/(modals)/service-event')}
             className="flex-row items-center px-4 py-4 active:bg-surface dark:active:bg-surface-dark"
-            accessibilityLabel="Add service"
+            accessibilityLabel={t('fab.addServiceA11y')}
             accessibilityRole="button"
           >
             <View className="w-10 h-10 rounded-full items-center justify-center mr-4" style={{ backgroundColor: '#FFF3E6' }}>
               <Ionicons name="construct" size={20} color="#E8772B" />
             </View>
-            <Text className="text-base font-medium text-ink dark:text-ink-on-dark">Service</Text>
+            <Text className="text-base font-medium text-ink dark:text-ink-on-dark">{t('fab.service')}</Text>
           </Pressable>
 
           <Pressable
             onPress={() => handleNavigate('/(modals)/expense-event')}
             className="flex-row items-center px-4 py-4 active:bg-surface dark:active:bg-surface-dark"
-            accessibilityLabel="Add expense"
+            accessibilityLabel={t('fab.addExpenseA11y')}
             accessibilityRole="button"
           >
             <View className="w-10 h-10 rounded-full items-center justify-center mr-4" style={{ backgroundColor: '#D5F2E3' }}>
               <Ionicons name="receipt-outline" size={20} color="#2EAD76" />
             </View>
-            <Text className="text-base font-medium text-ink dark:text-ink-on-dark">Expense</Text>
+            <Text className="text-base font-medium text-ink dark:text-ink-on-dark">{t('fab.expense')}</Text>
           </Pressable>
 
           <View className="h-8" />

@@ -17,6 +17,7 @@ import { Ionicons } from '@expo/vector-icons';
 import type { LocalPhoto } from '../types';
 import { ConfirmDialog } from './ConfirmDialog';
 import { useDialog } from '../hooks/useDialog';
+import { t } from '@/src/i18n';
 
 interface EventPhotosProps {
   eventId: string | null;
@@ -50,8 +51,8 @@ export function EventPhotos({ eventId, photos, onPhotosChange }: EventPhotosProp
         const { status } = await ImagePicker.requestCameraPermissionsAsync();
         if (status !== 'granted') {
           showDialog(
-            'Permission needed',
-            'Camera access is required to take a photo.'
+            t('photos.permissionTitle'),
+            t('photos.cameraPermissionMessage')
           );
           return;
         }
@@ -82,7 +83,7 @@ export function EventPhotos({ eventId, photos, onPhotosChange }: EventPhotosProp
   );
 
   const handleAddPress = useCallback(() => {
-    const options = ['Take Photo', 'Choose from Library', 'Cancel'];
+    const options = [t('photos.takePhoto'), t('photos.chooseFromLibrary'), t('common.cancel')];
     const cancelIndex = 2;
 
     if (Platform.OS === 'ios') {
@@ -94,20 +95,20 @@ export function EventPhotos({ eventId, photos, onPhotosChange }: EventPhotosProp
         }
       );
     } else {
-      showDialog('Add Photo', undefined, [
-        { text: 'Take Photo', onPress: () => pickImage('camera') },
-        { text: 'Choose from Library', onPress: () => pickImage('library') },
-        { text: 'Cancel', style: 'cancel' },
+      showDialog(t('photos.addPhotoSheetTitle'), undefined, [
+        { text: t('photos.takePhoto'), onPress: () => pickImage('camera') },
+        { text: t('photos.chooseFromLibrary'), onPress: () => pickImage('library') },
+        { text: t('common.cancel'), style: 'cancel' },
       ]);
     }
   }, [pickImage]);
 
   const handleDeletePhoto = useCallback(
     (photo: LocalPhoto) => {
-      showDialog('Delete Photo', 'Remove this photo?', [
-        { text: 'Cancel', style: 'cancel' },
+      showDialog(t('photos.deleteConfirmTitle'), t('photos.deleteConfirmMessage'), [
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Delete',
+          text: t('common.delete'),
           style: 'destructive',
           onPress: () => {
             if (photo.isNew) {
@@ -132,7 +133,7 @@ export function EventPhotos({ eventId, photos, onPhotosChange }: EventPhotosProp
   return (
     <View className="mb-4">
       <Text className="text-xs text-ink-muted dark:text-ink-muted-on-dark mb-1.5 font-semibold">
-        Photos
+        {t('photos.label')}
       </Text>
       <ScrollView
         horizontal
@@ -143,7 +144,7 @@ export function EventPhotos({ eventId, photos, onPhotosChange }: EventPhotosProp
           <Pressable
             key={photo.id ?? photo.uri}
             onPress={() => setPreviewPhoto(photo)}
-            accessibilityLabel={`Photo ${index + 1}`}
+            accessibilityLabel={t('photos.photoNumberA11y', { n: index + 1 })}
             accessibilityRole="button"
           >
             <Image
@@ -158,12 +159,12 @@ export function EventPhotos({ eventId, photos, onPhotosChange }: EventPhotosProp
         <Pressable
           onPress={handleAddPress}
           className="w-[80px] h-[80px] rounded-xl border-2 border-dashed border-divider dark:border-divider-dark items-center justify-center bg-surface dark:bg-surface-dark"
-          accessibilityLabel="Add photo"
+          accessibilityLabel={t('photos.addA11y')}
           accessibilityRole="button"
         >
           <Ionicons name="camera-outline" size={24} color="#A8A49D" />
           <Text className="text-[10px] text-ink-faint dark:text-ink-faint-on-dark mt-0.5">
-            Add
+            {t('photos.addLabel')}
           </Text>
         </Pressable>
       </ScrollView>
@@ -180,12 +181,12 @@ export function EventPhotos({ eventId, photos, onPhotosChange }: EventPhotosProp
           <View className="flex-row items-center justify-between px-4 py-3">
             <Pressable
               onPress={() => setPreviewPhoto(null)}
-              accessibilityLabel="Close photo preview"
+              accessibilityLabel={t('photos.previewCloseA11y')}
               accessibilityRole="button"
             >
               <Ionicons name="close" size={28} color="#F5F4F1" />
             </Pressable>
-            <Text className="text-white text-base font-semibold">Photo</Text>
+            <Text className="text-white text-base font-semibold">{t('photos.previewTitle')}</Text>
             <View className="w-7" />
           </View>
 
@@ -196,7 +197,7 @@ export function EventPhotos({ eventId, photos, onPhotosChange }: EventPhotosProp
                 source={{ uri: previewPhoto.uri }}
                 className="w-full h-full"
                 resizeMode="contain"
-                accessibilityLabel="Full screen photo preview"
+                accessibilityLabel={t('photos.previewFullscreenA11y')}
               />
             )}
           </View>
@@ -208,11 +209,11 @@ export function EventPhotos({ eventId, photos, onPhotosChange }: EventPhotosProp
                 if (previewPhoto) handleDeletePhoto(previewPhoto);
               }}
               className="bg-destructive rounded-xl py-3.5 items-center"
-              accessibilityLabel="Delete photo"
+              accessibilityLabel={t('photos.deletePhotoA11y')}
               accessibilityRole="button"
             >
               <Text className="text-white font-semibold text-base">
-                Delete Photo
+                {t('photos.deletePhoto')}
               </Text>
             </Pressable>
           </View>
