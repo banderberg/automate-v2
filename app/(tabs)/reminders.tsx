@@ -11,6 +11,7 @@ import { useVehicleStore } from '@/src/stores/vehicleStore';
 import { useReminderStore } from '@/src/stores/reminderStore';
 import { useActiveVehicle } from '@/src/hooks/useActiveVehicle';
 import * as notificationService from '@/src/services/notifications';
+import { t } from '@/src/i18n';
 
 export default function RemindersScreen() {
   const nav = useGuardedNavigate();
@@ -44,8 +45,8 @@ export default function RemindersScreen() {
               <Ionicons name="timer-outline" size={44} color="#F59E0B" />
             </View>
           }
-          title="No vehicle yet"
-          description="Add a vehicle from the Dashboard tab, then set reminders for oil changes, inspections, and more."
+          title={t('reminders.noVehicleTitle')}
+          description={t('reminders.noVehicleDescription')}
         />
       </SafeAreaView>
     );
@@ -61,7 +62,7 @@ export default function RemindersScreen() {
         <Pressable
           onPress={() => nav.push('/(modals)/reminder')}
           className="px-4 items-center justify-center bg-surface dark:bg-surface-dark border-b border-divider dark:border-divider-dark"
-          accessibilityLabel="Add Reminder"
+          accessibilityLabel={t('reminders.addA11y')}
           accessibilityRole="button"
         >
           <Ionicons name="add" size={24} color="#4272C4" />
@@ -73,14 +74,14 @@ export default function RemindersScreen() {
         <Pressable
           onPress={notificationService.openNotificationSettings}
           className="flex-row items-center bg-warning-light px-4 py-3 gap-2"
-          accessibilityLabel="Notifications are off. Tap to enable in Settings."
+          accessibilityLabel={t('reminders.notifBannerA11y')}
           accessibilityRole="button"
         >
           <Ionicons name="notifications-off-outline" size={18} color="#92400E" />
           <Text className="flex-1 text-sm text-yellow-800">
-            Notifications are off. You'll only see reminders in the app.
+            {t('reminders.notifBanner')}
           </Text>
-          <Text className="text-sm text-primary font-semibold">Enable</Text>
+          <Text className="text-sm text-primary font-semibold">{t('reminders.notifEnable')}</Text>
         </Pressable>
       )}
 
@@ -94,9 +95,9 @@ export default function RemindersScreen() {
                 <Ionicons name="timer-outline" size={44} color="#F59E0B" />
               </View>
             }
-            title="Nothing to track yet"
-            description="Set a reminder for oil changes, tire rotations, or any recurring service. AutoMate counts down so you don't have to."
-            actionLabel="Add Reminder"
+            title={t('reminders.emptyTitle')}
+            description={t('reminders.emptyDescription')}
+            actionLabel={t('reminders.addAction')}
             onAction={() => nav.push('/(modals)/reminder')}
           />
         </View>

@@ -19,16 +19,7 @@ import { useReferenceDataStore } from '@/src/stores/referenceDataStore';
 import { Directory, Paths } from 'expo-file-system';
 import { getDatabase } from '@/src/db/client';
 import { CURRENCIES } from '@/src/constants/currency';
-
-const FUEL_UNITS = [
-  { value: 'gallons', label: 'Gallons' },
-  { value: 'litres', label: 'Litres' },
-];
-
-const ODOMETER_UNITS = [
-  { value: 'miles', label: 'Miles' },
-  { value: 'kilometers', label: 'Kilometers' },
-];
+import { t } from '@/src/i18n';
 
 function SectionHeader({ title }: { title: string }) {
   return (
@@ -92,7 +83,7 @@ function PickerModal({ visible, title, options, selectedValue, onSelect, onClose
       <Pressable
         className="flex-1 justify-end" style={{ backgroundColor: 'rgba(28, 27, 24, 0.4)' }}
         onPress={onClose}
-        accessibilityLabel="Close picker"
+        accessibilityLabel={t('settings.closePicker')}
       >
         <Pressable
           className="bg-card dark:bg-card-dark rounded-t-2xl"
@@ -104,11 +95,11 @@ function PickerModal({ visible, title, options, selectedValue, onSelect, onClose
             </Text>
             <Pressable
               onPress={onClose}
-              accessibilityLabel="Done"
+              accessibilityLabel={t('common.done')}
               accessibilityRole="button"
               hitSlop={8}
             >
-              <Text className="text-base text-primary font-semibold">Done</Text>
+              <Text className="text-base text-primary font-semibold">{t('common.done')}</Text>
             </Pressable>
           </View>
           <FlatList
@@ -121,7 +112,7 @@ function PickerModal({ visible, title, options, selectedValue, onSelect, onClose
                   onClose();
                 }}
                 className="flex-row items-center justify-between px-4 py-4 border-b border-divider-subtle dark:border-divider-dark"
-                accessibilityLabel={`${item.label}${selectedValue === item.value ? ', selected' : ''}`}
+                accessibilityLabel={`${item.label}${selectedValue === item.value ? `, ${t('common.selected')}` : ''}`}
                 accessibilityRole="button"
               >
                 <Text className="text-base text-ink dark:text-ink-on-dark">
@@ -159,11 +150,11 @@ export default function SettingsScreen() {
       const fileUri = await createBackup();
       await Sharing.shareAsync(fileUri, {
         mimeType: 'application/x-sqlite3',
-        dialogTitle: 'Save AutoMate Backup',
+        dialogTitle: t('settings.backupShareTitle'),
       });
     } catch (e) {
-      const message = e instanceof Error ? e.message : 'An unexpected error occurred.';
-      showDialog('Backup Failed', message);
+      const message = e instanceof Error ? e.message : t('settings.unexpectedError');
+      showDialog(t('settings.backupFailedTitle'), message);
     } finally {
       setIsBackingUp(false);
     }
@@ -185,24 +176,32 @@ export default function SettingsScreen() {
       try {
         info = await getBackupInfo(fileUri);
       } catch (e) {
-        const message = e instanceof Error ? e.message : 'Could not read the selected file.';
-        showDialog('Invalid Backup', message);
+        const message = e instanceof Error ? e.message : t('settings.restoreInvalidMessage');
+        showDialog(t('settings.restoreInvalidTitle'), message);
         setIsRestoring(false);
         return;
       }
 
       setIsRestoring(false);
 
-      const docNote = info.documentCount > 0
-        ? `\n\nDocument and photo files are not included in backups and must be re-added after restore.`
-        : '';
+      const docNote = info.documentCount > 0 ? t('settings.restoreDocNote') : '';
+      const vehiclesPart = t(info.vehicleCount === 1 ? 'settings.vehicleCountOne' : 'settings.vehicleCountOther', { count: info.vehicleCount });
+      const eventsPart = t(info.eventCount === 1 ? 'settings.eventCountOne' : 'settings.eventCountOther', { count: info.eventCount });
+      const remindersPart = t(info.reminderCount === 1 ? 'settings.reminderCountOne' : 'settings.reminderCountOther', { count: info.reminderCount });
+      const documentsPart = t(info.documentCount === 1 ? 'settings.documentCountOne' : 'settings.documentCountOther', { count: info.documentCount });
       showDialog(
-        'Restore Backup?',
-        `This backup contains ${info.vehicleCount} vehicle${info.vehicleCount !== 1 ? 's' : ''}, ${info.eventCount} event${info.eventCount !== 1 ? 's' : ''}, ${info.reminderCount} reminder${info.reminderCount !== 1 ? 's' : ''}, and ${info.documentCount} document${info.documentCount !== 1 ? 's' : ''}.\n\nRestoring will replace ALL current data. This cannot be undone.${docNote}`,
+        t('settings.restoreConfirmTitle'),
+        t('settings.restoreConfirmMessage', {
+          vehicles: vehiclesPart,
+          events: eventsPart,
+          reminders: remindersPart,
+          documents: documentsPart,
+          docNote,
+        }),
         [
-          { text: 'Cancel', style: 'cancel' },
+          { text: t('common.cancel'), style: 'cancel' },
           {
-            text: 'Restore',
+            text: t('settings.restoreCta'),
             style: 'destructive',
             onPress: async () => {
               setIsRestoring(true);
@@ -210,10 +209,10 @@ export default function SettingsScreen() {
                 await restoreBackup(fileUri);
                 await reloadAllStores();
 
-                showDialog('Restore Complete', 'Your data has been restored successfully.');
+                showDialog(t('settings.restoreCompleteTitle'), t('settings.restoreCompleteMessage'));
               } catch (e) {
-                const message = e instanceof Error ? e.message : 'An unexpected error occurred.';
-                showDialog('Restore Failed', message);
+                const message = e instanceof Error ? e.message : t('settings.unexpectedError');
+                showDialog(t('settings.restoreFailedTitle'), message);
               } finally {
                 setIsRestoring(false);
               }
@@ -222,20 +221,20 @@ export default function SettingsScreen() {
         ]
       );
     } catch (e) {
-      const message = e instanceof Error ? e.message : 'An unexpected error occurred.';
-      showDialog('Restore Failed', message);
+      const message = e instanceof Error ? e.message : t('settings.unexpectedError');
+      showDialog(t('settings.restoreFailedTitle'), message);
       setIsRestoring(false);
     }
   }, [isRestoring]);
 
   const handleLoadTestData = useCallback(() => {
     showDialog(
-      'Load Test Data?',
-      'This will replace all current vehicles, events, and reminders with 2 years of sample data. This cannot be undone.',
+      t('settings.loadTestDataConfirmTitle'),
+      t('settings.loadTestDataConfirmMessage'),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Load Test Data',
+          text: t('settings.loadTestData'),
           style: 'destructive',
           onPress: async () => {
             setIsLoadingTestData(true);
@@ -243,12 +242,16 @@ export default function SettingsScreen() {
               const result = await loadTestData();
               await reloadAllStores();
               showDialog(
-                'Test Data Loaded',
-                `Created ${result.vehicles} vehicles, ${result.events} events, and ${result.reminders} reminders spanning 2 years.`,
+                t('settings.loadTestDataLoadedTitle'),
+                t('settings.loadTestDataLoadedMessage', {
+                  vehicles: result.vehicles,
+                  events: result.events,
+                  reminders: result.reminders,
+                }),
               );
             } catch (e) {
-              const message = e instanceof Error ? e.message : 'An unexpected error occurred.';
-              showDialog('Failed', message);
+              const message = e instanceof Error ? e.message : t('settings.unexpectedError');
+              showDialog(t('settings.loadTestDataFailedTitle'), message);
             } finally {
               setIsLoadingTestData(false);
             }
@@ -260,12 +263,12 @@ export default function SettingsScreen() {
 
   const handleResetAllData = useCallback(() => {
     showDialog(
-      'Reset All Data?',
-      'This will permanently delete all vehicles, events, and reminders. You will be returned to the onboarding screen. This cannot be undone.',
+      t('settings.resetAllDataConfirmTitle'),
+      t('settings.resetAllDataConfirmMessage'),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Reset Everything',
+          text: t('settings.resetAllDataCta'),
           style: 'destructive',
           onPress: async () => {
             try {
@@ -288,8 +291,8 @@ export default function SettingsScreen() {
               await useVehicleStore.getState().initialize();
               nav.replace('/onboarding');
             } catch (e) {
-              const message = e instanceof Error ? e.message : 'An unexpected error occurred.';
-              showDialog('Reset Failed', message);
+              const message = e instanceof Error ? e.message : t('settings.unexpectedError');
+              showDialog(t('settings.resetAllDataFailedTitle'), message);
             }
           },
         },
@@ -309,10 +312,20 @@ export default function SettingsScreen() {
     setPickerConfig((c) => ({ ...c, visible: false }));
   }, []);
 
+  const fuelUnits = [
+    { value: 'gallons', label: t('settings.fuelGallons') },
+    { value: 'litres', label: t('settings.fuelLitres') },
+  ];
+
+  const odometerUnits = [
+    { value: 'miles', label: t('settings.odoMiles') },
+    { value: 'kilometers', label: t('settings.odoKilometers') },
+  ];
+
   const openCurrencyPicker = useCallback(() => {
     setPickerConfig({
       visible: true,
-      title: 'Currency',
+      title: t('settings.currency'),
       options: CURRENCIES,
       selectedValue: settings.currency,
       onSelect: (v) => updateSetting('currency', v),
@@ -322,8 +335,8 @@ export default function SettingsScreen() {
   const openFuelUnitPicker = useCallback(() => {
     setPickerConfig({
       visible: true,
-      title: 'Default Fuel Unit',
-      options: FUEL_UNITS,
+      title: t('settings.fuelUnitTitle'),
+      options: fuelUnits,
       selectedValue: settings.defaultFuelUnit,
       onSelect: (v) => updateSetting('defaultFuelUnit', v as 'gallons' | 'litres'),
     });
@@ -332,35 +345,35 @@ export default function SettingsScreen() {
   const openOdometerUnitPicker = useCallback(() => {
     setPickerConfig({
       visible: true,
-      title: 'Default Odometer Unit',
-      options: ODOMETER_UNITS,
+      title: t('settings.odometerUnitTitle'),
+      options: odometerUnits,
       selectedValue: settings.defaultOdometerUnit,
       onSelect: (v) => updateSetting('defaultOdometerUnit', v as 'miles' | 'kilometers'),
     });
   }, [settings.defaultOdometerUnit, updateSetting]);
 
   const currencyLabel = CURRENCIES.find((c) => c.value === settings.currency)?.label ?? settings.currency;
-  const fuelUnitLabel = FUEL_UNITS.find((f) => f.value === settings.defaultFuelUnit)?.label ?? settings.defaultFuelUnit;
-  const odoUnitLabel = ODOMETER_UNITS.find((o) => o.value === settings.defaultOdometerUnit)?.label ?? settings.defaultOdometerUnit;
+  const fuelUnitLabel = fuelUnits.find((f) => f.value === settings.defaultFuelUnit)?.label ?? settings.defaultFuelUnit;
+  const odoUnitLabel = odometerUnits.find((o) => o.value === settings.defaultOdometerUnit)?.label ?? settings.defaultOdometerUnit;
 
   const themes = [
-    { value: 'system', label: 'System' },
-    { value: 'light', label: 'Light' },
-    { value: 'dark', label: 'Dark' },
+    { value: 'system', label: t('settings.themeSystem') },
+    { value: 'light', label: t('settings.themeLight') },
+    { value: 'dark', label: t('settings.themeDark') },
   ] as const;
 
   return (
     <SafeAreaView className="flex-1 bg-surface dark:bg-surface-dark" edges={['top']}>
       <View className="px-4 py-4 bg-surface dark:bg-surface-dark">
-        <Text className="text-2xl font-bold text-ink dark:text-ink-on-dark">Settings</Text>
+        <Text className="text-2xl font-bold text-ink dark:text-ink-on-dark">{t('settings.title')}</Text>
       </View>
 
       <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
         {/* Appearance */}
-        <SectionHeader title="Appearance" />
+        <SectionHeader title={t('settings.sectionAppearance')} />
         <View className="bg-card dark:bg-card-dark border-y border-divider-subtle dark:border-divider-dark">
           <View className="px-4 py-4">
-            <Text className="text-base text-ink dark:text-ink-on-dark mb-3">Theme</Text>
+            <Text className="text-base text-ink dark:text-ink-on-dark mb-3">{t('settings.theme')}</Text>
             <View className="flex-row gap-2">
               {themes.map(({ value, label }) => (
                 <Pressable
@@ -371,7 +384,7 @@ export default function SettingsScreen() {
                       ? 'bg-primary'
                       : 'bg-surface dark:bg-surface-dark'
                   }`}
-                  accessibilityLabel={`Set theme to ${label}`}
+                  accessibilityLabel={t('settings.themeSetTo', { label })}
                   accessibilityRole="button"
                   accessibilityState={{ selected: settings.theme === value }}
                 >
@@ -391,49 +404,49 @@ export default function SettingsScreen() {
         </View>
 
         {/* Defaults */}
-        <SectionHeader title="Defaults" />
+        <SectionHeader title={t('settings.sectionDefaults')} />
         <View className="border-t border-divider-subtle dark:border-divider-dark">
           <RowItem
-            label="Currency"
+            label={t('settings.currency')}
             value={currencyLabel}
             onPress={openCurrencyPicker}
-            accessibilityLabel={`Currency: ${currencyLabel}`}
+            accessibilityLabel={t('settings.currencyA11y', { label: currencyLabel })}
           />
           <RowItem
-            label="Fuel Unit"
+            label={t('settings.fuelUnit')}
             value={fuelUnitLabel}
             onPress={openFuelUnitPicker}
-            accessibilityLabel={`Default fuel unit: ${fuelUnitLabel}`}
+            accessibilityLabel={t('settings.fuelUnitA11y', { label: fuelUnitLabel })}
           />
           <RowItem
-            label="Odometer Unit"
+            label={t('settings.odometerUnit')}
             value={odoUnitLabel}
             onPress={openOdometerUnitPicker}
-            accessibilityLabel={`Default odometer unit: ${odoUnitLabel}`}
+            accessibilityLabel={t('settings.odometerUnitA11y', { label: odoUnitLabel })}
           />
         </View>
 
         {/* Vehicles */}
-        <SectionHeader title="Vehicles" />
+        <SectionHeader title={t('settings.sectionVehicles')} />
         <View className="border-t border-divider-subtle dark:border-divider-dark">
           <RowItem
-            label="Manage Vehicles"
-            value={`${vehicleCount} vehicle${vehicleCount !== 1 ? 's' : ''}`}
+            label={t('settings.manageVehicles')}
+            value={t(vehicleCount === 1 ? 'settings.vehicleCountOne' : 'settings.vehicleCountOther', { count: vehicleCount })}
             onPress={() => nav.push('/(modals)/manage-vehicles')}
-            accessibilityLabel="Manage Vehicles"
+            accessibilityLabel={t('settings.manageVehicles')}
           />
         </View>
 
         {/* Data */}
-        <SectionHeader title="Data" />
+        <SectionHeader title={t('settings.sectionData')} />
         <View className="border-t border-divider-subtle dark:border-divider-dark">
           <View className="flex-row items-center bg-card dark:bg-card-dark border-b border-divider-subtle dark:border-divider-dark">
             <View className="flex-1">
               <RowItem
-                label={isBackingUp ? 'Preparing backup...' : 'Backup Data'}
-                subtitle="Save a copy of all vehicles and events"
+                label={isBackingUp ? t('settings.backupPreparing') : t('settings.backupData')}
+                subtitle={t('settings.backupSubtitle')}
                 onPress={isBackingUp ? undefined : handleBackup}
-                accessibilityLabel={isBackingUp ? 'Backup in progress' : 'Backup Data'}
+                accessibilityLabel={isBackingUp ? t('settings.backupInProgress') : t('settings.backupData')}
               />
             </View>
             {isBackingUp && <ActivityIndicator size="small" color="#4272C4" style={{ marginRight: 16 }} />}
@@ -441,97 +454,97 @@ export default function SettingsScreen() {
           <View className="flex-row items-center bg-card dark:bg-card-dark border-b border-divider-subtle dark:border-divider-dark">
             <View className="flex-1">
               <RowItem
-                label={isRestoring ? 'Restoring...' : 'Restore Data'}
-                subtitle="Replace all current data from a backup file"
+                label={isRestoring ? t('settings.restoring') : t('settings.restoreData')}
+                subtitle={t('settings.restoreSubtitle')}
                 onPress={isRestoring ? undefined : handleRestore}
-                accessibilityLabel={isRestoring ? 'Restore in progress' : 'Restore Data'}
+                accessibilityLabel={isRestoring ? t('settings.restoreInProgress') : t('settings.restoreData')}
               />
             </View>
             {isRestoring && <ActivityIndicator size="small" color="#4272C4" style={{ marginRight: 16 }} />}
           </View>
           <RowItem
-            label="Import Data"
+            label={t('settings.importData')}
             onPress={() => nav.push('/(modals)/import')}
-            accessibilityLabel="Import Data"
+            accessibilityLabel={t('settings.importData')}
           />
           <RowItem
-            label="Export Data"
+            label={t('settings.exportData')}
             onPress={() => nav.push('/(modals)/export')}
-            accessibilityLabel="Export Data"
+            accessibilityLabel={t('settings.exportData')}
           />
         </View>
 
         {/* Help */}
-        <SectionHeader title="Help" />
+        <SectionHeader title={t('settings.sectionHelp')} />
         <View className="border-t border-divider-subtle dark:border-divider-dark">
           <RowItem
-            label="How is Cost / Mile calculated?"
-            subtitle="Total spending divided by total distance driven in the selected period."
-            accessibilityLabel="Cost per mile is total spending divided by total distance driven"
+            label={t('settings.helpCostPerMile')}
+            subtitle={t('settings.helpCostPerMileSubtitle')}
+            accessibilityLabel={t('settings.helpCostPerMileA11y')}
           />
           <RowItem
-            label="How is fuel efficiency calculated?"
-            subtitle="Distance between full fill-ups divided by fuel volume. Partial fills are excluded."
-            accessibilityLabel="Fuel efficiency is distance between full fill-ups divided by fuel volume"
+            label={t('settings.helpFuelEfficiency')}
+            subtitle={t('settings.helpFuelEfficiencySubtitle')}
+            accessibilityLabel={t('settings.helpFuelEfficiencyA11y')}
           />
           <RowItem
-            label="What is a partial fill?"
-            subtitle="When you don't fill the tank completely. Marked partial fills are excluded from efficiency calculations because the math requires full-to-full measurements."
-            accessibilityLabel="Partial fill explanation"
+            label={t('settings.helpPartialFill')}
+            subtitle={t('settings.helpPartialFillSubtitle')}
+            accessibilityLabel={t('settings.helpPartialFillA11y')}
           />
           <RowItem
-            label="How do reminders work?"
-            subtitle="Set a distance or time interval. AutoMate estimates when you'll reach the threshold based on your driving patterns and notifies you."
-            accessibilityLabel="Reminder explanation"
+            label={t('settings.helpReminders')}
+            subtitle={t('settings.helpRemindersSubtitle')}
+            accessibilityLabel={t('settings.helpRemindersA11y')}
           />
         </View>
 
         {/* About */}
-        <SectionHeader title="About" />
+        <SectionHeader title={t('settings.sectionAbout')} />
         <View className="border-t border-divider-subtle dark:border-divider-dark">
-          <RowItem label={`AutoMate v${Constants.expoConfig?.version ?? '2.0'}`} />
+          <RowItem label={t('settings.appVersion', { version: Constants.expoConfig?.version ?? '2.0' })} />
           <RowItem
-            label="Rate AutoMate"
+            label={t('settings.rateApp')}
             onPress={() => Linking.openURL('market://details?id=com.arctosbuilt.automate')}
-            accessibilityLabel="Rate AutoMate on Play Store"
+            accessibilityLabel={t('settings.rateAppA11y')}
           />
           <RowItem
-            label="Send Feedback"
-            onPress={() => Linking.openURL('mailto:arctos.built@gmail.com?subject=AutoMate Feedback')}
-            accessibilityLabel="Send feedback via email"
+            label={t('settings.sendFeedback')}
+            onPress={() => Linking.openURL(`mailto:arctos.built@gmail.com?subject=${encodeURIComponent(t('settings.feedbackEmailSubject'))}`)}
+            accessibilityLabel={t('settings.sendFeedbackA11y')}
           />
           <RowItem
-            label="Privacy Policy"
+            label={t('settings.privacyPolicy')}
             onPress={() => Linking.openURL('https://banderberg.github.io/arctoslabs/privacy.html')}
-            accessibilityLabel="View privacy policy"
+            accessibilityLabel={t('settings.privacyPolicyA11y')}
           />
           <RowItem
-            label="Open Source Licenses"
+            label={t('settings.openSourceLicenses')}
             onPress={() => nav.push('/(modals)/licenses')}
-            accessibilityLabel="View open source licenses"
+            accessibilityLabel={t('settings.openSourceLicensesA11y')}
           />
         </View>
 
         {__DEV__ && (
           <>
-            <SectionHeader title="Developer" />
+            <SectionHeader title={t('settings.sectionDeveloper')} />
             <View className="border-t border-divider-subtle dark:border-divider-dark">
               <RowItem
-                label={isLoadingTestData ? 'Loading test data...' : 'Load Test Data'}
+                label={isLoadingTestData ? t('settings.loadingTestData') : t('settings.loadTestData')}
                 onPress={isLoadingTestData ? undefined : handleLoadTestData}
-                accessibilityLabel="Load test data with 2 years of sample events"
+                accessibilityLabel={t('settings.loadTestDataA11y')}
               />
               <RowItem
-                label="Reset All Data"
-                subtitle="Delete everything and return to onboarding"
+                label={t('settings.resetAllData')}
+                subtitle={t('settings.resetAllDataSubtitle')}
                 onPress={handleResetAllData}
-                accessibilityLabel="Reset all data"
+                accessibilityLabel={t('settings.resetAllDataA11y')}
               />
               <RowItem
-                label="Test Error Boundary"
-                subtitle="Triggers a render error to test the error screen"
+                label={t('settings.testErrorBoundary')}
+                subtitle={t('settings.testErrorBoundarySubtitle')}
                 onPress={() => { throw new Error('Test error boundary — triggered from developer settings'); }}
-                accessibilityLabel="Test error boundary"
+                accessibilityLabel={t('settings.testErrorBoundaryA11y')}
               />
             </View>
           </>

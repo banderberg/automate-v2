@@ -1,4 +1,5 @@
 import { View, Text, Pressable, ActivityIndicator } from 'react-native';
+import { t } from '@/src/i18n';
 
 interface ModalHeaderProps {
   title: string;
@@ -16,22 +17,24 @@ export function ModalHeader({
   onCancel,
   onSave,
   saveDisabled = false,
-  saveLabel = 'Save',
-  cancelLabel = 'Cancel',
+  saveLabel,
+  cancelLabel,
   hideSave = false,
   isSaving = false,
 }: ModalHeaderProps) {
+  const resolvedSaveLabel = saveLabel ?? t('common.save');
+  const resolvedCancelLabel = cancelLabel ?? t('common.cancel');
   return (
     <View className="flex-row items-center justify-between px-4 py-3 border-b border-divider dark:border-divider-dark bg-card dark:bg-card-dark">
       <Pressable
         onPress={isSaving ? undefined : onCancel}
         className="min-w-[60px] py-3"
-        accessibilityLabel={cancelLabel}
+        accessibilityLabel={resolvedCancelLabel}
         accessibilityRole="button"
         disabled={isSaving}
         hitSlop={8}
       >
-        <Text className={`text-base ${isSaving ? 'text-ink-muted dark:text-ink-faint-on-dark' : 'text-primary'}`}>{cancelLabel}</Text>
+        <Text className={`text-base ${isSaving ? 'text-ink-muted dark:text-ink-faint-on-dark' : 'text-primary'}`}>{resolvedCancelLabel}</Text>
       </Pressable>
 
       <Text
@@ -45,7 +48,7 @@ export function ModalHeader({
         <Pressable
           onPress={saveDisabled || isSaving ? undefined : onSave}
           className="min-w-[60px] py-3 items-end"
-          accessibilityLabel={isSaving ? 'Saving' : saveLabel}
+          accessibilityLabel={isSaving ? t('modalHeader.savingA11y') : resolvedSaveLabel}
           accessibilityRole="button"
           accessibilityState={{ disabled: saveDisabled || isSaving }}
           disabled={saveDisabled || isSaving}
@@ -59,7 +62,7 @@ export function ModalHeader({
                 saveDisabled ? 'text-ink-muted dark:text-ink-faint-on-dark' : 'text-primary'
               }`}
             >
-              {saveLabel}
+              {resolvedSaveLabel}
             </Text>
           )}
         </Pressable>

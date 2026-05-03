@@ -1,6 +1,7 @@
 import { View, Text, Animated } from 'react-native';
 import { Swipeable } from 'react-native-gesture-handler';
 import { useRef } from 'react';
+import { t } from '@/src/i18n';
 
 interface InsightCardProps {
   title: string;
@@ -29,7 +30,7 @@ export function InsightCard({ title, subtitle, icon, iconBgColor, isDark, onDism
           opacity,
         }}
       >
-        <Text style={{ color: isDark ? '#8A8680' : '#706C67', fontSize: 12 }}>Dismiss</Text>
+        <Text style={{ color: isDark ? '#8A8680' : '#706C67', fontSize: 12 }}>{t('insight.dismissAction')}</Text>
       </Animated.View>
     );
   }

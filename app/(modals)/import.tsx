@@ -22,6 +22,7 @@ import {
   importData,
 } from '@/src/services/dataImport';
 import type { ParsedImportData, ParsedEvent } from '@/src/services/dataImport';
+import { t, type TranslationKey } from '@/src/i18n';
 
 type DetectedFormat = 'fuelio' | 'fuelly' | 'automate' | 'drivvo' | 'unknown';
 
@@ -31,12 +32,12 @@ let _importCache: {
   selectedVehicleId: string | null;
 } | null = null;
 
-const FORMAT_LABELS: Record<DetectedFormat, string> = {
-  fuelio: 'Fuelio Export',
-  fuelly: 'Fuelly Export',
-  automate: 'AutoMate Export',
-  drivvo: 'Drivvo Export',
-  unknown: 'Unknown Format',
+const FORMAT_LABEL_KEYS: Record<DetectedFormat, TranslationKey> = {
+  fuelio: 'importModal.formatFuelio',
+  fuelly: 'importModal.formatFuelly',
+  automate: 'importModal.formatAutomate',
+  drivvo: 'importModal.formatDrivvo',
+  unknown: 'importModal.formatUnknown',
 };
 
 const FORMAT_COLORS: Record<DetectedFormat, { bg: string; text: string }> = {
@@ -47,8 +48,14 @@ const FORMAT_COLORS: Record<DetectedFormat, { bg: string; text: string }> = {
   unknown: { bg: '#EF444420', text: '#EF4444' },
 };
 
+const EVENT_TYPE_LABEL_KEYS: Record<ParsedEvent['type'], TranslationKey> = {
+  fuel: 'importModal.fuelLabel',
+  service: 'importModal.serviceLabel',
+  expense: 'importModal.expenseLabel',
+};
+
 function formatEventType(type: ParsedEvent['type']): string {
-  return type.charAt(0).toUpperCase() + type.slice(1);
+  return t(EVENT_TYPE_LABEL_KEYS[type]);
 }
 
 function formatCost(cost: number, cc: string): string {
@@ -135,8 +142,8 @@ export default function ImportModal() {
       setParsedData(data);
       setIsReadingFile(false);
     } catch (e) {
-      const message = e instanceof Error ? e.message : 'Could not read the selected file.';
-      showDialog('File Error', message);
+      const message = e instanceof Error ? e.message : t('importModal.fileErrorMessage');
+      showDialog(t('importModal.fileErrorTitle'), message);
       setIsReadingFile(false);
     }
   }, []);
@@ -152,33 +159,38 @@ export default function ImportModal() {
 
       const parts: string[] = [];
       if (result.eventsImported > 0) {
-        parts.push(`Imported ${result.eventsImported} event${result.eventsImported !== 1 ? 's' : ''}`);
+        parts.push(t(result.eventsImported === 1 ? 'importModal.importedEventsOne' : 'importModal.importedEventsOther', { count: result.eventsImported }));
       }
       if (result.placesCreated > 0) {
-        parts.push(`created ${result.placesCreated} place${result.placesCreated !== 1 ? 's' : ''}`);
+        parts.push(t(result.placesCreated === 1 ? 'importModal.createdPlacesOne' : 'importModal.createdPlacesOther', { count: result.placesCreated }));
       }
       if (result.eventsSkipped > 0) {
-        parts.push(`${result.eventsSkipped} duplicate${result.eventsSkipped !== 1 ? 's' : ''} skipped`);
+        parts.push(t(result.eventsSkipped === 1 ? 'importModal.skippedDupesOne' : 'importModal.skippedDupesOther', { count: result.eventsSkipped }));
       }
 
       const summary = parts.join(', ') + '.';
 
       if (result.errors.length > 0) {
         showDialog(
-          'Import Complete with Warnings',
-          `${summary}\n\n${result.errors.length} error${result.errors.length !== 1 ? 's' : ''}: ${result.errors.slice(0, 3).join('; ')}`,
-          [{ text: 'OK', onPress: () => { clearCache(); nav.back(); } }]
+          t('importModal.completeWithWarningsTitle'),
+          t('importModal.completeWithWarningsMessage', {
+            summary,
+            count: result.errors.length,
+            errorWord: t(result.errors.length === 1 ? 'importModal.errorOne' : 'importModal.errorOther'),
+            joined: result.errors.slice(0, 3).join('; '),
+          }),
+          [{ text: t('common.ok'), onPress: () => { clearCache(); nav.back(); } }]
         );
       } else {
         showDialog(
-          'Import Complete',
+          t('importModal.completeTitle'),
           summary,
-          [{ text: 'OK', onPress: () => { clearCache(); nav.back(); } }]
+          [{ text: t('common.ok'), onPress: () => { clearCache(); nav.back(); } }]
         );
       }
     } catch (e) {
-      const message = e instanceof Error ? e.message : 'An unexpected error occurred during import.';
-      showDialog('Import Failed', message);
+      const message = e instanceof Error ? e.message : t('importModal.unexpectedError');
+      showDialog(t('importModal.failedTitle'), message);
     } finally {
       setIsImporting(false);
     }
@@ -187,8 +199,8 @@ export default function ImportModal() {
   return (
     <SafeAreaView className="flex-1 bg-surface dark:bg-surface-dark" edges={['top']}>
       <ModalHeader
-        title="Import Data"
-        cancelLabel="Done"
+        title={t('importModal.title')}
+        cancelLabel={t('common.done')}
         onCancel={() => { clearCache(); nav.back(); }}
         hideSave
       />
@@ -196,14 +208,14 @@ export default function ImportModal() {
       <ScrollView className="flex-1 px-4 pt-4" keyboardShouldPersistTaps="handled">
         {/* Step 1: Select File */}
         <Text className="text-xs font-semibold text-ink-muted dark:text-ink-muted-on-dark uppercase tracking-wider mb-2">
-          Select File
+          {t('importModal.selectFile')}
         </Text>
         <Pressable
           onPress={handleSelectFile}
           disabled={isReadingFile || isImporting}
           className="flex-row items-center justify-center bg-card dark:bg-card-dark rounded-card py-4 px-4 mb-4"
           style={{ shadowOpacity: isDark ? 0 : 0.04, shadowRadius: 16, shadowOffset: { width: 0, height: 4 }, elevation: isDark ? 0 : 3 }}
-          accessibilityLabel="Select CSV file to import"
+          accessibilityLabel={t('importModal.selectFileA11y')}
           accessibilityRole="button"
         >
           {isReadingFile ? (
@@ -212,7 +224,7 @@ export default function ImportModal() {
             <>
               <Ionicons name="document-outline" size={20} color="#4272C4" />
               <Text className="text-base font-semibold text-primary ml-2">
-                {parsedData ? 'Choose Different File' : 'Choose CSV File'}
+                {parsedData ? t('importModal.chooseDifferentFile') : t('importModal.chooseCsvFile')}
               </Text>
             </>
           )}
@@ -229,7 +241,7 @@ export default function ImportModal() {
                 style={{ color: FORMAT_COLORS[detectedFormat].text }}
                 className="text-sm font-semibold"
               >
-                {FORMAT_LABELS[detectedFormat]}
+                {t(FORMAT_LABEL_KEYS[detectedFormat])}
               </Text>
             </View>
           </View>
@@ -241,11 +253,11 @@ export default function ImportModal() {
             <View className="flex-row items-center mb-2">
               <Ionicons name="warning-outline" size={20} color="#EF4444" />
               <Text className="text-base font-semibold text-destructive ml-2">
-                Unrecognized Format
+                {t('importModal.unrecognizedFormat')}
               </Text>
             </View>
             <Text className="text-sm text-ink-secondary dark:text-ink-secondary-on-dark">
-              This file does not match Fuelio, Fuelly, Drivvo, or AutoMate CSV formats. Please select a supported CSV export file.
+              {t('importModal.unrecognizedMessage')}
             </Text>
           </View>
         )}
@@ -254,7 +266,7 @@ export default function ImportModal() {
         {parsedData && parsedData.events.length > 0 && (
           <>
             <Text className="text-xs font-semibold text-ink-muted dark:text-ink-muted-on-dark uppercase tracking-wider mb-2">
-              Preview ({parsedData.events.length} event{parsedData.events.length !== 1 ? 's' : ''})
+              {t(parsedData.events.length === 1 ? 'importModal.previewOne' : 'importModal.previewOther', { count: parsedData.events.length })}
             </Text>
             <View
               className="bg-card dark:bg-card-dark rounded-card overflow-hidden mb-4"
@@ -289,7 +301,7 @@ export default function ImportModal() {
               {parsedData.events.length > 5 && (
                 <View className="px-4 py-2 border-t border-divider-subtle dark:border-divider-dark">
                   <Text className="text-xs text-ink-muted dark:text-ink-muted-on-dark text-center">
-                    and {parsedData.events.length - 5} more event{parsedData.events.length - 5 !== 1 ? 's' : ''}...
+                    {t((parsedData.events.length - 5) === 1 ? 'importModal.andMoreOne' : 'importModal.andMoreOther', { count: parsedData.events.length - 5 })}
                   </Text>
                 </View>
               )}
@@ -300,7 +312,7 @@ export default function ImportModal() {
         {parsedData && parsedData.events.length === 0 && (
           <View className="bg-card dark:bg-card-dark rounded-card p-4 mb-4" style={{ shadowOpacity: isDark ? 0 : 0.04, shadowRadius: 16, shadowOffset: { width: 0, height: 4 }, elevation: isDark ? 0 : 3 }}>
             <Text className="text-sm text-ink-secondary dark:text-ink-secondary-on-dark text-center">
-              No events found in this file.
+              {t('importModal.noEvents')}
             </Text>
           </View>
         )}
@@ -309,13 +321,13 @@ export default function ImportModal() {
         {parsedData && parsedData.events.length > 0 && (
           <>
             <Text className="text-xs font-semibold text-ink-muted dark:text-ink-muted-on-dark uppercase tracking-wider mb-2">
-              Import Into Vehicle
+              {t('importModal.importIntoVehicle')}
             </Text>
             <Pressable
               onPress={() => setShowVehiclePicker(!showVehiclePicker)}
               className="flex-row items-center bg-card dark:bg-card-dark rounded-card px-4 py-3.5 mb-2"
               style={{ shadowOpacity: isDark ? 0 : 0.04, shadowRadius: 16, shadowOffset: { width: 0, height: 4 }, elevation: isDark ? 0 : 3 }}
-              accessibilityLabel={`Selected vehicle: ${selectedVehicle?.nickname ?? 'None selected'}`}
+              accessibilityLabel={t('importModal.selectedVehicleA11y', { label: selectedVehicle?.nickname ?? t('importModal.noneSelected') })}
               accessibilityRole="button"
             >
               <Ionicons name="car-outline" size={20} color="#A8A49D" />
@@ -326,7 +338,7 @@ export default function ImportModal() {
                     : 'text-ink-muted dark:text-ink-muted-on-dark'
                 }`}
               >
-                {selectedVehicle?.nickname ?? 'Select a vehicle'}
+                {selectedVehicle?.nickname ?? t('importModal.selectVehiclePlaceholder')}
               </Text>
               <Ionicons
                 name={showVehiclePicker ? 'chevron-up' : 'chevron-down'}
@@ -350,7 +362,7 @@ export default function ImportModal() {
                     className={`px-4 py-3.5 border-b border-divider-subtle dark:border-divider-dark ${
                       selectedVehicleId === v.id ? 'bg-surface dark:bg-surface-dark' : ''
                     }`}
-                    accessibilityLabel={`${v.nickname}${selectedVehicleId === v.id ? ', selected' : ''}`}
+                    accessibilityLabel={t('importModal.selectVehicleItemA11y', { name: v.nickname, suffix: selectedVehicleId === v.id ? t('importModal.selectedSuffix') : '' })}
                     accessibilityRole="button"
                   >
                     <Text
@@ -376,12 +388,12 @@ export default function ImportModal() {
                     nav.push('/(modals)/vehicle');
                   }}
                   className="flex-row items-center px-4 py-3.5"
-                  accessibilityLabel="Add new vehicle"
+                  accessibilityLabel={t('importModal.addNewVehicleA11y')}
                   accessibilityRole="button"
                 >
                   <Ionicons name="add-circle-outline" size={20} color="#4272C4" />
                   <Text className="text-base text-primary font-semibold ml-2">
-                    Add New Vehicle
+                    {t('importModal.addNewVehicle')}
                   </Text>
                 </Pressable>
               </View>
@@ -401,7 +413,7 @@ export default function ImportModal() {
                 ? 'bg-primary'
                 : 'bg-divider dark:bg-divider-dark'
             }`}
-            accessibilityLabel="Import data"
+            accessibilityLabel={t('importModal.importDataA11y')}
             accessibilityRole="button"
             accessibilityState={{ disabled: !canImport || isImporting }}
           >
@@ -415,7 +427,7 @@ export default function ImportModal() {
                     canImport ? 'text-white' : 'text-ink-muted dark:text-ink-muted-on-dark'
                   }`}
                 >
-                  Import {parsedData.events.length} Event{parsedData.events.length !== 1 ? 's' : ''}
+                  {t(parsedData.events.length === 1 ? 'importModal.importEventsOne' : 'importModal.importEventsOther', { count: parsedData.events.length })}
                 </Text>
               </View>
             )}

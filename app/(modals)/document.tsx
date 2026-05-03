@@ -31,24 +31,27 @@ import { useDocumentStore } from '@/src/stores/documentStore';
 import { useVehicleStore } from '@/src/stores/vehicleStore';
 import { useToastStore } from '@/src/stores/toastStore';
 import type { VehicleDocumentType } from '@/src/types';
+import { t, type TranslationKey } from '@/src/i18n';
 
 const DOC_DIR = 'vehicle-documents';
 
-const DOCUMENT_TYPES: { id: VehicleDocumentType; name: string }[] = [
-  { id: 'insurance', name: 'Insurance' },
-  { id: 'registration', name: 'Registration' },
-  { id: 'title', name: 'Title' },
-  { id: 'emissions', name: 'Emissions' },
-  { id: 'inspection', name: 'Inspection' },
-  { id: 'other', name: 'Other' },
-];
+function getDocumentTypes(): { id: VehicleDocumentType; name: string }[] {
+  return [
+    { id: 'insurance', name: t('documentModal.typeInsurance') },
+    { id: 'registration', name: t('documentModal.typeRegistration') },
+    { id: 'title', name: t('documentModal.typeTitle') },
+    { id: 'emissions', name: t('documentModal.typeEmissions') },
+    { id: 'inspection', name: t('documentModal.typeInspection') },
+    { id: 'other', name: t('documentModal.typeOther') },
+  ];
+}
 
-const TYPE_NAME_MAP: Record<VehicleDocumentType, string | null> = {
-  insurance: 'Insurance Card',
-  registration: 'Registration',
-  title: 'Title',
-  emissions: 'Emissions Certificate',
-  inspection: 'Inspection Report',
+const TYPE_NAME_KEYS: Record<VehicleDocumentType, TranslationKey | null> = {
+  insurance: 'documentModal.namePrefillInsurance',
+  registration: 'documentModal.namePrefillRegistration',
+  title: 'documentModal.namePrefillTitle',
+  emissions: 'documentModal.namePrefillEmissions',
+  inspection: 'documentModal.namePrefillInspection',
   other: null,
 };
 
@@ -57,7 +60,7 @@ function isDocumentPdf(filePath: string): boolean {
 }
 
 function getFileName(filePath: string): string {
-  return filePath.split('/').pop() ?? 'Document';
+  return filePath.split('/').pop() ?? t('documentModal.fallbackFileName');
 }
 
 function ensureDocDirectory(): void {
@@ -78,7 +81,7 @@ export default function DocumentModal() {
   const isEditing = !!documentId;
 
   const activeVehicle = useVehicleStore((s) => s.activeVehicle);
-  const vehicleName = activeVehicle?.nickname ?? 'your vehicle';
+  const vehicleName = activeVehicle?.nickname ?? t('documentModal.yourVehicleFallback');
   const documents = useDocumentStore((s) => s.documents);
   const addDocument = useDocumentStore((s) => s.addDocument);
   const updateDocument = useDocumentStore((s) => s.updateDocument);
@@ -146,9 +149,9 @@ export default function DocumentModal() {
       markDirty();
 
       if (!nameWasTouched.current) {
-        const prefill = TYPE_NAME_MAP[newType];
-        if (prefill) {
-          setName(prefill);
+        const prefillKey = TYPE_NAME_KEYS[newType];
+        if (prefillKey) {
+          setName(t(prefillKey));
         }
       }
     },
@@ -182,7 +185,7 @@ export default function DocumentModal() {
       if (source === 'camera') {
         const { status } = await ImagePicker.requestCameraPermissionsAsync();
         if (status !== 'granted') {
-          showDialog('Permission needed', 'Camera access is required to take a photo.');
+          showDialog(t('documentModal.permissionTitle'), t('documentModal.cameraPermissionMessage'));
           return;
         }
         result = await ImagePicker.launchCameraAsync(options);
@@ -217,7 +220,7 @@ export default function DocumentModal() {
   }, [copyFileToPermanent]);
 
   const handleFilePress = useCallback(() => {
-    const options = ['Take Photo', 'Choose from Library', 'Choose PDF File', 'Cancel'];
+    const options = [t('documentModal.takePhoto'), t('documentModal.chooseFromLibrary'), t('documentModal.choosePdf'), t('common.cancel')];
     const cancelIndex = 3;
 
     if (Platform.OS === 'ios') {
@@ -230,11 +233,11 @@ export default function DocumentModal() {
         }
       );
     } else {
-      showDialog('Attach Document', undefined, [
-        { text: 'Take Photo', onPress: () => pickImage('camera') },
-        { text: 'Choose from Library', onPress: () => pickImage('library') },
-        { text: 'Choose PDF File', onPress: () => pickPdf() },
-        { text: 'Cancel', style: 'cancel' as const },
+      showDialog(t('documentModal.attachSheetTitle'), undefined, [
+        { text: t('documentModal.takePhoto'), onPress: () => pickImage('camera') },
+        { text: t('documentModal.chooseFromLibrary'), onPress: () => pickImage('library') },
+        { text: t('documentModal.choosePdf'), onPress: () => pickPdf() },
+        { text: t('common.cancel'), style: 'cancel' as const },
       ]);
     }
   }, [pickImage, pickPdf]);
@@ -264,7 +267,7 @@ export default function DocumentModal() {
           vehicleName
         );
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        useToastStore.getState().show('Document updated');
+        useToastStore.getState().show(t('documentModal.updatedToast'));
       } else {
         await addDocument(
           {
@@ -278,14 +281,14 @@ export default function DocumentModal() {
           vehicleName
         );
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        useToastStore.getState().show('Document saved');
+        useToastStore.getState().show(t('documentModal.savedToast'));
       }
       router.back();
     } catch (err) {
       const msg = err instanceof Error ? err.message : '';
       showDialog(
-        "Couldn't Save Document",
-        msg || 'Check your entries and try again.'
+        t('documentModal.saveErrorTitle'),
+        msg || t('documentModal.saveErrorMessage')
       );
     } finally {
       setSaving(false);
@@ -306,15 +309,15 @@ export default function DocumentModal() {
 
   const handleDelete = useCallback(() => {
     if (!documentId) return;
-    showDialog('Delete Document', 'Are you sure you want to delete this document?', [
-      { text: 'Cancel', style: 'cancel' },
+    showDialog(t('documentModal.deleteDocument'), t('documentModal.deleteConfirmMessage'), [
+      { text: t('common.cancel'), style: 'cancel' },
       {
-        text: 'Delete',
+        text: t('common.delete'),
         style: 'destructive',
         onPress: async () => {
           await deleteDocument(documentId);
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-          useToastStore.getState().show('Document deleted');
+          useToastStore.getState().show(t('documentModal.deletedToast'));
           router.back();
         },
       },
@@ -323,9 +326,9 @@ export default function DocumentModal() {
 
   const handleCancel = useCallback(() => {
     if (isDirty.current) {
-      showDialog('Discard Changes?', 'You have unsaved changes.', [
-        { text: 'Keep Editing', style: 'cancel' },
-        { text: 'Discard', style: 'destructive', onPress: () => router.back() },
+      showDialog(t('eventForm.discardTitle'), t('eventForm.discardMessage'), [
+        { text: t('eventForm.keepEditing'), style: 'cancel' },
+        { text: t('eventForm.discard'), style: 'destructive', onPress: () => router.back() },
       ]);
     } else {
       router.back();
@@ -336,10 +339,10 @@ export default function DocumentModal() {
     if (!filePath) return;
     try {
       await Sharing.shareAsync(filePath, {
-        dialogTitle: 'Save Document',
+        dialogTitle: t('documentModal.saveDialogTitle'),
       });
     } catch {
-      showDialog('Share Failed', 'Could not share this file.');
+      showDialog(t('documentModal.shareFailedTitle'), t('documentModal.shareFailedMessage'));
     }
   }, [filePath]);
 
@@ -349,12 +352,12 @@ export default function DocumentModal() {
         <Pressable
           onPress={handleFilePress}
           className="w-full h-48 rounded-xl bg-surface dark:bg-surface-dark border-2 border-dashed border-divider dark:border-divider-dark items-center justify-center mb-4"
-          accessibilityLabel="Attach a document file"
+          accessibilityLabel={t('documentModal.attachA11y')}
           accessibilityRole="button"
         >
           <Ionicons name="document-attach-outline" size={40} color="#A8A49D" />
           <Text className="text-sm text-ink-muted dark:text-ink-muted-on-dark mt-2">
-            Tap to attach a photo or PDF
+            {t('documentModal.tapToAttach')}
           </Text>
         </Pressable>
       );
@@ -365,12 +368,12 @@ export default function DocumentModal() {
         <Pressable
           onPress={handleFilePress}
           className="w-full h-48 rounded-xl bg-surface dark:bg-surface-dark border-2 border-dashed border-divider dark:border-divider-dark items-center justify-center mb-4"
-          accessibilityLabel="File unavailable, tap to re-attach"
+          accessibilityLabel={t('documentModal.fileMissingA11y')}
           accessibilityRole="button"
         >
           <Ionicons name="alert-circle-outline" size={40} color="#F59E0B" />
           <Text className="text-sm text-ink-muted dark:text-ink-muted-on-dark mt-2 text-center px-4">
-            File unavailable — tap to re-attach
+            {t('documentModal.fileMissingMessage')}
           </Text>
         </Pressable>
       );
@@ -382,7 +385,7 @@ export default function DocumentModal() {
           <Pressable
             onPress={isEditing ? handleShareFile : handleFilePress}
             className="w-full h-48 rounded-xl bg-surface dark:bg-surface-dark border border-divider dark:border-divider-dark items-center justify-center"
-            accessibilityLabel={isEditing ? 'Export PDF' : 'Replace PDF'}
+            accessibilityLabel={isEditing ? t('documentModal.exportPdfA11y') : t('documentModal.replacePdfA11y')}
             accessibilityRole="button"
           >
             <Ionicons name="document-text" size={48} color="#EF4444" />
@@ -398,22 +401,22 @@ export default function DocumentModal() {
               <Pressable
                 onPress={handleShareFile}
                 className="flex-row items-center px-3 py-1.5"
-                accessibilityLabel="Export PDF to another app"
+                accessibilityLabel={t('documentModal.exportPdfBtnA11y')}
                 accessibilityRole="button"
                 hitSlop={8}
               >
                 <Ionicons name="download-outline" size={16} color="#4272C4" />
-                <Text className="text-sm text-primary font-semibold ml-1.5">Export</Text>
+                <Text className="text-sm text-primary font-semibold ml-1.5">{t('documentModal.exportLabel')}</Text>
               </Pressable>
               <Pressable
                 onPress={handleFilePress}
                 className="flex-row items-center px-3 py-1.5"
-                accessibilityLabel="Replace PDF file"
+                accessibilityLabel={t('documentModal.replacePdfBtnA11y')}
                 accessibilityRole="button"
                 hitSlop={8}
               >
                 <Ionicons name="swap-horizontal-outline" size={16} color="#4272C4" />
-                <Text className="text-sm text-primary font-semibold ml-1.5">Replace</Text>
+                <Text className="text-sm text-primary font-semibold ml-1.5">{t('documentModal.replaceLabel')}</Text>
               </Pressable>
             </View>
           )}
@@ -427,7 +430,7 @@ export default function DocumentModal() {
           onPress={handleFilePress}
           className="w-full rounded-xl overflow-hidden bg-surface dark:bg-surface-dark border border-divider dark:border-divider-dark mb-4"
           style={{ height: 192 }}
-          accessibilityLabel="Tap to change photo"
+          accessibilityLabel={t('documentModal.tapToChangePhoto')}
           accessibilityRole="button"
         >
           <Image
@@ -445,7 +448,7 @@ export default function DocumentModal() {
           onPress={() => setViewerVisible(true)}
           className="w-full rounded-xl overflow-hidden bg-surface dark:bg-surface-dark border border-divider dark:border-divider-dark"
           style={{ height: 192 }}
-          accessibilityLabel="View full photo"
+          accessibilityLabel={t('documentModal.viewFullPhoto')}
           accessibilityRole="imagebutton"
         >
           <Image
@@ -458,22 +461,22 @@ export default function DocumentModal() {
           <Pressable
             onPress={handleShareFile}
             className="flex-row items-center px-3 py-1.5"
-            accessibilityLabel="Export photo to another app"
+            accessibilityLabel={t('documentModal.exportPhotoA11y')}
             accessibilityRole="button"
             hitSlop={8}
           >
             <Ionicons name="download-outline" size={16} color="#4272C4" />
-            <Text className="text-sm text-primary font-semibold ml-1.5">Export</Text>
+            <Text className="text-sm text-primary font-semibold ml-1.5">{t('documentModal.exportLabel')}</Text>
           </Pressable>
           <Pressable
             onPress={handleFilePress}
             className="flex-row items-center px-3 py-1.5"
-            accessibilityLabel="Replace photo"
+            accessibilityLabel={t('documentModal.replacePhotoA11y')}
             accessibilityRole="button"
             hitSlop={8}
           >
             <Ionicons name="swap-horizontal-outline" size={16} color="#4272C4" />
-            <Text className="text-sm text-primary font-semibold ml-1.5">Replace</Text>
+            <Text className="text-sm text-primary font-semibold ml-1.5">{t('documentModal.replaceLabel')}</Text>
           </Pressable>
         </View>
       </View>
@@ -483,7 +486,7 @@ export default function DocumentModal() {
   return (
     <SafeAreaView className="flex-1 bg-surface dark:bg-surface-dark" edges={['top']}>
       <ModalHeader
-        title={isEditing ? 'Edit Document' : 'Add Document'}
+        title={isEditing ? t('documentModal.editTitle') : t('documentModal.addTitle')}
         onCancel={handleCancel}
         onSave={handleSave}
         saveDisabled={!canSave}
@@ -498,32 +501,32 @@ export default function DocumentModal() {
 
           <View className="mb-4">
             <Text className="text-xs text-ink-muted dark:text-ink-muted-on-dark mb-1.5 font-semibold">
-              Name *
+              {t('documentModal.nameLabel')}
             </Text>
             <View className="bg-surface dark:bg-surface-dark rounded-xl border border-divider dark:border-divider-dark px-3.5 py-3">
               <TextInput
                 className="text-base text-ink dark:text-ink-on-dark"
                 value={name}
                 onChangeText={handleNameChange}
-                placeholder="e.g., Insurance Card"
+                placeholder={t('documentModal.namePlaceholder')}
                 placeholderTextColor="#A8A49D"
                 maxLength={50}
-                accessibilityLabel="Document name"
+                accessibilityLabel={t('documentModal.nameA11y')}
               />
             </View>
           </View>
 
           <ChipPicker
-            items={DOCUMENT_TYPES}
+            items={getDocumentTypes()}
             selectedIds={[docType]}
             onSelectionChange={handleTypeChange}
             multiSelect={false}
-            label="Type"
+            label={t('documentModal.typeLabel')}
           />
 
           <View className="flex-row items-center bg-surface dark:bg-surface-dark rounded-xl border border-divider dark:border-divider-dark px-3.5 py-3 mb-3">
             <View className="flex-1 mr-3">
-              <Text className="text-base text-ink dark:text-ink-on-dark">Expiration Date</Text>
+              <Text className="text-base text-ink dark:text-ink-on-dark">{t('documentModal.expirationLabel')}</Text>
             </View>
             <Switch
               value={expirationEnabled}
@@ -536,7 +539,7 @@ export default function DocumentModal() {
                 true: isDark ? '#2E5A9E' : '#A7C4E4',
               }}
               thumbColor={expirationEnabled ? '#4272C4' : isDark ? '#1A1917' : '#FEFDFB'}
-              accessibilityLabel="Toggle expiration date"
+              accessibilityLabel={t('documentModal.expirationA11y')}
             />
           </View>
 
@@ -547,7 +550,7 @@ export default function DocumentModal() {
                 setExpirationDate(v);
                 markDirty();
               }}
-              label="Expires On"
+              label={t('documentModal.expiresOnLabel')}
               minDate={new Date()}
               maxDate={new Date(2100, 0, 1)}
               required={false}
@@ -556,23 +559,23 @@ export default function DocumentModal() {
 
           <View className="mb-4">
             <Text className="text-xs text-ink-muted dark:text-ink-muted-on-dark mb-1.5 font-semibold">
-              Notes
+              {t('documentModal.notesLabel')}
             </Text>
             <View className="bg-surface dark:bg-surface-dark rounded-xl border border-divider dark:border-divider-dark px-3.5 py-3">
               <TextInput
                 className="text-base text-ink dark:text-ink-on-dark"
                 value={notes}
-                onChangeText={(t) => {
-                  setNotes(t.slice(0, 500));
+                onChangeText={(text) => {
+                  setNotes(text.slice(0, 500));
                   markDirty();
                 }}
-                placeholder="Optional notes"
+                placeholder={t('documentModal.notesPlaceholder')}
                 placeholderTextColor="#A8A49D"
                 multiline
                 numberOfLines={3}
                 maxLength={500}
                 style={{ minHeight: 72, textAlignVertical: 'top' }}
-                accessibilityLabel="Document notes"
+                accessibilityLabel={t('documentModal.notesA11y')}
               />
             </View>
           </View>
@@ -581,10 +584,10 @@ export default function DocumentModal() {
             <Pressable
               onPress={handleDelete}
               className="mt-4 mb-8 py-3 rounded-xl border border-destructive items-center"
-              accessibilityLabel="Delete document"
+              accessibilityLabel={t('documentModal.deleteDocumentA11y')}
               accessibilityRole="button"
             >
-              <Text className="text-destructive font-semibold text-base">Delete Document</Text>
+              <Text className="text-destructive font-semibold text-base">{t('documentModal.deleteDocument')}</Text>
             </Pressable>
           )}
 
@@ -605,7 +608,7 @@ export default function DocumentModal() {
               <Pressable
                 onPress={() => setViewerVisible(false)}
                 className="p-2"
-                accessibilityLabel="Close viewer"
+                accessibilityLabel={t('documentModal.viewerCloseA11y')}
                 accessibilityRole="button"
                 hitSlop={12}
               >
@@ -617,7 +620,7 @@ export default function DocumentModal() {
                   handleShareFile();
                 }}
                 className="p-2"
-                accessibilityLabel="Save photo"
+                accessibilityLabel={t('documentModal.viewerSaveA11y')}
                 accessibilityRole="button"
                 hitSlop={12}
               >

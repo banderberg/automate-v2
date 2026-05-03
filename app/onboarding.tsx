@@ -24,6 +24,7 @@ import { reloadAllStores } from '@/src/stores/orchestrator';
 import { getBackupInfo, restoreBackup } from '@/src/services/backup';
 import { getVolumeUnitForFuelType } from '@/src/constants/units';
 import { decodeVin } from '@/src/services/vinDecoder';
+import { t } from '@/src/i18n';
 
 type FuelType = 'gas' | 'diesel' | 'electric';
 type OdometerUnit = 'miles' | 'kilometers';
@@ -82,7 +83,7 @@ export default function OnboardingScreen() {
       setCompleted(true);
     } catch (err) {
       const msg = err instanceof Error ? err.message : '';
-      showDialog("Couldn't Save Vehicle", msg || 'Check your entries and try again. If this keeps happening, try restarting the app.');
+      showDialog(t('onboarding.saveErrorTitle'), msg || t('onboarding.saveErrorMessage'));
       navigatingRef.current = false;
     } finally {
       setSaving(false);
@@ -104,21 +105,28 @@ export default function OnboardingScreen() {
       try {
         info = await getBackupInfo(fileUri);
       } catch (e) {
-        const message = e instanceof Error ? e.message : 'Could not read the selected file.';
-        showDialog('Invalid Backup', message);
+        const message = e instanceof Error ? e.message : t('onboarding.restoreInvalidMessage');
+        showDialog(t('onboarding.restoreInvalidTitle'), message);
         setRestoring(false);
         return;
       }
 
       setRestoring(false);
 
+      const vehiclesPart = t(info.vehicleCount === 1 ? 'settings.vehicleCountOne' : 'settings.vehicleCountOther', { count: info.vehicleCount });
+      const eventsPart = t(info.eventCount === 1 ? 'settings.eventCountOne' : 'settings.eventCountOther', { count: info.eventCount });
+      const remindersPart = t(info.reminderCount === 1 ? 'settings.reminderCountOne' : 'settings.reminderCountOther', { count: info.reminderCount });
       showDialog(
-        'Restore Backup?',
-        `This backup contains ${info.vehicleCount} vehicle${info.vehicleCount !== 1 ? 's' : ''}, ${info.eventCount} event${info.eventCount !== 1 ? 's' : ''}, and ${info.reminderCount} reminder${info.reminderCount !== 1 ? 's' : ''}.\n\nThis will restore all your data.`,
+        t('onboarding.restoreConfirmTitle'),
+        t('onboarding.restoreConfirmMessage', {
+          vehicles: vehiclesPart,
+          events: eventsPart,
+          reminders: remindersPart,
+        }),
         [
-          { text: 'Cancel', style: 'cancel' },
+          { text: t('common.cancel'), style: 'cancel' },
           {
-            text: 'Restore',
+            text: t('onboarding.restoreCta'),
             onPress: async () => {
               setRestoring(true);
               try {
@@ -127,8 +135,8 @@ export default function OnboardingScreen() {
 
                 Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
               } catch (e) {
-                const message = e instanceof Error ? e.message : 'An unexpected error occurred.';
-                showDialog('Restore Failed', message);
+                const message = e instanceof Error ? e.message : t('onboarding.unexpectedError');
+                showDialog(t('onboarding.restoreFailedTitle'), message);
               } finally {
                 setRestoring(false);
               }
@@ -137,8 +145,8 @@ export default function OnboardingScreen() {
         ]
       );
     } catch (e) {
-      const message = e instanceof Error ? e.message : 'An unexpected error occurred.';
-      showDialog('Restore Failed', message);
+      const message = e instanceof Error ? e.message : t('onboarding.unexpectedError');
+      showDialog(t('onboarding.restoreFailedTitle'), message);
       setRestoring(false);
     }
   }, [restoring]);
@@ -155,10 +163,10 @@ export default function OnboardingScreen() {
         if (result.model) setModel(result.model);
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       } else {
-        setVinError("Couldn't look up VIN — enter details manually.");
+        setVinError(t('onboarding.vinError'));
       }
     } catch {
-      setVinError("Couldn't look up VIN — enter details manually.");
+      setVinError(t('onboarding.vinError'));
     } finally {
       setVinLoading(false);
     }
@@ -178,27 +186,27 @@ export default function OnboardingScreen() {
           <Ionicons name="checkmark" size={36} color="#2EAD76" />
         </View>
         <Text className="text-2xl font-bold text-ink dark:text-ink-on-dark text-center mb-2">
-          You're all set
+          {t('onboarding.completedTitle')}
         </Text>
         <Text className="text-base text-ink-secondary dark:text-ink-secondary-on-dark text-center mb-8 leading-6">
-          Your next fill-up or service visit will start building your dashboard.
+          {t('onboarding.completedDescription')}
         </Text>
         <Pressable
           onPress={handleContinue}
           style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}
           className="bg-primary py-4 rounded-2xl w-full items-center mb-3"
-          accessibilityLabel="Log your first event"
+          accessibilityLabel={t('onboarding.logFirstEventA11y')}
           accessibilityRole="button"
         >
-          <Text className="text-lg font-semibold text-white">Log Your First Event</Text>
+          <Text className="text-lg font-semibold text-white">{t('onboarding.logFirstEvent')}</Text>
         </Pressable>
         <Pressable
           onPress={handleContinue}
           className="py-3 items-center"
-          accessibilityLabel="Go to dashboard"
+          accessibilityLabel={t('onboarding.goToDashboardA11y')}
           accessibilityRole="button"
         >
-          <Text className="text-sm text-primary font-medium">Explore first</Text>
+          <Text className="text-sm text-primary font-medium">{t('onboarding.exploreFirst')}</Text>
         </Pressable>
       </SafeAreaView>
     );
@@ -230,35 +238,35 @@ export default function OnboardingScreen() {
             </View>
 
             <Text className="text-5xl font-extrabold text-ink dark:text-ink-on-dark text-center">
-              AutoMate
+              {t('onboarding.appName')}
             </Text>
             <Text className="text-lg text-ink-secondary dark:text-ink-secondary-on-dark mt-2 text-center leading-7">
-              Track every mile, own every dollar.
+              {t('onboarding.tagline')}
             </Text>
           </View>
 
           {/* Vehicle form */}
           <View className="px-6">
             <Text className="text-xs text-ink-muted dark:text-ink-muted-on-dark mb-5 font-semibold uppercase tracking-wider text-center">
-              Add your first vehicle
+              {t('onboarding.addFirstVehicle')}
             </Text>
 
             {/* VIN lookup (optional) */}
             <View className="mb-4">
               <Text className="text-xs text-ink-muted dark:text-ink-muted-on-dark mb-1.5 font-semibold">
-                VIN (optional — auto-fills year, make, model)
+                {t('onboarding.vinLabel')}
               </Text>
               <View className="flex-row" style={{ gap: 8 }}>
                 <View className="flex-1 bg-card dark:bg-card-dark rounded-xl border border-divider dark:border-divider-dark px-3.5 py-3">
                   <TextInput
                     className="text-base text-ink dark:text-ink-on-dark"
                     value={vin}
-                    onChangeText={(t) => setVin(t.replace(/[^A-Za-z0-9]/g, '').toUpperCase().slice(0, 17))}
-                    placeholder="e.g., 1HGBH41JXMN109186"
+                    onChangeText={(text) => setVin(text.replace(/[^A-Za-z0-9]/g, '').toUpperCase().slice(0, 17))}
+                    placeholder={t('onboarding.vinPlaceholder')}
                     placeholderTextColor="#A8A49D"
                     maxLength={17}
                     autoCapitalize="characters"
-                    accessibilityLabel="Vehicle identification number"
+                    accessibilityLabel={t('onboarding.vinA11y')}
                   />
                 </View>
                 <Pressable
@@ -269,7 +277,7 @@ export default function OnboardingScreen() {
                       ? 'bg-primary'
                       : 'border border-divider dark:border-divider-dark'
                   }`}
-                  accessibilityLabel="Look up VIN to auto-fill vehicle details"
+                  accessibilityLabel={t('onboarding.vinLookupA11y')}
                   accessibilityRole="button"
                 >
                   {vinLoading ? (
@@ -282,7 +290,7 @@ export default function OnboardingScreen() {
                         color={vin.length === 17 ? '#FFFFFF' : '#A8A49D'}
                       />
                       <Text className={`text-xs font-semibold mt-0.5 ${vin.length === 17 ? 'text-white' : 'text-ink-muted dark:text-ink-muted-on-dark'}`}>
-                        Look Up
+                        {t('onboarding.vinLookup')}
                       </Text>
                     </View>
                   )}
@@ -292,7 +300,7 @@ export default function OnboardingScreen() {
                 <Text className="text-xs text-amber-600 dark:text-amber-400 mt-1">{vinError}</Text>
               ) : (
                 <Text className="text-xs text-ink-faint dark:text-ink-faint-on-dark mt-1">
-                  Enter 17 characters, then tap Look Up. Find it on the driver's door jamb or registration.
+                  {t('onboarding.vinHint')}
                 </Text>
               )}
             </View>
@@ -300,17 +308,17 @@ export default function OnboardingScreen() {
             {/* Nickname */}
             <View className="mb-4">
               <Text className="text-xs text-ink-muted dark:text-ink-muted-on-dark mb-1.5 font-semibold">
-                Nickname
+                {t('onboarding.nicknameLabel')}
               </Text>
               <View className="bg-card dark:bg-card-dark rounded-xl border border-divider dark:border-divider-dark px-3.5 py-3">
                 <TextInput
                   className="text-base text-ink dark:text-ink-on-dark"
                   value={nickname}
-                  onChangeText={(t) => setNickname(t.slice(0, 30))}
-                  placeholder="e.g., The Corolla"
+                  onChangeText={(text) => setNickname(text.slice(0, 30))}
+                  placeholder={t('onboarding.nicknamePlaceholder')}
                   placeholderTextColor="#A8A49D"
                   maxLength={30}
-                  accessibilityLabel="Vehicle nickname"
+                  accessibilityLabel={t('onboarding.nicknameA11y')}
                 />
               </View>
             </View>
@@ -318,18 +326,18 @@ export default function OnboardingScreen() {
             {/* Year */}
             <View className="mb-4">
               <Text className="text-xs text-ink-muted dark:text-ink-muted-on-dark mb-1.5 font-semibold">
-                Year
+                {t('onboarding.yearLabel')}
               </Text>
               <View className="bg-card dark:bg-card-dark rounded-xl border border-divider dark:border-divider-dark px-3.5 py-3">
                 <TextInput
                   className="text-base text-ink dark:text-ink-on-dark"
                   value={year}
-                  onChangeText={(t) => setYear(t.replace(/[^0-9]/g, '').slice(0, 4))}
-                  placeholder="2024"
+                  onChangeText={(text) => setYear(text.replace(/[^0-9]/g, '').slice(0, 4))}
+                  placeholder={t('onboarding.yearPlaceholder')}
                   placeholderTextColor="#A8A49D"
                   keyboardType="number-pad"
                   maxLength={4}
-                  accessibilityLabel="Vehicle year"
+                  accessibilityLabel={t('onboarding.yearA11y')}
                 />
               </View>
             </View>
@@ -337,16 +345,16 @@ export default function OnboardingScreen() {
             {/* Make */}
             <View className="mb-4">
               <Text className="text-xs text-ink-muted dark:text-ink-muted-on-dark mb-1.5 font-semibold">
-                Make
+                {t('onboarding.makeLabel')}
               </Text>
               <View className="bg-card dark:bg-card-dark rounded-xl border border-divider dark:border-divider-dark px-3.5 py-3">
                 <TextInput
                   className="text-base text-ink dark:text-ink-on-dark"
                   value={make}
                   onChangeText={setMake}
-                  placeholder="Toyota"
+                  placeholder={t('onboarding.makePlaceholder')}
                   placeholderTextColor="#A8A49D"
-                  accessibilityLabel="Vehicle make"
+                  accessibilityLabel={t('onboarding.makeA11y')}
                 />
               </View>
             </View>
@@ -354,16 +362,16 @@ export default function OnboardingScreen() {
             {/* Model */}
             <View className="mb-4">
               <Text className="text-xs text-ink-muted dark:text-ink-muted-on-dark mb-1.5 font-semibold">
-                Model
+                {t('onboarding.modelLabel')}
               </Text>
               <View className="bg-card dark:bg-card-dark rounded-xl border border-divider dark:border-divider-dark px-3.5 py-3">
                 <TextInput
                   className="text-base text-ink dark:text-ink-on-dark"
                   value={model}
                   onChangeText={setModel}
-                  placeholder="Corolla"
+                  placeholder={t('onboarding.modelPlaceholder')}
                   placeholderTextColor="#A8A49D"
-                  accessibilityLabel="Vehicle model"
+                  accessibilityLabel={t('onboarding.modelA11y')}
                 />
               </View>
             </View>
@@ -371,33 +379,33 @@ export default function OnboardingScreen() {
             {/* Fuel type */}
             <View className="mb-4">
               <Text className="text-xs text-ink-muted dark:text-ink-muted-on-dark mb-2 font-semibold">
-                Fuel Type
+                {t('onboarding.fuelTypeLabel')}
               </Text>
               <SegmentedControl
                 options={[
-                  { value: 'gas' as FuelType, label: 'Gas' },
-                  { value: 'diesel' as FuelType, label: 'Diesel' },
-                  { value: 'electric' as FuelType, label: 'Electric' },
+                  { value: 'gas' as FuelType, label: t('onboarding.fuelTypeGas') },
+                  { value: 'diesel' as FuelType, label: t('onboarding.fuelTypeDiesel') },
+                  { value: 'electric' as FuelType, label: t('onboarding.fuelTypeElectric') },
                 ]}
                 selectedValue={fuelType}
                 onValueChange={setFuelType}
-                accessibilityLabel="Fuel type"
+                accessibilityLabel={t('onboarding.fuelTypeA11y')}
               />
             </View>
 
             {/* Odometer unit */}
             <View className="mb-4">
               <Text className="text-xs text-ink-muted dark:text-ink-muted-on-dark mb-2 font-semibold">
-                Odometer Unit
+                {t('onboarding.odometerUnitLabel')}
               </Text>
               <SegmentedControl
                 options={[
-                  { value: 'miles' as OdometerUnit, label: 'Miles' },
-                  { value: 'kilometers' as OdometerUnit, label: 'Kilometers' },
+                  { value: 'miles' as OdometerUnit, label: t('onboarding.odoMiles') },
+                  { value: 'kilometers' as OdometerUnit, label: t('onboarding.odoKilometers') },
                 ]}
                 selectedValue={odometerUnit}
                 onValueChange={setOdometerUnit}
-                accessibilityLabel="Odometer unit"
+                accessibilityLabel={t('onboarding.odometerUnitA11y')}
               />
             </View>
 
@@ -409,7 +417,7 @@ export default function OnboardingScreen() {
               className={`mt-4 py-4 rounded-2xl items-center ${
                 canSave ? 'bg-primary' : 'bg-divider dark:bg-divider-dark'
               }`}
-              accessibilityLabel="Save vehicle and continue"
+              accessibilityLabel={t('onboarding.saveA11y')}
               accessibilityRole="button"
               accessibilityState={{ disabled: !canSave }}
             >
@@ -418,23 +426,23 @@ export default function OnboardingScreen() {
                   canSave ? 'text-white' : 'text-ink-muted dark:text-ink-muted-on-dark'
                 }`}
               >
-                {saving ? 'Saving...' : 'Add Vehicle'}
+                {saving ? t('onboarding.saving') : t('onboarding.addVehicle')}
               </Text>
             </Pressable>
 
             <Text className="text-xs text-ink-muted dark:text-ink-faint-on-dark mt-4 text-center">
-              No account required. Your data stays on your device.
+              {t('onboarding.noAccountFooter')}
             </Text>
 
             <Pressable
               onPress={handleRestore}
               disabled={restoring}
               className="mt-6 py-2 items-center"
-              accessibilityLabel="Restore from a backup file"
+              accessibilityLabel={t('onboarding.restoreA11y')}
               accessibilityRole="button"
             >
               <Text className="text-sm text-primary font-medium">
-                {restoring ? 'Restoring...' : 'Have a backup? Restore it'}
+                {restoring ? t('onboarding.restoring') : t('onboarding.restorePrompt')}
               </Text>
             </Pressable>
           </View>

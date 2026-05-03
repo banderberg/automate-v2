@@ -29,6 +29,7 @@ import { onEventSaved } from '@/src/stores/orchestrator';
 import { getVolumeLabel } from '@/src/constants/units';
 import { getCurrencySymbol, formatCurrency } from '@/src/constants/currency';
 import type { VehicleEvent } from '@/src/types';
+import { t } from '@/src/i18n';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -66,7 +67,7 @@ export default function FuelEventModal() {
     odometerError, saving, setSaving, setBoundsLoaded,
     markDirty, handleOdometerBlur, handleCancel, handleDelete,
     showDialog, dialogProps,
-  } = useEventForm({ type: 'fuel', deleteLabel: 'Fill-Up' });
+  } = useEventForm({ type: 'fuel' });
 
   const addEvent = useEventStore((s) => s.addEvent);
   const updateEvent = useEventStore((s) => s.updateEvent);
@@ -97,8 +98,8 @@ export default function FuelEventModal() {
   const isElectric = activeVehicle?.fuelType === 'electric';
   const volumeLabel = getVolumeLabel(volumeUnit);
   const title = isEditing
-    ? isElectric ? 'Edit Charge' : 'Edit Fill-Up'
-    : isElectric ? 'Add Charge' : 'Add Fill-Up';
+    ? (isElectric ? t('fuelModal.editCharge') : t('fuelModal.editFillUp'))
+    : (isElectric ? t('fuelModal.addCharge') : t('fuelModal.addFillUp'));
 
   useEffect(() => {
     if (!activeVehicle) return;
@@ -117,11 +118,11 @@ export default function FuelEventModal() {
         if (defaults.date) setDate(defaults.date);
         if (defaults.odometer != null) {
           setOdometer(String(defaults.odometer));
-          setOdometerTag('Estimated');
+          setOdometerTag(t('fuelModal.smartTagEstimated'));
         }
         if (defaults.pricePerUnit != null) {
           setPricePerUnit(String(defaults.pricePerUnit));
-          setPriceTag('Last fill-up');
+          setPriceTag(t('fuelModal.smartTagLastFillUp'));
         }
         if (defaults.discountPerUnit != null && defaults.discountPerUnit > 0) {
           setDiscountPerUnit(String(defaults.discountPerUnit));
@@ -248,13 +249,16 @@ export default function FuelEventModal() {
         await onEventSaved(event);
       }
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      const label = isElectric ? 'Charge' : 'Fill-up';
-      const costStr = resolvedCost != null ? `, ${formatCurrency(resolvedCost, currencyCode)}` : '';
-      useToastStore.getState().show(`${label} ${isEditing ? 'updated' : 'saved'}${costStr}`);
+      const label = isElectric ? t('fuelModal.chargeLabel') : t('fuelModal.fillUpLabel');
+      const costStr = resolvedCost != null ? formatCurrency(resolvedCost, currencyCode) : '';
+      const toastKey = costStr
+        ? (isEditing ? 'fuelModal.updatedWithCostFmt' : 'fuelModal.savedWithCostFmt')
+        : (isEditing ? 'fuelModal.updatedFmt' : 'fuelModal.savedFmt');
+      useToastStore.getState().show(t(toastKey, { label, cost: costStr }));
       router.back();
     } catch (err) {
       const msg = err instanceof Error ? err.message : '';
-      showDialog("Couldn't Save Fill-Up", msg || 'Check your entries and try again. If this keeps happening, try restarting the app.');
+      showDialog(t('fuelModal.saveErrorTitle'), msg || t('fuelModal.saveErrorMessage'));
     } finally {
       setSaving(false);
     }
@@ -295,17 +299,17 @@ export default function FuelEventModal() {
             {/* Volume */}
             <View className="mb-4">
               <Text className="text-xs text-ink-muted dark:text-ink-muted-on-dark mb-1.5 font-semibold">
-                {isElectric ? 'Energy Added' : 'Fuel Added'} *
+                {isElectric ? t('fuelModal.energyAdded') : t('fuelModal.fuelAdded')}
               </Text>
               <View className="flex-row items-center bg-surface dark:bg-surface-dark rounded-xl border border-divider dark:border-divider-dark px-3.5 py-3">
                 <TextInput
                   className="flex-1 text-base text-ink dark:text-ink-on-dark"
                   value={volume}
-                  onChangeText={(t) => { setVolume(t); markDirty(); }}
+                  onChangeText={(text) => { setVolume(text); markDirty(); }}
                   keyboardType="decimal-pad"
                   placeholder="0.0"
                   placeholderTextColor="#A8A49D"
-                  accessibilityLabel={`Volume in ${volumeLabel}`}
+                  accessibilityLabel={t('fuelModal.volumeA11y', { unit: volumeLabel })}
                 />
                 <Text className="text-sm text-ink-muted dark:text-ink-muted-on-dark ml-2">
                   {volumeLabel}
@@ -319,10 +323,12 @@ export default function FuelEventModal() {
               <View className="flex-1">
                 <View className="flex-row items-center mb-1.5">
                   <Text className="text-xs text-ink-muted dark:text-ink-muted-on-dark font-semibold" numberOfLines={1}>
-                    Price / {volumeLabel}{entryMode === 'price' ? ' *' : ''}
+                    {entryMode === 'price'
+                      ? t('fuelModal.pricePerUnitRequired', { unit: volumeLabel })
+                      : t('fuelModal.pricePerUnit', { unit: volumeLabel })}
                   </Text>
                   {entryMode === 'price' && priceTag != null && <SmartTag label={priceTag} />}
-                  {entryMode === 'total' && <SmartTag label="Calculated" />}
+                  {entryMode === 'total' && <SmartTag label={t('fuelModal.smartTagCalculated')} />}
                 </View>
                 {entryMode === 'price' ? (
                   <View className="flex-row items-center bg-surface dark:bg-surface-dark rounded-xl border border-divider dark:border-divider-dark px-3.5 py-3">
@@ -336,7 +342,7 @@ export default function FuelEventModal() {
                       placeholder="0.000"
                       placeholderTextColor="#A8A49D"
                       selectTextOnFocus={!!priceTag}
-                      accessibilityLabel={`Price per ${volumeLabel}`}
+                      accessibilityLabel={t('fuelModal.pricePerUnitA11y', { unit: volumeLabel })}
                     />
                   </View>
                 ) : (
@@ -348,7 +354,10 @@ export default function FuelEventModal() {
                         color: computedPrice ? FUEL_TEAL : ghostColor,
                         fontVariant: ['tabular-nums'],
                       }}
-                      accessibilityLabel={`Calculated price: ${computedPrice ? `${currSymbol}${computedPrice}` : 'waiting for input'} per ${volumeLabel}`}
+                      accessibilityLabel={t('fuelModal.calculatedPriceA11y', {
+                        value: computedPrice ? `${currSymbol}${computedPrice}` : t('fuelModal.waitingForInput'),
+                        unit: volumeLabel,
+                      })}
                     >
                       {currSymbol}{computedPrice || '0.000'}/{volumeLabel}
                     </Text>
@@ -360,9 +369,9 @@ export default function FuelEventModal() {
               <View className="flex-1">
                 <View className="flex-row items-center mb-1.5">
                   <Text className="text-xs text-ink-muted dark:text-ink-muted-on-dark font-semibold">
-                    Total{entryMode === 'total' ? ' *' : ''}
+                    {entryMode === 'total' ? t('fuelModal.totalRequired') : t('fuelModal.totalLabel')}
                   </Text>
-                  {entryMode === 'price' && <SmartTag label="Calculated" />}
+                  {entryMode === 'price' && <SmartTag label={t('fuelModal.smartTagCalculated')} />}
                 </View>
                 {entryMode === 'total' ? (
                   <View className="flex-row items-center bg-surface dark:bg-surface-dark rounded-xl border border-divider dark:border-divider-dark px-3.5 py-3">
@@ -371,11 +380,11 @@ export default function FuelEventModal() {
                       ref={totalRef}
                       className="flex-1 text-base text-ink dark:text-ink-on-dark"
                       value={totalCost}
-                      onChangeText={(t) => { setTotalCost(t); markDirty(); }}
+                      onChangeText={(text) => { setTotalCost(text); markDirty(); }}
                       keyboardType="decimal-pad"
                       placeholder="0.00"
                       placeholderTextColor="#A8A49D"
-                      accessibilityLabel="Total cost"
+                      accessibilityLabel={t('fuelModal.totalA11y')}
                       style={{ fontVariant: ['tabular-nums'] }}
                     />
                   </View>
@@ -389,7 +398,9 @@ export default function FuelEventModal() {
                         color: computedTotal ? FUEL_TEAL : ghostColor,
                         fontVariant: ['tabular-nums'],
                       }}
-                      accessibilityLabel={`Calculated total: ${computedTotal ? `${currSymbol}${computedTotal}` : 'waiting for input'}`}
+                      accessibilityLabel={t('fuelModal.calculatedTotalA11y', {
+                        value: computedTotal ? `${currSymbol}${computedTotal}` : t('fuelModal.waitingForInput'),
+                      })}
                     >
                       = {currSymbol}{computedTotal || '0.00'}
                     </Text>
@@ -403,12 +414,12 @@ export default function FuelEventModal() {
               <View className="mb-3">
                 <View className="flex-row items-center justify-between mb-1.5">
                   <Text className="text-xs text-ink-muted dark:text-ink-muted-on-dark font-semibold">
-                    Discount / {volumeLabel}
+                    {t('fuelModal.discountLabel', { unit: volumeLabel })}
                   </Text>
                   <Pressable
                     onPress={handleToggleDiscount}
                     hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                    accessibilityLabel="Remove discount"
+                    accessibilityLabel={t('fuelModal.removeDiscountA11y')}
                     accessibilityRole="button"
                   >
                     <Ionicons name="close-circle" size={16} color={isDark ? '#78756F' : '#A8A49D'} />
@@ -420,11 +431,11 @@ export default function FuelEventModal() {
                     ref={discountRef}
                     className="flex-1 text-base text-ink dark:text-ink-on-dark"
                     value={discountPerUnit}
-                    onChangeText={(t) => { setDiscountPerUnit(t); markDirty(); }}
+                    onChangeText={(text) => { setDiscountPerUnit(text); markDirty(); }}
                     keyboardType="decimal-pad"
                     placeholder="0.00"
                     placeholderTextColor="#A8A49D"
-                    accessibilityLabel={`Discount per ${volumeLabel}`}
+                    accessibilityLabel={t('fuelModal.discountA11y', { unit: volumeLabel })}
                   />
                 </View>
                 {(() => {
@@ -433,7 +444,7 @@ export default function FuelEventModal() {
                   return !isNaN(d) && !isNaN(p) && d > 0 && d >= p;
                 })() && (
                   <Text className="text-xs text-warning mt-1 ml-1" accessibilityRole="alert">
-                    Discount exceeds price. Total will be {currSymbol}0.00.
+                    {t('fuelModal.discountWarning', { symbol: currSymbol })}
                   </Text>
                 )}
               </View>
@@ -446,10 +457,10 @@ export default function FuelEventModal() {
                   onPress={handleToggleDiscount}
                   hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                   className="py-1"
-                  accessibilityLabel="Add a per-unit discount"
+                  accessibilityLabel={t('fuelModal.addDiscountA11y')}
                   accessibilityRole="button"
                 >
-                  <Text className="text-sm font-medium text-primary">Add discount</Text>
+                  <Text className="text-sm font-medium text-primary">{t('fuelModal.addDiscount')}</Text>
                 </Pressable>
               ) : (
                 <View />
@@ -458,11 +469,11 @@ export default function FuelEventModal() {
                 onPress={handleModeSwitch}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                 className="py-1"
-                accessibilityLabel={entryMode === 'price' ? 'Switch to entering total cost' : 'Switch to entering price per unit'}
+                accessibilityLabel={entryMode === 'price' ? t('fuelModal.switchToTotalA11y') : t('fuelModal.switchToPriceA11y')}
                 accessibilityRole="button"
               >
                 <Text className="text-sm font-medium text-primary">
-                  {entryMode === 'price' ? 'Enter total instead' : 'Enter price instead'}
+                  {entryMode === 'price' ? t('fuelModal.switchToTotal') : t('fuelModal.switchToPrice')}
                 </Text>
               </Pressable>
             </View>
@@ -470,9 +481,9 @@ export default function FuelEventModal() {
             {/* Partial fill */}
             <View className="flex-row items-center justify-between pt-3 border-t border-divider-subtle dark:border-divider-dark">
               <View className="flex-1 mr-3">
-                <Text className="text-base text-ink dark:text-ink-on-dark">Partial fill</Text>
+                <Text className="text-base text-ink dark:text-ink-on-dark">{t('fuelModal.partialFill')}</Text>
                 <Text className="text-xs text-ink-muted dark:text-ink-muted-on-dark mt-0.5">
-                  Excluded from efficiency calculations
+                  {t('fuelModal.partialFillSubtitle')}
                 </Text>
               </View>
               <Switch
@@ -480,7 +491,7 @@ export default function FuelEventModal() {
                 onValueChange={(v) => { setIsPartialFill(v); markDirty(); }}
                 trackColor={{ false: isDark ? '#2A2926' : '#E2E0DB', true: isDark ? '#2E5A9E' : '#A7C4E4' }}
                 thumbColor={isPartialFill ? '#4272C4' : isDark ? '#1A1917' : '#FEFDFB'}
-                accessibilityLabel="This is a partial fill"
+                accessibilityLabel={t('fuelModal.partialFillA11y')}
               />
             </View>
           </View>
@@ -488,7 +499,7 @@ export default function FuelEventModal() {
           {/* ── Tier 3: Details ── */}
           <View>
             <Text className="text-xs text-ink-muted dark:text-ink-muted-on-dark font-semibold uppercase tracking-wider mb-3">
-              Details
+              {t('fuelModal.details')}
             </Text>
 
             <PlaceAutocomplete
@@ -499,20 +510,20 @@ export default function FuelEventModal() {
 
             <View className="mb-4">
               <View className="flex-row justify-between mb-1.5">
-                <Text className="text-xs text-ink-muted dark:text-ink-muted-on-dark font-semibold">Notes</Text>
+                <Text className="text-xs text-ink-muted dark:text-ink-muted-on-dark font-semibold">{t('fuelModal.notesLabel')}</Text>
                 <Text className="text-xs text-ink-faint dark:text-ink-faint-on-dark">{notes.length}/500</Text>
               </View>
               <TextInput
                 className="bg-card dark:bg-card-dark rounded-xl border border-divider dark:border-divider-dark px-3.5 py-3 text-base text-ink dark:text-ink-on-dark"
                 value={notes}
-                onChangeText={(t) => { setNotes(t.slice(0, 500)); markDirty(); }}
+                onChangeText={(text) => { setNotes(text.slice(0, 500)); markDirty(); }}
                 multiline
                 numberOfLines={3}
                 textAlignVertical="top"
-                placeholder="Optional notes..."
+                placeholder={t('fuelModal.notesPlaceholder')}
                 placeholderTextColor="#A8A49D"
                 style={{ minHeight: 80 }}
-                accessibilityLabel="Notes"
+                accessibilityLabel={t('fuelModal.notesA11y')}
               />
             </View>
 
@@ -528,10 +539,10 @@ export default function FuelEventModal() {
               onPress={handleDelete}
               style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
               className="mb-8 py-3 rounded-xl border border-destructive items-center"
-              accessibilityLabel="Delete fill-up"
+              accessibilityLabel={t('fuelModal.deleteFillUpA11y')}
               accessibilityRole="button"
             >
-              <Text className="text-destructive font-semibold text-base">Delete Fill-Up</Text>
+              <Text className="text-destructive font-semibold text-base">{t('fuelModal.deleteFillUp')}</Text>
             </Pressable>
           )}
         </ScrollView>

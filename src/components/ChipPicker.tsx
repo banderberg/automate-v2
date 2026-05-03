@@ -11,6 +11,7 @@ import {
   BottomSheetTextInput,
 } from '@gorhom/bottom-sheet';
 import type { BottomSheetBackdropProps } from '@gorhom/bottom-sheet';
+import { t } from '@/src/i18n';
 
 interface ChipItem {
   id: string;
@@ -75,7 +76,7 @@ export function ChipPicker({
       newItemRef.current = '';
       setNewItemName('');
     } catch (e) {
-      setAddError(e instanceof Error ? e.message : 'Failed to add');
+      setAddError(e instanceof Error ? e.message : t('chipPicker.addFailed'));
     }
   }, [onAdd]);
 
@@ -90,9 +91,9 @@ export function ChipPicker({
   const handleDelete = useCallback(
     (id: string, name: string) => {
       if (!onDelete) return;
-      showDialog('Delete', `Remove "${name}"?`, [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Delete', style: 'destructive', onPress: () => onDelete(id) },
+      showDialog(t('chipPicker.deleteConfirmTitle'), t('chipPicker.deleteConfirmMessage', { name }), [
+        { text: t('common.cancel'), style: 'cancel' },
+        { text: t('common.delete'), style: 'destructive', onPress: () => onDelete(id) },
       ]);
     },
     [onDelete]
@@ -116,10 +117,10 @@ export function ChipPicker({
             <Pressable
               onPress={() => manageSheetRef.current?.present()}
               hitSlop={8}
-              accessibilityLabel={`Manage ${label}`}
+              accessibilityLabel={t('chipPicker.manageA11y', { label })}
               accessibilityRole="button"
             >
-              <Text className="text-xs text-primary font-semibold">Manage</Text>
+              <Text className="text-xs text-primary font-semibold">{t('chipPicker.manage')}</Text>
             </Pressable>
           )}
         </View>
@@ -138,7 +139,7 @@ export function ChipPicker({
                   : 'border-divider dark:border-divider-dark bg-surface dark:bg-surface-dark'
               }`}
               style={selected ? { backgroundColor: accentColor || '#4272C4' } : undefined}
-              accessibilityLabel={`${item.name}${selected ? ', selected' : ''}`}
+              accessibilityLabel={`${item.name}${selected ? t('chipPicker.selectedSuffix') : ''}`}
               accessibilityRole="button"
               accessibilityState={{ selected }}
             >
@@ -158,12 +159,12 @@ export function ChipPicker({
             onPress={() => manageSheetRef.current?.present()}
             className="mr-2 mb-2 px-4 py-2 rounded-full"
             style={{ borderWidth: 1, borderStyle: 'dashed', borderColor: isDark ? '#54524D' : '#A8A49D' }}
-            accessibilityLabel={`Add custom ${label || 'item'}`}
+            accessibilityLabel={t('chipPicker.addCustomA11y', { label: label || t('chipPicker.defaultItemLabel') })}
             accessibilityRole="button"
           >
             <View className="flex-row items-center">
               <Ionicons name="add" size={14} color={isDark ? '#78756F' : '#A8A49D'} />
-              <Text className="text-sm text-ink-muted dark:text-ink-muted-on-dark ml-0.5">Custom</Text>
+              <Text className="text-sm text-ink-muted dark:text-ink-muted-on-dark ml-0.5">{t('chipPicker.custom')}</Text>
             </View>
           </Pressable>
         )}
@@ -186,7 +187,7 @@ export function ChipPicker({
         >
           <BottomSheetView style={{ paddingBottom: 40 }}>
             <Text className="px-4 pt-2 pb-3 text-base font-semibold text-ink dark:text-ink-on-dark">
-              Manage {label}
+              {t('chipPicker.manageTitle', { label: label ?? '' })}
             </Text>
 
             {items.map((item) => (
@@ -201,14 +202,14 @@ export function ChipPicker({
                       onSubmitEditing={handleSaveEdit}
                       returnKeyType="done"
                     />
-                    <Pressable onPress={handleSaveEdit} className="ml-2 p-2" hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} accessibilityLabel="Save" accessibilityRole="button">
+                    <Pressable onPress={handleSaveEdit} className="ml-2 p-2" hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} accessibilityLabel={t('chipPicker.saveA11y')} accessibilityRole="button">
                       <Ionicons name="checkmark" size={20} color="#4272C4" />
                     </Pressable>
                     <Pressable
                       onPress={() => { setEditingId(null); setEditingName(''); }}
                       className="ml-1 p-2"
                       hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                      accessibilityLabel="Cancel edit"
+                      accessibilityLabel={t('chipPicker.cancelEditA11y')}
                       accessibilityRole="button"
                     >
                       <Ionicons name="close" size={20} color="#A8A49D" />
@@ -222,7 +223,7 @@ export function ChipPicker({
                         onPress={() => { setEditingId(item.id); setEditingName(item.name); }}
                         className="p-2.5"
                         hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                        accessibilityLabel={`Edit ${item.name}`}
+                        accessibilityLabel={t('chipPicker.editItemA11y', { name: item.name })}
                         accessibilityRole="button"
                       >
                         <Ionicons name="pencil" size={16} color="#5C5A55" />
@@ -233,7 +234,7 @@ export function ChipPicker({
                         onPress={() => handleDelete(item.id, item.name)}
                         className="p-2.5 ml-1"
                         hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                        accessibilityLabel={`Delete ${item.name}`}
+                        accessibilityLabel={t('chipPicker.deleteItemA11y', { name: item.name })}
                         accessibilityRole="button"
                       >
                         <Ionicons name="trash-outline" size={16} color="#EF4444" />
@@ -251,7 +252,7 @@ export function ChipPicker({
                     className="flex-1 text-sm text-ink dark:text-ink-on-dark bg-surface dark:bg-surface-dark rounded-lg px-3 py-2"
                     value={newItemName}
                     onChangeText={(text) => { newItemRef.current = text; setNewItemName(text); }}
-                    placeholder="Add new..."
+                    placeholder={t('chipPicker.addNewPlaceholder')}
                     placeholderTextColor="#A8A49D"
                     onSubmitEditing={handleAdd}
                     returnKeyType="done"
@@ -259,10 +260,10 @@ export function ChipPicker({
                   <Pressable
                     onPress={handleAdd}
                     className="ml-2 bg-primary px-3 py-2 rounded-lg"
-                    accessibilityLabel="Add"
+                    accessibilityLabel={t('chipPicker.addA11y')}
                     accessibilityRole="button"
                   >
-                    <Text className="text-white text-sm font-semibold">Add</Text>
+                    <Text className="text-white text-sm font-semibold">{t('chipPicker.add')}</Text>
                   </Pressable>
                 </View>
                 {addError ? (

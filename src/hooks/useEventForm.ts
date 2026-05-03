@@ -7,13 +7,19 @@ import { validateOdometer } from '../services/odometerValidator';
 import * as eventQueries from '../db/queries/events';
 import * as eventPhotoQueries from '../db/queries/eventPhotos';
 import type { VehicleEvent, LocalPhoto, Vehicle } from '../types';
+import { t, type TranslationKey } from '../i18n';
 
 interface UseEventFormOptions {
   type: 'fuel' | 'service' | 'expense';
-  deleteLabel: string;
 }
 
-export function useEventForm({ type, deleteLabel }: UseEventFormOptions) {
+const DELETE_LABEL_KEYS: Record<UseEventFormOptions['type'], TranslationKey> = {
+  fuel: 'eventForm.labelFuel',
+  service: 'eventForm.labelService',
+  expense: 'eventForm.labelExpense',
+};
+
+export function useEventForm({ type }: UseEventFormOptions) {
   const router = useRouter();
   const { eventId } = useLocalSearchParams<{ eventId?: string }>();
   const isEditing = !!eventId;
@@ -77,7 +83,7 @@ export function useEventForm({ type, deleteLabel }: UseEventFormOptions) {
     const val = parseInt(odometer, 10);
     if (isNaN(val) || !val) return;
     const result = validateOdometer(val, bounds);
-    setOdometerError(result.valid ? '' : result.message ?? 'Invalid odometer');
+    setOdometerError(result.valid ? '' : result.message ?? t('eventForm.invalidOdometer'));
   }, [bounds]);
 
   const handleOdometerBlur = useCallback(() => {
@@ -87,14 +93,14 @@ export function useEventForm({ type, deleteLabel }: UseEventFormOptions) {
       return;
     }
     const result = validateOdometer(val, bounds);
-    setOdometerError(result.valid ? '' : result.message ?? 'Invalid odometer');
+    setOdometerError(result.valid ? '' : result.message ?? t('eventForm.invalidOdometer'));
   }, [odometer, bounds]);
 
   const handleCancel = useCallback(() => {
     if (isDirty.current) {
-      showDialog('Discard Changes?', 'You have unsaved changes.', [
-        { text: 'Keep Editing', style: 'cancel' },
-        { text: 'Discard', style: 'destructive', onPress: () => router.back() },
+      showDialog(t('eventForm.discardTitle'), t('eventForm.discardMessage'), [
+        { text: t('eventForm.keepEditing'), style: 'cancel' },
+        { text: t('eventForm.discard'), style: 'destructive', onPress: () => router.back() },
       ]);
     } else {
       router.back();
@@ -103,10 +109,10 @@ export function useEventForm({ type, deleteLabel }: UseEventFormOptions) {
 
   const handleDelete = useCallback(() => {
     if (!eventId) return;
-    showDialog(`Delete ${deleteLabel}`, 'This cannot be undone.', [
-      { text: 'Cancel', style: 'cancel' },
+    showDialog(t('eventForm.deleteTitle', { label: t(DELETE_LABEL_KEYS[type]) }), t('eventForm.deleteMessage'), [
+      { text: t('common.cancel'), style: 'cancel' },
       {
-        text: 'Delete',
+        text: t('common.delete'),
         style: 'destructive',
         onPress: async () => {
           await deleteEvent(eventId);
@@ -114,7 +120,7 @@ export function useEventForm({ type, deleteLabel }: UseEventFormOptions) {
         },
       },
     ]);
-  }, [eventId, deleteEvent, router, deleteLabel]);
+  }, [eventId, deleteEvent, router, type]);
 
   return {
     router,

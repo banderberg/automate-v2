@@ -21,15 +21,18 @@ import { useActiveVehicle } from '@/src/hooks/useActiveVehicle';
 import { useSettingsStore } from '@/src/stores/settingsStore';
 import { formatCurrency } from '@/src/constants/currency';
 import type { VehicleEvent } from '@/src/types';
+import { t } from '@/src/i18n';
 
 type FilterType = 'all' | 'fuel' | 'service' | 'expense';
 
-const FILTER_CHIPS: { id: FilterType; label: string; color?: string }[] = [
-  { id: 'all', label: 'All' },
-  { id: 'fuel', label: 'Fuel', color: '#1A9A8F' },
-  { id: 'service', label: 'Service', color: '#E8772B' },
-  { id: 'expense', label: 'Expense', color: '#2EAD76' },
-];
+function getFilterChips(): { id: FilterType; label: string; color?: string }[] {
+  return [
+    { id: 'all', label: t('history.filterAll') },
+    { id: 'fuel', label: t('history.filterFuel'), color: '#1A9A8F' },
+    { id: 'service', label: t('history.filterService'), color: '#E8772B' },
+    { id: 'expense', label: t('history.filterExpense'), color: '#2EAD76' },
+  ];
+}
 
 interface SectionHeader {
   kind: 'header';
@@ -108,11 +111,11 @@ function SwipeableEventRow({
           onDelete();
         }}
         className="bg-destructive justify-center items-center px-6"
-        accessibilityLabel="Delete"
+        accessibilityLabel={t('history.deleteSwipeA11y')}
         accessibilityRole="button"
       >
         <Ionicons name="trash-outline" size={20} color="white" />
-        <Text className="text-white text-xs mt-1 font-semibold">Delete</Text>
+        <Text className="text-white text-xs mt-1 font-semibold">{t('history.deleteSwipeLabel')}</Text>
       </Pressable>
     ),
     [onDelete]
@@ -120,7 +123,7 @@ function SwipeableEventRow({
 
   return (
     <Swipeable ref={swipeableRef} renderRightActions={renderRightActions} overshootRight={false}>
-      <Pressable onLongPress={onLongPress} delayLongPress={500} accessibilityLabel={`${event.type} event on ${event.date}, ${formatCurrency(event.cost, cc)}. Long press for options.`}>
+      <Pressable onLongPress={onLongPress} delayLongPress={500} accessibilityLabel={t('history.longPressA11y', { type: event.type, date: event.date, cost: formatCurrency(event.cost, cc) })}>
         <View className="bg-surface dark:bg-surface-dark">
           <EventRow
             event={event}
@@ -215,11 +218,15 @@ export default function HistoryScreen() {
   const handleDelete = useCallback(
     (event: VehicleEvent) => {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-      const typeLabel = event.type === 'fuel' ? 'fill-up' : event.type;
-      showDialog(`Delete ${typeLabel}?`, 'You can undo this for a few seconds after.', [
-        { text: 'Cancel', style: 'cancel' },
+      const titleKey = event.type === 'fuel'
+        ? 'history.deleteFillUpTitle'
+        : event.type === 'service'
+          ? 'history.deleteServiceTitle'
+          : 'history.deleteExpenseTitle';
+      showDialog(t(titleKey), t('history.deleteMessage'), [
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Delete',
+          text: t('common.delete'),
           style: 'destructive',
           onPress: () => deleteEvent(event.id),
         },
@@ -230,17 +237,17 @@ export default function HistoryScreen() {
 
   const handleLongPress = useCallback(
     (event: VehicleEvent) => {
-      showDialog('Options', undefined, [
+      showDialog(t('history.optionsTitle'), undefined, [
         {
-          text: 'Edit',
+          text: t('history.optionsEdit'),
           onPress: () => handleEventPress(event),
         },
         {
-          text: 'Delete',
+          text: t('history.optionsDelete'),
           style: 'destructive',
           onPress: () => handleDelete(event),
         },
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
       ]);
     },
     [handleEventPress, handleDelete]
@@ -255,8 +262,8 @@ export default function HistoryScreen() {
               <Ionicons name="receipt-outline" size={44} color="#1A9A8F" />
             </View>
           }
-          title="No vehicle yet"
-          description="Add a vehicle from the Dashboard tab to start logging events here."
+          title={t('history.noVehicleTitle')}
+          description={t('history.noVehicleDescription')}
         />
       </SafeAreaView>
     );
@@ -274,14 +281,14 @@ export default function HistoryScreen() {
             className="flex-1 text-sm text-ink dark:text-ink-on-dark ml-2"
             value={searchQuery}
             onChangeText={setSearchQuery}
-            placeholder="Search notes, places, categories..."
+            placeholder={t('history.searchPlaceholder')}
             placeholderTextColor="#A8A49D"
             returnKeyType="search"
             clearButtonMode="while-editing"
-            accessibilityLabel="Search history"
+            accessibilityLabel={t('history.searchA11y')}
           />
           {searchQuery.length > 0 && (
-            <Pressable onPress={() => setSearchQuery('')} hitSlop={14} accessibilityLabel="Clear search">
+            <Pressable onPress={() => setSearchQuery('')} hitSlop={14} accessibilityLabel={t('history.clearSearchA11y')}>
               <Ionicons name="close-circle" size={16} color="#A8A49D" />
             </Pressable>
           )}
@@ -290,7 +297,7 @@ export default function HistoryScreen() {
 
       {/* Filter bar */}
       <View className="flex-row px-4 py-3 gap-2">
-        {FILTER_CHIPS.map((chip) => {
+        {getFilterChips().map((chip) => {
           const isActive = activeFilters.has(chip.id);
           return (
             <Pressable
@@ -304,7 +311,7 @@ export default function HistoryScreen() {
                   ? { backgroundColor: chip.color || '#4272C4' }
                   : undefined
               }
-              accessibilityLabel={`Filter ${chip.label}${isActive ? ', active' : ''}`}
+              accessibilityLabel={`${t('history.filterA11y', { label: chip.label })}${isActive ? t('history.filterActiveSuffix') : ''}`}
               accessibilityRole="button"
               accessibilityState={{ selected: isActive }}
             >
@@ -327,8 +334,8 @@ export default function HistoryScreen() {
           {searchQuery.trim() || !activeFilters.has('all') ? (
             <EmptyState
               icon={<View style={{ opacity: 0.4 }}><Ionicons name="search-outline" size={64} color="#A8A49D" /></View>}
-              title="No matches"
-              description="Try a different search term or clear your filters."
+              title={t('history.noMatchesTitle')}
+              description={t('history.noMatchesDescription')}
             />
           ) : (
             <EmptyState
@@ -337,8 +344,8 @@ export default function HistoryScreen() {
                   <Ionicons name="receipt-outline" size={44} color="#1A9A8F" />
                 </View>
               }
-              title="Your timeline starts here"
-              description="Tap + to log a fill-up, service, or expense. Each entry builds your car's story."
+              title={t('history.emptyTitle')}
+              description={t('history.emptyDescription')}
             />
           )}
         </View>

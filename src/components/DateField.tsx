@@ -3,6 +3,7 @@ import { View, Text, Pressable, Platform } from 'react-native';
 import { useColorScheme } from 'nativewind';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
+import { t } from '@/src/i18n';
 
 interface DateFieldProps {
   value: string;
@@ -33,11 +34,12 @@ function toISODate(date: Date): string {
 export function DateField({
   value,
   onChange,
-  label = 'Date',
+  label,
   maxDate,
   minDate,
   required = true,
 }: DateFieldProps) {
+  const resolvedLabel = label ?? t('dateField.label');
   const { colorScheme } = useColorScheme();
   const [showPicker, setShowPicker] = useState(false);
   const dateValue = new Date(value + 'T12:00:00');
@@ -58,12 +60,12 @@ export function DateField({
   return (
     <View className="mb-4">
       <Text className="text-xs text-ink-muted dark:text-ink-muted-on-dark mb-1.5 font-semibold">
-        {label}{required ? ' *' : ''}
+        {resolvedLabel}{required ? ' *' : ''}
       </Text>
       <Pressable
         onPress={() => setShowPicker(!showPicker)}
         className="flex-row items-center bg-card dark:bg-card-dark rounded-xl border border-divider dark:border-divider-dark px-3.5 py-3"
-        accessibilityLabel={`${label}: ${formatDisplayDate(value)}`}
+        accessibilityLabel={`${resolvedLabel}: ${formatDisplayDate(value)}`}
         accessibilityRole="button"
       >
         <Ionicons name="calendar-outline" size={18} color="#A8A49D" />
@@ -88,10 +90,10 @@ export function DateField({
               onPress={() => setShowPicker(false)}
               className="items-center py-3"
               hitSlop={8}
-              accessibilityLabel="Done selecting date"
+              accessibilityLabel={t('dateField.doneA11y')}
               accessibilityRole="button"
             >
-              <Text className="text-sm text-primary font-semibold">Done</Text>
+              <Text className="text-sm text-primary font-semibold">{t('common.done')}</Text>
             </Pressable>
           )}
         </View>

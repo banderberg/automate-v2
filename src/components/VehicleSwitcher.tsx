@@ -12,6 +12,7 @@ import type { BottomSheetBackdropProps } from '@gorhom/bottom-sheet';
 import { useVehicleStore } from '../stores/vehicleStore';
 import { switchVehicle } from '../stores/orchestrator';
 import type { Vehicle } from '../types';
+import { t } from '@/src/i18n';
 
 interface VehicleSwitcherProps {
   tintColor?: string;
@@ -83,7 +84,7 @@ export function VehicleSwitcher({ tintColor }: VehicleSwitcherProps) {
           className="text-base font-bold text-ink dark:text-ink-on-dark"
           numberOfLines={1}
         >
-          {activeVehicle?.nickname ?? 'Add a Vehicle'}
+          {activeVehicle?.nickname ?? t('vehicleSwitcher.addVehicleHeader')}
         </Text>
         {activeVehicle && (
           <Text className="text-xs text-ink-muted dark:text-ink-muted-on-dark" numberOfLines={1}>
@@ -100,13 +101,13 @@ export function VehicleSwitcher({ tintColor }: VehicleSwitcherProps) {
       {multiVehicle ? (
         <Pressable
           onPress={handleOpen}
-          accessibilityLabel={`Active vehicle: ${activeVehicle?.nickname ?? 'None'}. Tap to switch vehicle.`}
+          accessibilityLabel={t('vehicleSwitcher.headerSwitchA11y', { name: activeVehicle?.nickname ?? t('vehicleSwitcher.headerNone') })}
           accessibilityRole="button"
         >
           {header}
         </Pressable>
       ) : (
-        <View accessibilityLabel={`Vehicle: ${activeVehicle?.nickname ?? 'None'}`}>
+        <View accessibilityLabel={t('vehicleSwitcher.headerVehicleA11y', { name: activeVehicle?.nickname ?? t('vehicleSwitcher.headerNone') })}>
           {header}
         </View>
       )}
@@ -121,7 +122,7 @@ export function VehicleSwitcher({ tintColor }: VehicleSwitcherProps) {
       >
         <BottomSheetView>
           <Text className="px-4 pt-4 pb-2 text-xs font-semibold text-ink-muted dark:text-ink-muted-on-dark uppercase tracking-wider">
-            Your Vehicles
+            {t('vehicleSwitcher.yourVehicles')}
           </Text>
 
           {vehicles.map((vehicle) => (
@@ -129,7 +130,7 @@ export function VehicleSwitcher({ tintColor }: VehicleSwitcherProps) {
               key={vehicle.id}
               onPress={() => handleSelectVehicle(vehicle)}
               className="flex-row items-center px-4 py-3 active:bg-surface dark:active:bg-surface-dark"
-              accessibilityLabel={`Select ${vehicle.nickname}`}
+              accessibilityLabel={t('vehicleSwitcher.selectVehicleA11y', { name: vehicle.nickname })}
               accessibilityRole="button"
             >
               <View className="w-10 h-10 rounded-full bg-divider dark:bg-divider-dark items-center justify-center overflow-hidden mr-3">
@@ -158,7 +159,7 @@ export function VehicleSwitcher({ tintColor }: VehicleSwitcherProps) {
                   name="checkmark-circle"
                   size={20}
                   color="#4272C4"
-                  accessibilityLabel="Active vehicle"
+                  accessibilityLabel={t('vehicleSwitcher.activeVehicleA11y')}
                 />
               )}
             </Pressable>
@@ -170,13 +171,13 @@ export function VehicleSwitcher({ tintColor }: VehicleSwitcherProps) {
               nav.push('/(modals)/vehicle');
             }}
             className="flex-row items-center px-4 py-3 active:bg-surface dark:active:bg-surface-dark"
-            accessibilityLabel="Add Vehicle"
+            accessibilityLabel={t('vehicleSwitcher.addVehicle')}
             accessibilityRole="button"
           >
             <View className="w-10 h-10 rounded-full bg-primary-light items-center justify-center mr-3">
               <Ionicons name="add" size={20} color="#4272C4" />
             </View>
-            <Text className="text-base text-primary font-medium">Add Vehicle</Text>
+            <Text className="text-base text-primary font-medium">{t('vehicleSwitcher.addVehicle')}</Text>
           </Pressable>
 
           <View className="h-px bg-divider dark:bg-divider-dark mx-4 my-1" />
@@ -184,11 +185,11 @@ export function VehicleSwitcher({ tintColor }: VehicleSwitcherProps) {
           <Pressable
             onPress={handleManageVehicles}
             className="flex-row items-center px-4 py-4 active:bg-surface dark:active:bg-surface-dark"
-            accessibilityLabel="Manage Vehicles"
+            accessibilityLabel={t('vehicleSwitcher.manageVehicles')}
             accessibilityRole="button"
           >
             <Ionicons name="settings-outline" size={18} color="#5C5A55" className="mr-3" />
-            <Text className="text-sm text-ink-secondary dark:text-ink-secondary-on-dark ml-3">Manage Vehicles</Text>
+            <Text className="text-sm text-ink-secondary dark:text-ink-secondary-on-dark ml-3">{t('vehicleSwitcher.manageVehicles')}</Text>
           </Pressable>
 
           {/* Bottom safe area spacing */}

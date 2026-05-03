@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { ModalHeader } from '@/src/components/ModalHeader';
 import { useVehicleStore } from '@/src/stores/vehicleStore';
 import type { Vehicle } from '@/src/types';
+import { t } from '@/src/i18n';
 
 export default function ManageVehiclesModal() {
   const nav = useGuardedNavigate();
@@ -30,7 +31,13 @@ export default function ManageVehiclesModal() {
           nav.push(`/(modals)/vehicle?vehicleId=${item.id}`)
         }
         className="flex-row items-center px-4 py-3 bg-card dark:bg-card-dark border-b border-divider-subtle dark:border-divider-dark active:bg-surface dark:active:bg-surface-dark"
-        accessibilityLabel={`${item.nickname}, ${item.year} ${item.make} ${item.model}${item.isActive ? ', active' : ''}`}
+        accessibilityLabel={t('manageVehicles.vehicleA11y', {
+          name: item.nickname,
+          year: item.year,
+          make: item.make,
+          model: item.model,
+          activeSuffix: item.isActive ? t('manageVehicles.activeSuffix') : '',
+        })}
         accessibilityRole="button"
       >
         {/* Photo */}
@@ -70,7 +77,7 @@ export default function ManageVehiclesModal() {
             onPress={() => moveVehicle(index, -1)}
             disabled={index === 0}
             className="p-1.5"
-            accessibilityLabel={`Move ${item.nickname} up`}
+            accessibilityLabel={t('manageVehicles.moveUpA11y', { name: item.nickname })}
             accessibilityRole="button"
             hitSlop={8}
           >
@@ -84,7 +91,7 @@ export default function ManageVehiclesModal() {
             onPress={() => moveVehicle(index, 1)}
             disabled={index === vehicles.length - 1}
             className="p-1.5"
-            accessibilityLabel={`Move ${item.nickname} down`}
+            accessibilityLabel={t('manageVehicles.moveDownA11y', { name: item.nickname })}
             accessibilityRole="button"
             hitSlop={8}
           >
@@ -103,8 +110,8 @@ export default function ManageVehiclesModal() {
   return (
     <SafeAreaView className="flex-1 bg-surface dark:bg-surface-dark" edges={['top']}>
       <ModalHeader
-        title="Manage Vehicles"
-        cancelLabel="Done"
+        title={t('manageVehicles.title')}
+        cancelLabel={t('common.done')}
         onCancel={() => nav.back()}
         hideSave
       />
@@ -116,12 +123,12 @@ export default function ManageVehiclesModal() {
           <Pressable
             onPress={() => nav.push('/(modals)/vehicle')}
             className="flex-row items-center justify-center py-4 mt-4 mx-4 rounded-xl bg-primary"
-            accessibilityLabel="Add Vehicle"
+            accessibilityLabel={t('manageVehicles.addVehicleA11y')}
             accessibilityRole="button"
           >
             <Ionicons name="add" size={20} color="white" />
             <Text className="text-white font-semibold text-base ml-1">
-              Add Vehicle
+              {t('manageVehicles.addVehicle')}
             </Text>
           </Pressable>
         }

@@ -2,6 +2,7 @@ import { View, Text, FlatList } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ModalHeader } from '@/src/components/ModalHeader';
 import { useGuardedNavigate } from '@/src/hooks/useGuardedNavigate';
+import { t } from '@/src/i18n';
 
 const LICENSES = [
   { name: 'expo', license: 'MIT' },
@@ -34,7 +35,7 @@ export default function LicensesModal() {
   const nav = useGuardedNavigate();
   return (
     <SafeAreaView className="flex-1 bg-surface dark:bg-surface-dark" edges={['top']}>
-      <ModalHeader title="Open Source Licenses" cancelLabel="Done" onCancel={() => nav.back()} hideSave />
+      <ModalHeader title={t('modalLicenses.title')} cancelLabel={t('common.done')} onCancel={() => nav.back()} hideSave />
       <FlatList
         data={LICENSES}
         keyExtractor={(item) => item.name}

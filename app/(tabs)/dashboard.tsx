@@ -28,6 +28,7 @@ import type { InsightEngineInput } from '@/src/services/insightEngine';
 import { computeFuelEfficiency } from '@/src/services/fuelEfficiency';
 import { splitCurrency, formatCurrency } from '@/src/constants/currency';
 import { useSettingsStore } from '@/src/stores/settingsStore';
+import { t } from '@/src/i18n';
 
 const PERIODS = [
   { value: '1M', label: '1M' },
@@ -246,9 +247,9 @@ export default function DashboardScreen() {
               <Ionicons name="car-sport-outline" size={44} color="#4272C4" />
             </View>
           }
-          title="Add your first vehicle"
-          description="AutoMate tracks what you spend, so you always know where the money goes."
-          actionLabel="Get Started"
+          title={t('dashboard.noVehicleTitle')}
+          description={t('dashboard.noVehicleDescription')}
+          actionLabel={t('dashboard.noVehicleAction')}
           onAction={() => nav.push('/(modals)/vehicle')}
         />
       </SafeAreaView>
@@ -266,8 +267,8 @@ export default function DashboardScreen() {
                 <Ionicons name="wallet-outline" size={44} color="#4272C4" />
               </View>
             }
-            title="Ready when you are"
-            description="Your next fill-up or service visit will start building your dashboard."
+            title={t('dashboard.noEventsTitle')}
+            description={t('dashboard.noEventsDescription')}
           />
         </View>
         <AddEventFAB />
@@ -292,7 +293,7 @@ export default function DashboardScreen() {
                 onPress={() => setPeriod(p.value)}
                 className="flex-1 items-center"
                 style={{ paddingVertical: 10 }}
-                accessibilityLabel={`Period ${p.label}${selected ? ', selected' : ''}`}
+                accessibilityLabel={`${t('dashboard.periodA11y', { label: p.label })}${selected ? t('dashboard.periodSelectedSuffix') : ''}`}
                 accessibilityRole="tab"
                 accessibilityState={{ selected }}
               >
@@ -338,7 +339,7 @@ export default function DashboardScreen() {
           <View className="bg-success-light rounded-card mx-4 mb-4 px-4 py-3 flex-row items-center">
             <Ionicons name="checkmark-circle" size={20} color="#10B981" />
             <Text className="text-sm font-semibold text-ink dark:text-ink-on-dark ml-2">
-              First one logged! You're tracking now.
+              {t('dashboard.celebrationLabel')}
             </Text>
           </View>
         )}
@@ -356,7 +357,7 @@ export default function DashboardScreen() {
               marginBottom: 4,
             }}
           >
-            Total Spent
+            {t('dashboard.totalSpent')}
           </Text>
           <View className="flex-row items-baseline">
             {heroPosition === 'prefix' && (
@@ -418,14 +419,18 @@ export default function DashboardScreen() {
                 marginTop: 4,
               }}
             >
-              {metrics.totalSpentDelta.direction === 'up' ? '↑' : '↓'} {Math.round(Math.abs(metrics.totalSpentDelta.percentage) * 100)}% vs prev {metrics.periodLabel}
+              {t('dashboard.deltaText', {
+                arrow: metrics.totalSpentDelta.direction === 'up' ? t('dashboard.deltaUp') : t('dashboard.deltaDown'),
+                percent: Math.round(Math.abs(metrics.totalSpentDelta.percentage) * 100),
+                period: metrics.periodLabel,
+              })}
             </Text>
           )}
         </View>
 
         {/* ── Secondary metrics ── */}
         <View className="flex-row px-4 mt-4 mb-8">
-          <View className="flex-1" accessibilityLabel={`Cost per ${odoLabel}: ${metrics.costPerMile != null ? formatCurrency(metrics.costPerMile, currencyCode) : 'not enough data'}`} accessibilityHint="Total spending divided by distance driven">
+          <View className="flex-1" accessibilityLabel={t('dashboard.costPerA11y', { unit: odoLabel, value: metrics.costPerMile != null ? formatCurrency(metrics.costPerMile, currencyCode) : t('dashboard.costPerNotEnoughData') })} accessibilityHint={t('dashboard.costPerHint')}>
             <View className="flex-row items-center" style={{ gap: 4, marginBottom: 2 }}>
               <Text
                 style={{
@@ -436,10 +441,10 @@ export default function DashboardScreen() {
                   textTransform: 'uppercase',
                 }}
               >
-                Cost / {odoLabel}
+                {t('dashboard.costPer', { unit: odoLabel })}
               </Text>
               <MetricInfo
-                explanation={`Total spending divided by total ${odoLabel} driven in the selected period.`}
+                explanation={t('dashboard.costPerExplanation', { unit: odoLabel })}
                 color={isDark ? '#8A8680' : '#706C67'}
               />
             </View>
@@ -462,7 +467,9 @@ export default function DashboardScreen() {
 
           <View style={{ width: 1, backgroundColor: isDark ? '#2A2926' : '#E2E0DB', marginHorizontal: 20 }} />
 
-          <View className="flex-1" accessibilityLabel={`Average efficiency: ${metrics.efficiency.average != null ? `${metrics.efficiency.average.toFixed(1)} ${effLabel}` : 'not enough data'}${metrics.efficiencyTrend !== 'flat' && metrics.efficiencyTrend !== null ? `, trending ${metrics.efficiencyTrend}` : ''}`} accessibilityHint="Calculated from full fill-ups only">
+          <View className="flex-1" accessibilityLabel={t('dashboard.avgEffA11y', {
+            value: `${metrics.efficiency.average != null ? t('dashboard.avgEffValue', { n: metrics.efficiency.average.toFixed(1), unit: effLabel }) : t('dashboard.costPerNotEnoughData')}${metrics.efficiencyTrend !== 'flat' && metrics.efficiencyTrend !== null ? t('dashboard.avgEffTrending', { trend: metrics.efficiencyTrend }) : ''}`,
+          })} accessibilityHint={t('dashboard.avgEffHint')}>
             <View className="flex-row items-center" style={{ gap: 4, marginBottom: 2 }}>
               <Text
                 style={{
@@ -473,10 +480,10 @@ export default function DashboardScreen() {
                   textTransform: 'uppercase',
                 }}
               >
-                Avg {effLabel}
+                {t('dashboard.avgEff', { unit: effLabel })}
               </Text>
               <MetricInfo
-                explanation="Average fuel efficiency from full fill-ups only. Partial fills are excluded."
+                explanation={t('dashboard.avgEffExplanation')}
                 color={isDark ? '#8A8680' : '#706C67'}
               />
             </View>
@@ -496,7 +503,7 @@ export default function DashboardScreen() {
                   name={trendIcon as 'arrow-up' | 'arrow-down'}
                   size={14}
                   color={trendColor}
-                  accessibilityLabel={trendIcon === 'arrow-up' ? 'Improving' : 'Declining'}
+                  accessibilityLabel={trendIcon === 'arrow-up' ? t('dashboard.trendImproving') : t('dashboard.trendDeclining')}
                 />
               )}
             </View>
@@ -535,13 +542,17 @@ export default function DashboardScreen() {
                   color: isDark ? '#F5F4F1' : '#1C1B18',
                 }}
               >
-                Fuel Efficiency
+                {t('dashboard.fuelEfficiency')}
               </Text>
               <Text style={{ fontSize: 11, color: isDark ? '#8A8680' : '#706C67' }}>{effLabel}</Text>
             </View>
             <ChartTransition transitionKey={period}>
               <View
-                accessibilityLabel={`Fuel efficiency chart, ${lineChartData.length} data points, average ${metrics.efficiency.average?.toFixed(1) ?? 'N/A'} ${effLabel}`}
+                accessibilityLabel={t('dashboard.fuelEfficiencyChartA11y', {
+                  count: lineChartData.length,
+                  avg: metrics.efficiency.average?.toFixed(1) ?? 'N/A',
+                  unit: effLabel,
+                })}
               >
                 <LineChart
                   data={lineChartData}
@@ -590,7 +601,7 @@ export default function DashboardScreen() {
             </ChartTransition>
             {metrics.chartData.some((d) => d.isPartial) && (
               <Text style={{ fontSize: 10, color: isDark ? '#54524D' : '#706C67', paddingHorizontal: 16, paddingBottom: 12 }}>
-                Hollow dots = partial fills (excluded from average)
+                {t('dashboard.partialFillsLegend')}
               </Text>
             )}
           </View>
@@ -600,10 +611,10 @@ export default function DashboardScreen() {
             style={cardShadow(isDark)}
           >
             <Text style={{ fontSize: 13, fontWeight: '600', color: isDark ? '#F5F4F1' : '#1C1B18', marginBottom: 8 }}>
-              Fuel Efficiency
+              {t('dashboard.fuelEfficiency')}
             </Text>
             <Text style={{ fontSize: 12, color: isDark ? '#8A8680' : '#706C67', textAlign: 'center', paddingVertical: 12 }}>
-              Log 2 or more fill-ups to see your trend
+              {t('dashboard.fuelEfficiencyEmpty')}
             </Text>
           </View>
         )}
@@ -625,10 +636,14 @@ export default function DashboardScreen() {
           <View
             className="mx-4 mb-6"
             style={{ ...cardShadow(isDark), padding: 16 }}
-            accessibilityLabel={`Spending: fuel ${formatCurrency(metrics.spendingBreakdown.fuel, currencyCode)}, service ${formatCurrency(metrics.spendingBreakdown.service, currencyCode)}, expense ${formatCurrency(metrics.spendingBreakdown.expense, currencyCode)}`}
+            accessibilityLabel={t('dashboard.spendingA11y', {
+              fuel: formatCurrency(metrics.spendingBreakdown.fuel, currencyCode),
+              service: formatCurrency(metrics.spendingBreakdown.service, currencyCode),
+              expense: formatCurrency(metrics.spendingBreakdown.expense, currencyCode),
+            })}
           >
             <Text style={{ fontSize: 13, fontWeight: '600', color: isDark ? '#F5F4F1' : '#1C1B18', marginBottom: 16 }}>
-              Spending
+              {t('dashboard.spending')}
             </Text>
             <View className="flex-row items-center">
               <PieChart
@@ -646,9 +661,9 @@ export default function DashboardScreen() {
                 )}
               />
               <View className="flex-1 ml-6" style={{ gap: 14 }}>
-                <SpendingRow isDark={isDark} color="#1A9A8F" label="Fuel" amount={metrics.spendingBreakdown.fuel} total={metrics.spendingBreakdown.total} currencyCode={currencyCode} />
-                <SpendingRow isDark={isDark} color="#E8772B" label="Service" amount={metrics.spendingBreakdown.service} total={metrics.spendingBreakdown.total} currencyCode={currencyCode} />
-                <SpendingRow isDark={isDark} color="#2EAD76" label="Expense" amount={metrics.spendingBreakdown.expense} total={metrics.spendingBreakdown.total} currencyCode={currencyCode} />
+                <SpendingRow isDark={isDark} color="#1A9A8F" label={t('dashboard.spendingFuel')} amount={metrics.spendingBreakdown.fuel} total={metrics.spendingBreakdown.total} currencyCode={currencyCode} />
+                <SpendingRow isDark={isDark} color="#E8772B" label={t('dashboard.spendingService')} amount={metrics.spendingBreakdown.service} total={metrics.spendingBreakdown.total} currencyCode={currencyCode} />
+                <SpendingRow isDark={isDark} color="#2EAD76" label={t('dashboard.spendingExpense')} amount={metrics.spendingBreakdown.expense} total={metrics.spendingBreakdown.total} currencyCode={currencyCode} />
               </View>
             </View>
           </View>
@@ -659,16 +674,16 @@ export default function DashboardScreen() {
           <View className="mx-4 mb-6">
             <View className="flex-row items-center justify-between mb-3 px-1">
               <Text style={{ fontSize: 13, fontWeight: '600', color: isDark ? '#F5F4F1' : '#1C1B18' }}>
-                Recent
+                {t('dashboard.recent')}
               </Text>
               <Pressable
                 onPress={() => nav.push('/(tabs)/history')}
                 className="py-2"
-                accessibilityLabel="See all history"
+                accessibilityLabel={t('dashboard.seeAllA11y')}
                 accessibilityRole="button"
                 hitSlop={8}
               >
-                <Text className="text-primary" style={{ fontSize: 13 }}>See all</Text>
+                <Text className="text-primary" style={{ fontSize: 13 }}>{t('dashboard.seeAll')}</Text>
               </Pressable>
             </View>
             <View
