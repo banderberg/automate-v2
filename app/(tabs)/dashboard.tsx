@@ -14,7 +14,6 @@ import { DashboardSkeleton } from '@/src/components/Skeleton';
 import { useVehicleStore } from '@/src/stores/vehicleStore';
 import { useEventStore } from '@/src/stores/eventStore';
 import { useReferenceDataStore } from '@/src/stores/referenceDataStore';
-import { useActiveVehicle } from '@/src/hooks/useActiveVehicle';
 import { useDashboardMetrics } from '@/src/hooks/useDashboardMetrics';
 import { getOdometerLabel, getEfficiencyLabel } from '@/src/constants/units';
 import { ProjectedCost } from '@/src/components/ProjectedCost';
@@ -60,7 +59,8 @@ export default function DashboardScreen() {
 
   const currencyCode = useSettingsStore((s) => s.settings.currency);
   const vehicleCount = useVehicleStore((s) => s.vehicles.length);
-  const { activeVehicle, eventCount } = useActiveVehicle();
+  const activeVehicle = useVehicleStore((s) => s.activeVehicle);
+  const eventCount = useEventStore((s) => s.events.length);
   const places = useReferenceDataStore((s) => s.places);
   const categories = useReferenceDataStore((s) => s.categories);
   const serviceLabels = useEventStore((s) => s.serviceLabels);

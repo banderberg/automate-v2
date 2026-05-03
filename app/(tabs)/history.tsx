@@ -20,7 +20,7 @@ import { useReferenceDataStore } from '@/src/stores/referenceDataStore';
 import { useActiveVehicle } from '@/src/hooks/useActiveVehicle';
 import { useSettingsStore } from '@/src/stores/settingsStore';
 import { formatCurrency } from '@/src/constants/currency';
-import type { VehicleEvent } from '@/src/types';
+import type { VehicleEvent, Place } from '@/src/types';
 
 type FilterType = 'all' | 'fuel' | 'service' | 'expense';
 
@@ -80,6 +80,8 @@ function SwipeableEventRow({
   onPress,
   onDelete,
   onLongPress,
+  place,
+  label: eventLabel,
   currencyCode: cc = 'USD',
 }: {
   event: VehicleEvent;
@@ -87,18 +89,11 @@ function SwipeableEventRow({
   onPress: () => void;
   onDelete: () => void;
   onLongPress: () => void;
+  place?: Place | null;
+  label?: string;
   currencyCode?: string;
 }) {
   const swipeableRef = useRef<Swipeable>(null);
-  const places = useReferenceDataStore((s) => s.places);
-  const categories = useReferenceDataStore((s) => s.categories);
-  const serviceLabels = useEventStore((s) => s.serviceLabels);
-  const place = event.placeId ? places.find((p) => p.id === event.placeId) : null;
-  const eventLabel = event.type === 'expense'
-    ? (event.categoryId ? categories.find((c) => c.id === event.categoryId)?.name : undefined)
-    : event.type === 'service'
-      ? serviceLabels.get(event.id)
-      : undefined;
 
   const renderRightActions = useCallback(
     () => (
@@ -156,6 +151,12 @@ export default function HistoryScreen() {
     return m;
   }, [places]);
 
+  const categoryMap = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const c of categories) m.set(c.id, c.name);
+    return m;
+  }, [categories]);
+
   const handleFilterToggle = useCallback((filter: FilterType) => {
     setActiveFilters((prev) => {
       if (filter === 'all') return new Set(['all']);
@@ -185,8 +186,8 @@ export default function HistoryScreen() {
           if (place?.name.toLowerCase().includes(q)) return true;
         }
         if (e.type === 'expense' && e.categoryId) {
-          const cat = categories.find((c) => c.id === e.categoryId);
-          if (cat?.name.toLowerCase().includes(q)) return true;
+          const catName = categoryMap.get(e.categoryId);
+          if (catName?.toLowerCase().includes(q)) return true;
         }
         if (e.type === 'service') {
           const label = serviceLabels.get(e.id);
@@ -196,7 +197,7 @@ export default function HistoryScreen() {
       });
     }
     return result;
-  }, [events, activeFilters, searchQuery, placeMap, categories, serviceLabels]);
+  }, [events, activeFilters, searchQuery, placeMap, categoryMap, serviceLabels]);
 
   const listItems = useMemo(() => groupByMonth(filteredEvents), [filteredEvents]);
 
@@ -365,13 +366,22 @@ export default function HistoryScreen() {
                 </View>
               );
             }
+            const evt = item.event;
+            const place = evt.placeId ? placeMap.get(evt.placeId) ?? null : null;
+            const label = evt.type === 'expense'
+              ? (evt.categoryId ? categoryMap.get(evt.categoryId) : undefined)
+              : evt.type === 'service'
+                ? serviceLabels.get(evt.id)
+                : undefined;
             return (
               <SwipeableEventRow
-                event={item.event}
+                event={evt}
                 odometerUnit={activeVehicle?.odometerUnit ?? 'miles'}
-                onPress={() => handleEventPress(item.event)}
-                onDelete={() => handleDelete(item.event)}
-                onLongPress={() => handleLongPress(item.event)}
+                onPress={() => handleEventPress(evt)}
+                onDelete={() => handleDelete(evt)}
+                onLongPress={() => handleLongPress(evt)}
+                place={place}
+                label={label}
                 currencyCode={currencyCode}
               />
             );

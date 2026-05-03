@@ -16,6 +16,15 @@
     "ios": {
       "bundleIdentifier": "com.arctosbuilt.automate",
       "supportsTablet": true,
+      "splash": {
+        "image": "./assets/images/splash-icon.png",
+        "resizeMode": "contain",
+        "backgroundColor": "#F5F4F1",
+        "dark": {
+          "image": "./assets/images/splash-icon-dark.png",
+          "backgroundColor": "#0E0E0C"
+        }
+      },
       "infoPlist": {
         "NSCameraUsageDescription": "AutoMate uses your camera to take photos of receipts and your vehicle.",
         "NSPhotoLibraryUsageDescription": "AutoMate accesses your photo library to attach receipt images to events.",
@@ -24,10 +33,9 @@
     },
     "android": {
       "package": "com.arctosbuilt.automate",
-      "versionCode": 1,
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#F5F4F1"
+        "backgroundColor": "#0E0E0C"
       },
       "permissions": [
         "android.permission.CAMERA",
@@ -36,8 +44,11 @@
         "android.permission.POST_NOTIFICATIONS"
       ],
       "splash": {
+        "image": "./assets/images/splash-icon.png",
+        "resizeMode": "contain",
         "backgroundColor": "#F5F4F1",
         "dark": {
+          "image": "./assets/images/splash-icon-dark.png",
           "backgroundColor": "#0E0E0C"
         }
       },

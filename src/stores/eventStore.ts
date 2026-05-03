@@ -116,8 +116,11 @@ export const useEventStore = create<EventStore>((set, get) => ({
       }
 
       set((state) => {
+        if (!serviceLabel) {
+          return { events: insertSorted(state.events, event) };
+        }
         const serviceLabels = new Map(state.serviceLabels);
-        if (serviceLabel) serviceLabels.set(event.id, serviceLabel);
+        serviceLabels.set(event.id, serviceLabel);
         return { events: insertSorted(state.events, event), serviceLabels };
       });
 
