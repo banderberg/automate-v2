@@ -13,6 +13,7 @@ import { useSettingsStore } from '@/src/stores/settingsStore';
 import { useToastStore } from '@/src/stores/toastStore';
 import { exportVehicleData } from '@/src/services/csvExport';
 import { generateServiceHistoryPDF } from '@/src/services/pdfExport';
+import { t } from '@/src/i18n';
 
 type ExportFormat = 'csv' | 'pdf';
 
@@ -31,9 +32,9 @@ export default function ExportModal() {
   const { showDialog, dialogProps } = useDialog();
 
   const selectedLabel = useMemo(() => {
-    if (!selectedVehicleId) return 'All Vehicles';
+    if (!selectedVehicleId) return t('exportModal.allVehicles');
     const v = vehicles.find((veh) => veh.id === selectedVehicleId);
-    return v?.nickname ?? 'Unknown';
+    return v?.nickname ?? t('exportModal.unknownVehicle');
   }, [selectedVehicleId, vehicles]);
 
   const handleFormatChange = useCallback(
@@ -51,7 +52,7 @@ export default function ExportModal() {
     try {
       if (format === 'pdf') {
         if (!selectedVehicleId) {
-          showDialog('Vehicle Required', 'Please select a vehicle for PDF export.');
+          showDialog(t('exportModal.vehicleRequiredTitle'), t('exportModal.vehicleRequiredMessage'));
           return;
         }
         const fileUri = await generateServiceHistoryPDF(
@@ -65,12 +66,12 @@ export default function ExportModal() {
         if (canShare) {
           await Sharing.shareAsync(fileUri, {
             mimeType: 'application/pdf',
-            dialogTitle: 'Export AutoMate Service History',
+            dialogTitle: t('exportModal.shareDialogPdf'),
           });
-          useToastStore.getState().show('Export complete');
+          useToastStore.getState().show(t('exportModal.exportComplete'));
           router.back();
         } else {
-          showDialog('Exported', `File saved to: ${fileUri}`);
+          showDialog(t('exportModal.exportedTitle'), t('exportModal.exportedMessage', { uri: fileUri }));
         }
       } else {
         const fileUri = await exportVehicleData(
@@ -83,17 +84,17 @@ export default function ExportModal() {
         if (canShare) {
           await Sharing.shareAsync(fileUri, {
             mimeType: 'text/csv',
-            dialogTitle: 'Export AutoMate Data',
+            dialogTitle: t('exportModal.shareDialogCsv'),
           });
-          useToastStore.getState().show('Export complete');
+          useToastStore.getState().show(t('exportModal.exportComplete'));
           router.back();
         } else {
-          showDialog('Exported', `File saved to: ${fileUri}`);
+          showDialog(t('exportModal.exportedTitle'), t('exportModal.exportedMessage', { uri: fileUri }));
         }
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : '';
-      showDialog('Export Failed', msg || 'Could not generate the file. Check your storage space and try again.');
+      showDialog(t('exportModal.exportFailedTitle'), msg || t('exportModal.exportFailedMessage'));
     } finally {
       setExporting(false);
     }
@@ -102,15 +103,15 @@ export default function ExportModal() {
   return (
     <SafeAreaView className="flex-1 bg-surface dark:bg-surface-dark" edges={['top']}>
       <ModalHeader
-        title="Export Data"
-        cancelLabel="Done"
+        title={t('exportModal.title')}
+        cancelLabel={t('common.done')}
         onCancel={() => router.back()}
         hideSave
       />
       <ScrollView className="flex-1 px-4 pt-4" keyboardShouldPersistTaps="handled">
         {/* Format toggle */}
         <Text className="text-xs text-ink-muted dark:text-ink-muted-on-dark mb-2 font-semibold">
-          Format
+          {t('exportModal.format')}
         </Text>
         <View className="flex-row bg-surface dark:bg-surface-dark rounded-card border border-divider dark:border-divider-dark p-1 mb-4">
           <Pressable
@@ -118,7 +119,7 @@ export default function ExportModal() {
             className={`flex-1 py-2.5 rounded-lg items-center ${
               format === 'csv' ? 'bg-primary' : ''
             }`}
-            accessibilityLabel={`CSV format${format === 'csv' ? ', selected' : ''}`}
+            accessibilityLabel={t('exportModal.csvA11y', { suffix: format === 'csv' ? t('exportModal.selectedSuffix') : '' })}
             accessibilityRole="tab"
             accessibilityState={{ selected: format === 'csv' }}
           >
@@ -127,7 +128,7 @@ export default function ExportModal() {
                 format === 'csv' ? 'text-white' : 'text-ink-secondary dark:text-ink-secondary-on-dark'
               }`}
             >
-              CSV
+              {t('exportModal.csv')}
             </Text>
           </Pressable>
           <Pressable
@@ -135,7 +136,7 @@ export default function ExportModal() {
             className={`flex-1 py-2.5 rounded-lg items-center ${
               format === 'pdf' ? 'bg-primary' : ''
             }`}
-            accessibilityLabel={`PDF format${format === 'pdf' ? ', selected' : ''}`}
+            accessibilityLabel={t('exportModal.pdfA11y', { suffix: format === 'pdf' ? t('exportModal.selectedSuffix') : '' })}
             accessibilityRole="tab"
             accessibilityState={{ selected: format === 'pdf' }}
           >
@@ -144,25 +145,25 @@ export default function ExportModal() {
                 format === 'pdf' ? 'text-white' : 'text-ink-secondary dark:text-ink-secondary-on-dark'
               }`}
             >
-              PDF
+              {t('exportModal.pdf')}
             </Text>
           </Pressable>
         </View>
 
         {format === 'pdf' && (
           <Text className="text-xs text-ink-faint dark:text-ink-faint-on-dark mb-4 -mt-2">
-            PDF export is per-vehicle only
+            {t('exportModal.pdfPerVehicleHint')}
           </Text>
         )}
 
         {/* Vehicle picker */}
         <Text className="text-xs text-ink-muted dark:text-ink-muted-on-dark mb-2 font-semibold">
-          Vehicle
+          {t('exportModal.vehicle')}
         </Text>
         <Pressable
           onPress={() => setShowVehiclePicker(!showVehiclePicker)}
           className="flex-row items-center bg-surface dark:bg-surface-dark rounded-xl border border-divider dark:border-divider-dark px-3.5 py-3 mb-4"
-          accessibilityLabel={`Selected vehicle: ${selectedLabel}`}
+          accessibilityLabel={t('exportModal.vehicleSelectedA11y', { label: selectedLabel })}
           accessibilityRole="button"
         >
           <Text className="flex-1 text-base text-ink dark:text-ink-on-dark">
@@ -186,7 +187,7 @@ export default function ExportModal() {
                 className={`px-3.5 py-3 border-b border-divider-subtle dark:border-divider-dark ${
                   !selectedVehicleId ? 'bg-primary-light dark:bg-primary-dark' : ''
                 }`}
-                accessibilityLabel="All Vehicles"
+                accessibilityLabel={t('exportModal.allVehicles')}
                 accessibilityRole="button"
               >
                 <Text
@@ -196,7 +197,7 @@ export default function ExportModal() {
                       : 'text-ink dark:text-ink-on-dark'
                   }`}
                 >
-                  All Vehicles
+                  {t('exportModal.allVehicles')}
                 </Text>
               </Pressable>
             )}
@@ -229,7 +230,7 @@ export default function ExportModal() {
 
         {/* Date range */}
         <Text className="text-xs text-ink-muted dark:text-ink-muted-on-dark mb-2 font-semibold">
-          Date Range (optional)
+          {t('exportModal.dateRange')}
         </Text>
 
         {fromDate ? (
@@ -237,27 +238,27 @@ export default function ExportModal() {
             <DateField
               value={fromDate}
               onChange={setFromDate}
-              label="From"
+              label={t('exportModal.fromLabel')}
               required={false}
             />
             <Pressable
               onPress={() => setFromDate('')}
               className="self-start mb-2"
-              accessibilityLabel="Clear from date"
+              accessibilityLabel={t('exportModal.clearFromA11y')}
               accessibilityRole="button"
             >
-              <Text className="text-xs text-primary">Clear</Text>
+              <Text className="text-xs text-primary">{t('exportModal.clear')}</Text>
             </Pressable>
           </View>
         ) : (
           <Pressable
             onPress={() => setFromDate(new Date().toISOString().split('T')[0])}
             className="flex-row items-center bg-surface dark:bg-surface-dark rounded-xl border border-divider dark:border-divider-dark px-3.5 py-3 mb-4"
-            accessibilityLabel="Set from date"
+            accessibilityLabel={t('exportModal.setFromA11y')}
             accessibilityRole="button"
           >
             <Ionicons name="calendar-outline" size={18} color="#A8A49D" />
-            <Text className="flex-1 ml-2 text-base text-ink-muted">From (all time)</Text>
+            <Text className="flex-1 ml-2 text-base text-ink-muted">{t('exportModal.fromAllTime')}</Text>
           </Pressable>
         )}
 
@@ -266,44 +267,44 @@ export default function ExportModal() {
             <DateField
               value={toDate}
               onChange={setToDate}
-              label="To"
+              label={t('exportModal.toLabel')}
               required={false}
             />
             <Pressable
               onPress={() => setToDate('')}
               className="self-start mb-2"
-              accessibilityLabel="Clear to date"
+              accessibilityLabel={t('exportModal.clearToA11y')}
               accessibilityRole="button"
             >
-              <Text className="text-xs text-primary">Clear</Text>
+              <Text className="text-xs text-primary">{t('exportModal.clear')}</Text>
             </Pressable>
           </View>
         ) : (
           <Pressable
             onPress={() => setToDate(new Date().toISOString().split('T')[0])}
             className="flex-row items-center bg-surface dark:bg-surface-dark rounded-xl border border-divider dark:border-divider-dark px-3.5 py-3 mb-4"
-            accessibilityLabel="Set to date"
+            accessibilityLabel={t('exportModal.setToA11y')}
             accessibilityRole="button"
           >
             <Ionicons name="calendar-outline" size={18} color="#A8A49D" />
-            <Text className="flex-1 ml-2 text-base text-ink-muted">To (all time)</Text>
+            <Text className="flex-1 ml-2 text-base text-ink-muted">{t('exportModal.toAllTime')}</Text>
           </Pressable>
         )}
 
         {/* File name */}
         <Text className="text-xs text-ink-muted dark:text-ink-muted-on-dark mb-2 font-semibold">
-          File Name (optional)
+          {t('exportModal.fileNameLabel')}
         </Text>
         <View className="bg-surface dark:bg-surface-dark rounded-xl border border-divider dark:border-divider-dark px-3.5 py-3 mb-4">
           <TextInput
             className="text-base text-ink dark:text-ink-on-dark"
             value={fileName}
             onChangeText={setFileName}
-            placeholder={`automate-export-${new Date().toISOString().split('T')[0]}`}
+            placeholder={t('exportModal.fileNamePlaceholder', { date: new Date().toISOString().split('T')[0] })}
             placeholderTextColor="#A8A49D"
             autoCapitalize="none"
             autoCorrect={false}
-            accessibilityLabel="Export file name"
+            accessibilityLabel={t('exportModal.fileNameA11y')}
           />
         </View>
 
@@ -314,7 +315,7 @@ export default function ExportModal() {
           className={`mt-6 py-4 rounded-xl items-center ${
             exporting ? 'bg-divider dark:bg-divider-dark' : 'bg-primary'
           }`}
-          accessibilityLabel={`Export ${format.toUpperCase()}`}
+          accessibilityLabel={t('exportModal.exportFmtA11y', { fmt: format.toUpperCase() })}
           accessibilityRole="button"
         >
           {exporting ? (
@@ -327,7 +328,7 @@ export default function ExportModal() {
                 color="white"
               />
               <Text className="text-white font-semibold text-base">
-                Export {format.toUpperCase()}
+                {format === 'pdf' ? t('exportModal.exportPdf') : t('exportModal.exportCsv')}
               </Text>
             </View>
           )}
