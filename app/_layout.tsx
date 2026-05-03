@@ -3,10 +3,11 @@ import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native
 import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useState } from 'react';
-import { useColorScheme as useSystemColorScheme, ActivityIndicator, View } from 'react-native';
+import { useColorScheme as useSystemColorScheme, ActivityIndicator, View, Platform } from 'react-native';
 import { useColorScheme } from 'nativewind';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
+import * as Application from 'expo-application';
 import { initializeDatabase } from '@/src/db/client';
 import { useSettingsStore } from '@/src/stores/settingsStore';
 import { useVehicleStore } from '@/src/stores/vehicleStore';
@@ -14,6 +15,9 @@ import { useReferenceDataStore } from '@/src/stores/referenceDataStore';
 import { useEventStore } from '@/src/stores/eventStore';
 import { useReminderStore } from '@/src/stores/reminderStore';
 import { ErrorToast } from '@/src/components/ErrorToast';
+import { initLogger, logError, setLoggerTag, setLoggerUser } from '@/src/services/logger';
+
+initLogger();
 
 export { AppErrorBoundary as ErrorBoundary } from '@/src/components/AppErrorBoundary';
 
@@ -50,8 +54,10 @@ export default function RootLayout() {
             useReminderStore.getState().loadForVehicle(activeVehicle.id),
           ]);
         }
+
+        attachLoggerContext();
       } catch (e) {
-        console.error('App initialization failed:', e);
+        logError(e, { source: 'appInit' });
       } finally {
         setAppReady(true);
         SplashScreen.hideAsync();
@@ -108,4 +114,22 @@ function RootNavigator({ resolvedColorScheme }: { resolvedColorScheme: string })
       <Stack.Screen name="+not-found" />
     </Stack>
   );
+}
+
+async function attachLoggerContext(): Promise<void> {
+  try {
+    const deviceId =
+      Platform.OS === 'android'
+        ? Application.getAndroidId()
+        : await Application.getIosIdForVendorAsync();
+    if (deviceId) setLoggerUser(deviceId);
+
+    const version = Application.nativeApplicationVersion;
+    const build = Application.nativeBuildVersion;
+    if (version) setLoggerTag('appVersion', version);
+    if (build) setLoggerTag('buildVersion', build);
+    setLoggerTag('platform', Platform.OS);
+  } catch (e) {
+    logError(e, { source: 'attachLoggerContext' });
+  }
 }

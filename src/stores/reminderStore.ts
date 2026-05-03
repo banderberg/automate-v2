@@ -5,6 +5,7 @@ import * as eventQueries from '../db/queries/events';
 import { computeNextDue } from '../services/reminderScheduler';
 import { getDatabase } from '../db/client';
 import * as notificationService from '../services/notifications';
+import { logError } from '../services/logger';
 
 interface ReminderStore {
   reminders: ReminderWithStatus[];
@@ -137,6 +138,7 @@ export const useReminderStore = create<ReminderStore>((set, get) => ({
 
       set({ reminders: enriched, isLoading: false });
     } catch (e) {
+      logError(e, { store: 'reminderStore', action: 'loadForVehicle', vehicleId });
       const msg = e instanceof Error ? e.message : 'Failed to load reminders';
       set({ error: msg, isLoading: false });
     }
@@ -163,6 +165,7 @@ export const useReminderStore = create<ReminderStore>((set, get) => ({
 
       return reminder;
     } catch (e) {
+      logError(e, { store: 'reminderStore', action: 'addReminder' });
       const msg = e instanceof Error ? e.message : 'Failed to add reminder';
       set({ error: msg });
       throw new Error(msg);
@@ -195,6 +198,7 @@ export const useReminderStore = create<ReminderStore>((set, get) => ({
         return { reminders };
       });
     } catch (e) {
+      logError(e, { store: 'reminderStore', action: 'updateReminder', id });
       const msg = e instanceof Error ? e.message : 'Failed to update reminder';
       set({ error: msg });
       throw new Error(msg);
@@ -213,6 +217,7 @@ export const useReminderStore = create<ReminderStore>((set, get) => ({
         reminders: state.reminders.filter((r) => r.id !== id),
       }));
     } catch (e) {
+      logError(e, { store: 'reminderStore', action: 'deleteReminder', id });
       const msg = e instanceof Error ? e.message : 'Failed to delete reminder';
       set({ error: msg });
       throw new Error(msg);
@@ -269,6 +274,7 @@ export const useReminderStore = create<ReminderStore>((set, get) => ({
         return { reminders: updatedReminders };
       });
     } catch (e) {
+      logError(e, { store: 'reminderStore', action: 'recalculateForEvent', eventId: event.id });
       const msg = e instanceof Error ? e.message : 'Failed to recalculate reminders';
       set({ error: msg });
     }

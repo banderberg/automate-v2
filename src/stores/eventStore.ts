@@ -4,6 +4,7 @@ import * as eventQueries from '../db/queries/events';
 import * as eventServiceTypeQueries from '../db/queries/eventServiceTypes';
 import * as eventPhotoQueries from '../db/queries/eventPhotos';
 import { estimateOdometer } from '../services/odometerEstimator';
+import { logError } from '../services/logger';
 
 interface PendingDelete {
   event: VehicleEvent;
@@ -89,6 +90,7 @@ export const useEventStore = create<EventStore>((set, get) => ({
         : events;
       set({ events: filtered, serviceLabels, isLoading: false });
     } catch (e) {
+      logError(e, { store: 'eventStore', action: 'loadForVehicle', vehicleId });
       const msg = e instanceof Error ? e.message : 'Failed to load events';
       set({ error: msg, isLoading: false });
     }
@@ -153,6 +155,7 @@ export const useEventStore = create<EventStore>((set, get) => ({
 
       return event;
     } catch (e) {
+      logError(e, { store: 'eventStore', action: 'addEvent', eventType: data.type });
       const msg = e instanceof Error ? e.message : 'Failed to add event';
       set({ error: msg });
       throw new Error(msg);
@@ -209,6 +212,7 @@ export const useEventStore = create<EventStore>((set, get) => ({
         return { events, serviceLabels };
       });
     } catch (e) {
+      logError(e, { store: 'eventStore', action: 'updateEvent', eventId: id });
       const msg = e instanceof Error ? e.message : 'Failed to update event';
       set({ error: msg });
       throw new Error(msg);

@@ -8,6 +8,7 @@ import {
   SafeAreaView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { logError } from '../services/logger';
 
 interface Props {
   children: React.ReactNode;
@@ -31,6 +32,13 @@ export class AppErrorBoundary extends React.Component<Props, State> {
 
   static getDerivedStateFromError(error: Error): State {
     return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, info: React.ErrorInfo): void {
+    logError(error, {
+      source: 'AppErrorBoundary',
+      componentStack: info.componentStack ?? null,
+    });
   }
 
   handleRestart = async () => {

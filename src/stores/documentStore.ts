@@ -3,6 +3,7 @@ import { File } from 'expo-file-system';
 import type { VehicleDocument } from '../types';
 import * as vehicleDocumentQueries from '../db/queries/vehicleDocuments';
 import * as notificationService from '../services/notifications';
+import { logError } from '../services/logger';
 
 interface DocumentStore {
   documents: VehicleDocument[];
@@ -59,6 +60,7 @@ export const useDocumentStore = create<DocumentStore>((set, get) => ({
       const documents = await vehicleDocumentQueries.getByVehicle(vehicleId);
       set({ documents, isLoading: false });
     } catch (e) {
+      logError(e, { store: 'documentStore', action: 'loadForVehicle', vehicleId });
       const msg = e instanceof Error ? e.message : 'Failed to load documents';
       set({ error: msg, isLoading: false });
     }
@@ -89,6 +91,7 @@ export const useDocumentStore = create<DocumentStore>((set, get) => ({
 
       return doc;
     } catch (e) {
+      logError(e, { store: 'documentStore', action: 'addDocument' });
       const msg = e instanceof Error ? e.message : 'Failed to add document';
       set({ error: msg });
       throw new Error(msg);
@@ -145,6 +148,7 @@ export const useDocumentStore = create<DocumentStore>((set, get) => ({
         documents: state.documents.map((d) => (d.id === id ? updated : d)),
       }));
     } catch (e) {
+      logError(e, { store: 'documentStore', action: 'updateDocument', id });
       const msg = e instanceof Error ? e.message : 'Failed to update document';
       set({ error: msg });
       throw new Error(msg);
@@ -159,6 +163,7 @@ export const useDocumentStore = create<DocumentStore>((set, get) => ({
         documents: state.documents.filter((d) => d.id !== id),
       }));
     } catch (e) {
+      logError(e, { store: 'documentStore', action: 'deleteDocument', id });
       const msg = e instanceof Error ? e.message : 'Failed to delete document';
       set({ error: msg });
       throw new Error(msg);
